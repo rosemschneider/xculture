@@ -1,0 +1,103 @@
+---
+title: "XCulture Analysis"
+author: "Rose M. Schneider"
+date: "8/5/2018"
+output: html_document
+---
+#Setup
+```{r setup, include=FALSE}
+rm(list = ls())
+require("knitr")
+opts_knit$set(root.dir = "~/Documents/Projects/xculture/HK_SLO") #this is specific to RMS, change accordingly
+library(tidyverse)
+library(magrittr)
+library(langcog)
+library(lme4)
+library(stringr)
+library(RColorBrewer)
+library(ggthemes)
+```
+
+##Load data
+```{r}
+#give n
+slo_gn <- read.csv("Data/slo_given.csv")
+#highest count
+slo_hc <- read.csv("Data/slo_hc.csv")
+#sf
+slo_sf <- read.csv("Data/slo_sf.csv")
+#wcn
+slo_wcn <- read.csv("Data/slo_wcn.csv")
+#wppsi
+slo_wppsi <- read.csv("Data/slo_wppsi.csv")
+```
+
+##Tidy data
+To-do RMS: Need to pull sex, experimenter & location into other dfs
+###Exclusions
+```{r}
+##This is a function that checks a dataframe for anyone marked as "excluded", pulls out those participants, and puts them into a dataframe
+check_exclusions <- function(df){
+    exclusions <- df %>%
+      filter(exclude == 1)%>%
+      distinct(SID, age, exclude, exclude_reason)
+    # 
+    exclusions$task = deparse(substitute(df))
+    if (length(exclusions$SID) > 0) {
+    return(exclusions)
+    } else {
+      return("No exclusions")
+      return(exclusions)
+    }
+}
+
+df.list <- list(slo_gn, slo_hc, slo_sf, slo_wcn, slo_wppsi)
+list_exclusions <- lapply(df.list, check_exclusions)
+
+#function that pulls out unique SIDs & reasons and puts them into a df
+unique_exclusions <- function(list) {
+  all_exclusions <- data.frame()
+  for(item in list){
+    df_item <- as.data.frame(item)
+    if(length(df_item$SID) > 0){
+      tmp_excl <- df_item %>%
+        distinct(SID, age, exclude, exclude_reason)
+      all_exclusions <- bind_rows(all_exclusions, tmp_excl)
+    }
+  }
+  return(all_exclusions)
+}
+
+all_exclusions <- unique_exclusions(list_exclusions)
+SIDs_exclude <- as.vector(unique(all_exclusions$SID))
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+#now actually exclude from every dataset 
+#this is a function that removes excluded participants across every data frame
+exclude_sub <- function(df){
+  df %<>%
+    filter(SID %!in% SIDs_exclude)
+  return(df)
+}
+
+slo_gn.df <- exclude_sub(slo_gn)
+slo_hc.df <- exclude_sub(slo_hc)
+slo_sf.df <- exclude_sub(slo_hc)
+slo_wcn.df <- exclude_sub(slo_hc)
+slo_wppsi.df <- exclude_sub(slo_wppsi)
+```
+
+To-do RMS: Need to make sure same number of participants and same participants across every df
+
+##Data manipulations
+Cap IHC and FHC and 140
+```{r}
+slo_hc.df %<>%
+  mutate(initial_highest = ifelse(initial_highest > 140, 140, initial_highest), 
+         final_highest = ifelse(final_highest > 140, 140, final_highest))
+
+#histogram of initial and final highest counts 
+hist(slo_hc.df$initial_highest)
+hist(slo_hc.df$final_highest)
+```
