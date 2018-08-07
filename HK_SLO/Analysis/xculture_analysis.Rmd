@@ -19,18 +19,122 @@ library(ggthemes)
 ```
 
 ##Load data
+###Slovenian
 ```{r}
+#demos
+slo.demo <- read.csv('Data/slo_demo.csv')%>%
+  mutate(dataset = "SLO")%>%
+  select(-X, -X.1)%>%
+  filter(SID != "")
 #give n
-slo_gn <- read.csv("Data/slo_given.csv")
+slo.gn <- read.csv("Data/slo_given.csv")%>%
+  mutate(dataset = "SLO")%>%
+  select(-age)%>%
+  filter(SID != "")
 #highest count
-slo_hc <- read.csv("Data/slo_hc.csv")
+slo.hc <- read.csv("Data/slo_hc.csv")%>%
+  mutate(dataset = "SLO")%>%
+  select(-age)%>%
+  filter(SID != "")
 #sf
-slo_sf <- read.csv("Data/slo_sf.csv")
+slo.sf <- read.csv("Data/slo_sf.csv")%>%
+  mutate(dataset = "SLO")%>%
+  select(-age)%>%
+  filter(SID != "")%>%
+  mutate(num_answer = factor(num_answer))%>%
+  mutate(mem_check_1 = factor(mem_check_1), 
+         mem_check_2 = factor(mem_check_2))
 #wcn
-slo_wcn <- read.csv("Data/slo_wcn.csv")
+slo.wcn <- read.csv("Data/slo_wcn.csv")%>%
+  mutate(dataset = "SLO")%>%
+  select(-age)%>%
+  filter(SID != "")%>%
+  mutate(num_answer = factor(num_answer), 
+         repeat_1 = factor(repeat_1), 
+         repeat_2 = factor(repeat_2))
 #wppsi
-slo_wppsi <- read.csv("Data/slo_wppsi.csv")
+slo.wppsi <- read.csv("Data/slo_wppsi.csv")%>%
+  mutate(dataset = "SLO")%>%
+  filter(SID != "")%>%
+  select(-age)
 ```
+
+###Hong Kong 
+```{r}
+#demos
+hk.demo <- read.csv('Data/hk_demo.csv')%>%
+  mutate(dataset = "HK")%>%
+  filter(SID != "")
+#give n
+hk.gn <- read.csv("Data/hk_given.csv")%>%
+  mutate(dataset = "HK")%>%
+  filter(SID != "")%>%
+  select(-age)%>%
+  mutate(trial = ifelse(trial == "second try", 6, trial))
+#highest count
+hk.hc <- read.csv("Data/hk_hc.csv")%>%
+  mutate(dataset = "HK")%>%
+  select(-age, -X, -X.1, -X.2, -X.3, -X.4, -X.5)%>%
+  filter(SID != "")%>%
+  mutate(last_successful = factor(last_successful))
+#sf
+hk.sf <- read.csv("Data/hk_sf.csv")%>%
+  mutate(dataset = "HK")%>%
+  select(-age)%>%
+  filter(SID != "")%>%
+  mutate(num_answer = factor(num_answer))%>%
+  mutate(mem_check_1 = factor(mem_check_1), 
+         mem_check_2 = factor(mem_check_2))
+#wcn
+hk.wcn <- read.csv("Data/hk_wcn.csv")%>%
+  mutate(dataset = "HK")%>%
+  select(-age)%>%
+  filter(SID != "")%>%
+  mutate(num_answer = factor(num_answer), 
+         repeat_1 = factor(repeat_1), 
+         repeat_2 = factor(repeat_2))
+#wppsi
+hk.wppsi <- read.csv("Data/hk_wppsi.csv")%>%
+  mutate(dataset = "HK")%>%
+  select(-age)%>%
+  filter(SID != "")
+```
+
+###Bind these datasets together 
+```{r}
+#demos
+demo.raw <- bind_rows(slo.demo, hk.demo)%>%
+  mutate(SID = factor(SID))
+
+#given
+given.raw <- bind_rows(slo.gn, hk.gn)%>%
+  mutate(SID = factor(SID))
+
+#hc
+hc.raw <- bind_rows(slo.hc, hk.hc)%>%
+  mutate(SID = factor(SID))
+
+#sf 
+sf.raw <- bind_rows(slo.sf, hk.sf)%>%
+  mutate(SID = factor(SID))
+
+#wcn
+wcn.raw <- bind_rows(slo.wcn, hk.wcn)%>%
+  mutate(SID = factor(SID))
+
+#wppsi
+wppsi.raw <- bind_rows(slo.wppsi, hk.wppsi)%>%
+  mutate(SID = factor(SID))
+
+```
+
+
+###Spread demographic information to other dataframes
+```{r}
+
+```
+
+
 
 ##Tidy data
 To-do RMS: Need to pull sex, experimenter & location into other dfs
@@ -42,7 +146,7 @@ check_exclusions <- function(df){
       filter(exclude == 1)%>%
       distinct(SID, age, exclude, exclude_reason)
     # 
-    exclusions$task = deparse(substitute(df))
+    # exclusions$task = deparse(substitute(df))
     if (length(exclusions$SID) > 0) {
     return(exclusions)
     } else {
@@ -91,13 +195,41 @@ slo_wppsi.df <- exclude_sub(slo_wppsi)
 To-do RMS: Need to make sure same number of participants and same participants across every df
 
 ##Data manipulations
-Cap IHC and FHC and 140
+Remove examples from data frames
+```{r}
+slo_gn.df %<>%
+  filter(SID != "Example1")
+slo_hc.df %<>%
+  filter(SID != "Example1" |
+           SID!= "Example2")
+```
+
+###Non-numeric answers
+To-do RMS: There are non-numeric answers for last successful - I think this would be better served by going through the data, tbh
+```{r}
+
+```
+###Highest count
+Cap IHC and FHC at 140
 ```{r}
 slo_hc.df %<>%
   mutate(initial_highest = ifelse(initial_highest > 140, 140, initial_highest), 
          final_highest = ifelse(final_highest > 140, 140, final_highest))
 
-#histogram of initial and final highest counts 
-hist(slo_hc.df$initial_highest)
-hist(slo_hc.df$final_highest)
+#histogram of initial and final highest counts for a sanity check
+tmp <- slo_hc.df %>%
+  distinct(SID, initial_highest, final_highest)
+hist(tmp$initial_highest)
+hist(tmp$final_highest)
 ```
+
+##Highest count sanity checks
+To-do for RMS
+```{r}
+hc.check <- slo_hc.df %>%
+  group_by(SID)%>%
+  filter(last_successful == max(last_successful))%>%
+  mutate(hc.check = ifelse(final_highest >= last_successful, TRUE, FALSE))%>%
+  filter(hc.check == FALSE)
+```
+
