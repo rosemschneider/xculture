@@ -216,6 +216,9 @@ sf.df %<>%
 wcn.df %<>%
   filter(exclude_trial != 1, 
          trial != "practice")
+
+given.df %<>%
+  filter(exclude_trial != 1)
 ```
 
 Sanity check! Do we have the same number of participants AND the same participants?
@@ -392,7 +395,28 @@ ggplot(sf.mem.num.ms, aes(x = starting_num, y = n, fill = mem_check_status)) +
 ```
 ###Coding check
 Make sure that everything is actually correct
+To-do for RMS: From Slovenia, pull in all the answers that are in the notes
 ```{r}
+tmp <- sf.df %>%
+  mutate()
+```
 
-````
+###Classify kids as CP or subset
+To-do for RMS: add age when you've spread it
+To-do for RMS: spread this classification to other dfs
+```{r}
+classify.cp <- function(){
+  tmp <- given.df %>%
+    group_by(SID, dataset)%>%
+    summarise(sum.corr = sum(correct))%>%
+    mutate(knower.level = ifelse(sum.corr >= 4, "CP", "subset"))%>%
+    distinct(SID, dataset, knower.level)
+}
 
+cp.lookup <- classify.cp()
+
+#number of subset and CP knowers by group
+cp.lookup %>%
+  group_by(knower.level, dataset)%>%
+  summarise(n = n())
+```
