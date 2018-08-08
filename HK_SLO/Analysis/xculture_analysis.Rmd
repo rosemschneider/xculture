@@ -16,6 +16,8 @@ library(lme4)
 library(stringr)
 library(RColorBrewer)
 library(ggthemes)
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
 ```
 
 ##Load data
@@ -101,7 +103,7 @@ hk.wppsi <- read.csv("Data/hk_wppsi.csv")%>%
 ```
 
 ###Bind these datasets together 
-```{r}
+```{r, warning = FALSE}
 #demos
 demo.raw <- bind_rows(slo.demo, hk.demo)%>%
   mutate(SID = factor(SID))
@@ -128,80 +130,158 @@ wppsi.raw <- bind_rows(slo.wppsi, hk.wppsi)%>%
 
 ```
 
-
-###Spread demographic information to other dataframes
+##Exclusions
 ```{r}
-
-```
-
-
-
-##Tidy data
-To-do RMS: Need to pull sex, experimenter & location into other dfs
-###Exclusions
-```{r}
-##This is a function that checks a dataframe for anyone marked as "excluded", pulls out those participants, and puts them into a dataframe
-check_exclusions <- function(df){
-    exclusions <- df %>%
-      filter(exclude == 1)%>%
-      distinct(SID, age, exclude, exclude_reason)
-    # 
-    # exclusions$task = deparse(substitute(df))
-    if (length(exclusions$SID) > 0) {
+#first, get every exclusion from every df
+#this is a function that filters down to to excluded participants
+exclude <- function(df){
+  exclusions <- df %>%
+    filter(exclude == 1)%>%
+    distinct(SID, exclude, exclude_reason, dataset)
+  
+    exclusions$dataframe = deparse(substitute(df))
     return(exclusions)
-    } else {
-      return("No exclusions")
-      return(exclusions)
-    }
 }
 
-df.list <- list(slo_gn, slo_hc, slo_sf, slo_wcn, slo_wppsi)
-list_exclusions <- lapply(df.list, check_exclusions)
-
-#function that pulls out unique SIDs & reasons and puts them into a df
-unique_exclusions <- function(list) {
-  all_exclusions <- data.frame()
-  for(item in list){
-    df_item <- as.data.frame(item)
-    if(length(df_item$SID) > 0){
-      tmp_excl <- df_item %>%
-        distinct(SID, age, exclude, exclude_reason)
-      all_exclusions <- bind_rows(all_exclusions, tmp_excl)
-    }
-  }
-  return(all_exclusions)
+#run this function over every df
+get_all_exclusions <- function(){
+  demo.ex <- exclude(demo.raw)
+  given.ex <- exclude(given.raw)
+  hc.ex <- exclude(hc.raw)
+  sf.ex <- exclude(sf.raw)
+  wcn.ex <- exclude(wcn.raw)
+  wppsi.ex <- exclude(wppsi.raw)
+  all_excl <- bind_rows(demo.ex, given.ex, hc.ex, sf.ex, wcn.ex, wppsi.ex)
+  return(all_excl)
 }
 
-all_exclusions <- unique_exclusions(list_exclusions)
-SIDs_exclude <- as.vector(unique(all_exclusions$SID))
+all_exclusions <- get_all_exclusions()
 
-'%!in%' <- function(x,y)!('%in%'(x,y))
+##Now, filter these down to unique SIDs
+##To-do for RMS: You need to standardize exclusion reasons later
+unique_exclusions <- all_exclusions%>%
+  distinct(SID, exclude_reason)
+unique_exclusions
 
-#now actually exclude from every dataset 
-#this is a function that removes excluded participants across every data frame
-exclude_sub <- function(df){
-  df %<>%
-    filter(SID %!in% SIDs_exclude)
-  return(df)
-}
+##Now, exclude these participants from all dataframes
+exclude_SIDs <- as.vector(unique_exclusions$SID)
+#demographics
+demo.df <- demo.raw%>%
+  filter(SID %!in% exclude_SIDs)
+#given
+given.df <- given.raw%>%
+  filter(SID %!in% exclude_SIDs)
+#hc
+hc.df <- hc.raw%>%
+  filter(SID %!in% exclude_SIDs)
+#sf 
+sf.df <- sf.raw%>%
+  filter(SID %!in% exclude_SIDs)
+#wcn
+wcn.df <- wcn.raw%>%
+  filter(SID %!in% exclude_SIDs)
+#wppsi
+wppsi.df <- wppsi.raw%>%
+  filter(SID %!in% exclude_SIDs)
 
-slo_gn.df <- exclude_sub(slo_gn)
-slo_hc.df <- exclude_sub(slo_hc)
-slo_sf.df <- exclude_sub(slo_hc)
-slo_wcn.df <- exclude_sub(slo_hc)
-slo_wppsi.df <- exclude_sub(slo_wppsi)
+##all kids who needed to be globally excluded should now be
 ```
 
-To-do RMS: Need to make sure same number of participants and same participants across every df
-
-##Data manipulations
-Remove examples from data frames
+###Trial exclusions
+How many trials are we going to exclude from each task
 ```{r}
-slo_gn.df %<>%
-  filter(SID != "Example1")
-slo_hc.df %<>%
-  filter(SID != "Example1" |
-           SID!= "Example2")
+sf.ex <- sf.df %>%
+  filter(exclude_trial == 1 |
+           is.na(exclude_trial))%>%
+  group_by(exclude_trial_reason)%>%
+  summarise(n = n())%>%
+  mutate(total = sum(n))
+sf.ex$total[1]
+
+wcn.ex <- wcn.df %>%
+  filter(exclude_trial == 1 |
+           is.na(exclude_trial))%>%
+  group_by(exclude_trial_reason)%>%
+  summarise(n = n())%>%
+  mutate(total = sum(n))
+wcn.ex$total[1]
+```
+
+###Exclude trials and practice trials
+```{r}
+sf.df %<>%
+  filter(exclude_trial != 1, 
+         trial != "practice")
+
+wcn.df %<>%
+  filter(exclude_trial != 1, 
+         trial != "practice")
+```
+
+Sanity check! Do we have the same number of participants AND the same participants?
+To-do for RMS: There are participants in SLO data that have demographic information, but no data - will have to update data
+```{r}
+# #this is a function for getting unique IDs in each task
+# get_unique_SID <- function(df){
+#   unique <- df %>%
+#     distinct(SID, )
+#   
+#   unique$task = deparse(substitute(df))
+#   return(unique)
+# }
+# 
+# #get unique IDs for each task df
+# unique.demo <- get_unique_SID(demo.df)
+# unique.given <- get_unique_SID(given.df)
+# unique.hc <- get_unique_SID(hc.df)
+# unique.sf <- get_unique_SID(sf.df)
+# unique.wcn <- get_unique_SID(wcn.df)
+# unique.wppsi <- get_unique_SID(wppsi.df)
+# 
+# check_unique <- function() {
+#   if (length(unique.demo$SID) == length(unique.given$SID) &
+#       length(unique.demo$SID) == length(unique.hc$SID) &
+#       length(unique.demo$SID) == length(unique.sf$SID) & 
+#       length(unique.demo$SID) == length(unique.wcn$SID) & 
+#       length(unique.demo$SID) == length(unique.wppsi$SID)) {
+#     print("Same number of subjects in each task")
+#   } else {
+#         print("WARNING: Differing numbers of participants in each task")
+#       }
+# }
+# 
+# check_unique()
+# 
+# #differing numbers of participants
+# test1 <- unique.demo %>%
+#   filter(SID %!in% unique.given$SID)
+```
+
+##Spread information from demo to every df
+To-do for RMS: This does not work right now because we have subs that do not have data, fix when Slovenian data is totally uploaded.
+```{r}
+#first, create a lookup of unique SIDs and demo information
+# demo_lookup <- demo.raw%>%
+#   distinct(SID, age, sex, experimenter, location, dataset)
+# 
+# spread_demo <- function(df){
+#   tmp.df <- df 
+#   for (row in 1:nrow(tmp.df)) {
+#     sub = as.character(tmp.df[row, "SID"])
+#     age = subset(demo_lookup, SID == sub)$age
+#     sex = subset(demo_lookup, SID == sub)$sex
+#     experimenter = subset(demo_lookup, SID == sub)$experimenter
+#     location = subset(demo_lookup, SID == sub)$location
+#     tmp.df[row, "age"] = age
+#     tmp.df[row, "sex"] = sex
+#     tmp.df[row, "experimenter"] = experimenter
+#     tmp.df[row, "location"] = location
+#   }
+#   return(tmp.df)
+# }
+# 
+# y <- spread_demo(x)
+
 ```
 
 ###Non-numeric answers
@@ -209,22 +289,54 @@ To-do RMS: There are non-numeric answers for last successful - I think this woul
 ```{r}
 
 ```
+
+###Round age
+To-do for RMS when you get all the data ready to go
+```{r}
+round_age <- function(df) {
+  df %<>%
+    mutate(age = round(age, 2))
+  return(df)
+}
+
+#round age for every task df
+sf.df <- round_age(sf.df)
+given.df <- round_age(given.df)
+nextnumber.df <- round_age(nextnumber.df)
+mathfacts.df <- round_age(mathfacts.df)
+highestcount.df <- round_age(highestcount.df)
+```
+
 ###Highest count
 Cap IHC and FHC at 140
+To-do for RMS: Make this graph better
 ```{r}
-slo_hc.df %<>%
+hc.df %<>%
   mutate(initial_highest = ifelse(initial_highest > 140, 140, initial_highest), 
          final_highest = ifelse(final_highest > 140, 140, final_highest))
 
 #histogram of initial and final highest counts for a sanity check
-tmp <- slo_hc.df %>%
-  distinct(SID, initial_highest, final_highest)
-hist(tmp$initial_highest)
-hist(tmp$final_highest)
+unique.hc.data <- hc.df %>%
+  distinct(SID, initial_highest, final_highest, dataset)
+
+#initial
+ggplot(unique.hc.data, aes(x=initial_highest, fill=dataset)) + 
+  geom_histogram(colour = "black") +
+  theme_bw()+
+  labs(title = "Initial Highest Count") +
+  facet_grid(~dataset) + guides(fill = FALSE)
+
+#final
+ggplot(unique.hc.data, aes(x=final_highest, fill=dataset)) + 
+  geom_histogram(colour = "black") +
+  theme_bw()+
+  labs(title = "Final Highest Count") +
+  facet_grid(~dataset) +
+  guides(fill = FALSE)
 ```
 
 ##Highest count sanity checks
-To-do for RMS
+To-do for RMS: Fix when you've gone through all of the HC data
 ```{r}
 hc.check <- slo_hc.df %>%
   group_by(SID)%>%
@@ -232,4 +344,55 @@ hc.check <- slo_hc.df %>%
   mutate(hc.check = ifelse(final_highest >= last_successful, TRUE, FALSE))%>%
   filter(hc.check == FALSE)
 ```
+
+###How many kids had issues with saying large numbers but still applied SF correctly for WCN and SF?
+```{r}
+#number of trials affected in sf
+sf.df %>%
+  group_by(correct, dataset)%>%
+  summarise(n = n())
+
+wcn.df %>%
+  group_by(correct, dataset)%>%
+  summarise(n = n())
+```
+
+###How many kids failed the memory checks in each dataset by number
+```{r}
+#for SF
+sf.df %<>%
+  mutate(mem_check_status = ifelse((mem_check_1 == 1 & is.na(mem_check_2)), "need_1_pass_1",
+                                    ifelse((mem_check_1 == 0 & mem_check_2 == 0), "need_2_fail_2",
+                                           ifelse((mem_check_1 == 1 & mem_check_2 == 1),
+                                                  "unclear_pass1_pass2",
+                                                  ifelse((mem_check_1 == 1 & mem_check_2 == 0),
+                                                         "unclear_pass1_fail2",
+                                                         ifelse((mem_check_1 == 0 & mem_check_2 == 1),
+                                                                "fail1_pass2", "other"))))))
+
+sf.mem.ms <- sf.df %>%
+  group_by(mem_check_status, dataset)%>%
+  summarise(n = n())
+
+ggplot(sf.mem.ms, aes(x = mem_check_status, y = n, fill = mem_check_status)) + 
+  geom_bar(stat = "identity", position = position_dodge()) + 
+  facet_grid(~dataset) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + guides(fill=FALSE)
+
+#what about by number?
+sf.mem.num.ms <- sf.df %>%
+  mutate(starting_num = factor(starting_num))%>%
+  group_by(starting_num, mem_check_status, dataset)%>%
+  summarise(n = n())
+
+ggplot(sf.mem.num.ms, aes(x = starting_num, y = n, fill = mem_check_status)) + 
+  geom_bar(stat = "identity") + 
+  facet_grid(~dataset) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+###Coding check
+Make sure that everything is actually correct
+```{r}
+
+````
 
