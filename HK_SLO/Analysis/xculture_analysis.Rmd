@@ -26,7 +26,6 @@ library(ggthemes)
 #demos
 slo.demo <- read.csv('Data/slo_demo.csv')%>%
   mutate(dataset = "SLO")%>%
-  select(-X, -X.1)%>%
   filter(SID != "")
 #give n
 slo.gn <- read.csv("Data/slo_given.csv")%>%
@@ -76,7 +75,7 @@ hk.gn <- read.csv("Data/hk_given.csv")%>%
 #highest count
 hk.hc <- read.csv("Data/hk_hc.csv")%>%
   mutate(dataset = "HK")%>%
-  select(-age, -X, -X.1, -X.2, -X.3, -X.4, -X.5)%>%
+  select(-age)%>%
   filter(SID != "")%>%
   mutate(last_successful = factor(last_successful))
 #sf
@@ -167,243 +166,124 @@ unique_exclusions
 exclude_SIDs <- as.vector(unique_exclusions$SID)
 #demographics
 demo.df <- demo.raw%>%
-  filter(SID %!in% exclude_SIDs)
+  filter(SID %!in% exclude_SIDs)%>%
+  filter(SID != "19072018-E") #manual exclude - change later
 #given
 given.df <- given.raw%>%
-  filter(SID %!in% exclude_SIDs)
+  filter(SID %!in% exclude_SIDs)%>%
+  filter(SID != "19072018-E") #manual exclude - change later
 #hc
 hc.df <- hc.raw%>%
-  filter(SID %!in% exclude_SIDs)
+  filter(SID %!in% exclude_SIDs)%>%
+  filter(SID != "19072018-E") #manual exclude - change later
 #sf 
 sf.df <- sf.raw%>%
-  filter(SID %!in% exclude_SIDs)
+  filter(SID %!in% exclude_SIDs)%>%
+  filter(SID != "19072018-E") #manual exclude - change later
 #wcn
 wcn.df <- wcn.raw%>%
-  filter(SID %!in% exclude_SIDs)
+  filter(SID %!in% exclude_SIDs)%>%
+  filter(SID != "19072018-E") #manual exclude - change later
 #wppsi
 wppsi.df <- wppsi.raw%>%
-  filter(SID %!in% exclude_SIDs)
+  filter(SID %!in% exclude_SIDs)%>%
+  filter(SID != "19072018-E") #manual exclude - change later
 
 ##all kids who needed to be globally excluded should now be
 ```
 
-###Trial exclusions
-How many trials are we going to exclude from each task
+###Sanity check
+Do we have the same number of participants in each task?
 ```{r}
-sf.ex <- sf.df %>%
-  filter(exclude_trial == 1 |
-           is.na(exclude_trial))%>%
-  group_by(exclude_trial_reason)%>%
-  summarise(n = n())%>%
-  mutate(total = sum(n))
-sf.ex$total[1]
+#this is a function for getting unique IDs in each task
+get_unique_SID <- function(df){
+  unique <- df %>%
+    distinct(SID)
 
-wcn.ex <- wcn.df %>%
-  filter(exclude_trial == 1 |
-           is.na(exclude_trial))%>%
-  group_by(exclude_trial_reason)%>%
-  summarise(n = n())%>%
-  mutate(total = sum(n))
-wcn.ex$total[1]
+  unique$task = deparse(substitute(df))
+  return(unique)
+}
+
+#get unique IDs for each task df
+unique.demo <- get_unique_SID(demo.df)
+unique.given <- get_unique_SID(given.df)
+unique.hc <- get_unique_SID(hc.df)
+unique.sf <- get_unique_SID(sf.df)
+unique.wcn <- get_unique_SID(wcn.df)
+unique.wppsi <- get_unique_SID(wppsi.df)
+
+
+check_unique <- function() {
+  if (length(unique.demo$SID) == length(unique.given$SID) &
+      length(unique.demo$SID) == length(unique.hc$SID) &
+      length(unique.demo$SID) == length(unique.sf$SID) &
+      length(unique.demo$SID) == length(unique.wcn$SID) &
+      length(unique.demo$SID) == length(unique.wppsi$SID)) {
+    print("Same number of subjects in each task")
+  } else {
+        print("WARNING: Differing numbers of participants in each task")
+      }
+}
+
+check_unique()
+
 ```
 
-###Exclude trials and practice trials
+###Trial exclusions
+How many trials are we going to exclude from each task
+TO-DO RMS: Add 2 correct trials and NAs to count
 ```{r}
-sf.df %<>%
+#get the SIDs that failed practice
+sf.fail <- sf.df %>%
+  filter(trial == "practice", 
+         correct == 0)
+
+sf.failed.SIDs <- as.vector(unique(sf.fail$SID))
+
+sf.df %>%
+  filter(exclude_trial == 1 |
+           is.na(exclude_trial))%>%
+  group_by(exclude_trial_reason)%>%
+  summarise(n = n())%>%
+  mutate(total = sum(n))
+
+#get the SIDS that failed practice
+wcn.fail <- wcn.df %>%
+  filter(trial == "practice", 
+         correct == 0)
+
+wcn.failed.SIDs <- as.vector(unique(wcn.fail$SID))
+
+wcn.df %>%
+  filter(exclude_trial == 1 |
+           is.na(exclude_trial))%>%
+  group_by(exclude_trial_reason)%>%
+  summarise(n = n())%>%
+  mutate(total = sum(n))
+
+```
+
+###Exclude trials and practice trials, also participants that should be excluded from a particular task
+```{r}
+sf.df%<>%
   filter(exclude_trial != 1, 
-         trial != "practice")
+         trial != "practice")%>%
+  mutate(exclude_task = ifelse(is.na(exclude_task), 0, exclude_task))%>%
+  filter(exclude_task != 1)
+  
 
 wcn.df %<>%
   filter(exclude_trial != 1, 
-         trial != "practice")
+         trial != "practice")%>%
+  mutate(exclude_task = ifelse(is.na(exclude_task), 0, exclude_task))%>%
+  filter(exclude_task != 1)
 
 given.df %<>%
   filter(exclude_trial != 1)
 ```
 
-Sanity check! Do we have the same number of participants AND the same participants?
-To-do for RMS: There are participants in SLO data that have demographic information, but no data - will have to update data
-```{r}
-# #this is a function for getting unique IDs in each task
-# get_unique_SID <- function(df){
-#   unique <- df %>%
-#     distinct(SID, )
-#   
-#   unique$task = deparse(substitute(df))
-#   return(unique)
-# }
-# 
-# #get unique IDs for each task df
-# unique.demo <- get_unique_SID(demo.df)
-# unique.given <- get_unique_SID(given.df)
-# unique.hc <- get_unique_SID(hc.df)
-# unique.sf <- get_unique_SID(sf.df)
-# unique.wcn <- get_unique_SID(wcn.df)
-# unique.wppsi <- get_unique_SID(wppsi.df)
-# 
-# check_unique <- function() {
-#   if (length(unique.demo$SID) == length(unique.given$SID) &
-#       length(unique.demo$SID) == length(unique.hc$SID) &
-#       length(unique.demo$SID) == length(unique.sf$SID) & 
-#       length(unique.demo$SID) == length(unique.wcn$SID) & 
-#       length(unique.demo$SID) == length(unique.wppsi$SID)) {
-#     print("Same number of subjects in each task")
-#   } else {
-#         print("WARNING: Differing numbers of participants in each task")
-#       }
-# }
-# 
-# check_unique()
-# 
-# #differing numbers of participants
-# test1 <- unique.demo %>%
-#   filter(SID %!in% unique.given$SID)
-```
-
-##Spread information from demo to every df
-To-do for RMS: This does not work right now because we have subs that do not have data, fix when Slovenian data is totally uploaded.
-```{r}
-#first, create a lookup of unique SIDs and demo information
-# demo_lookup <- demo.raw%>%
-#   distinct(SID, age, sex, experimenter, location, dataset)
-# 
-# spread_demo <- function(df){
-#   tmp.df <- df 
-#   for (row in 1:nrow(tmp.df)) {
-#     sub = as.character(tmp.df[row, "SID"])
-#     age = subset(demo_lookup, SID == sub)$age
-#     sex = subset(demo_lookup, SID == sub)$sex
-#     experimenter = subset(demo_lookup, SID == sub)$experimenter
-#     location = subset(demo_lookup, SID == sub)$location
-#     tmp.df[row, "age"] = age
-#     tmp.df[row, "sex"] = sex
-#     tmp.df[row, "experimenter"] = experimenter
-#     tmp.df[row, "location"] = location
-#   }
-#   return(tmp.df)
-# }
-# 
-# y <- spread_demo(x)
-
-```
-
-###Non-numeric answers
-To-do RMS: There are non-numeric answers for last successful - I think this would be better served by going through the data, tbh
-```{r}
-
-```
-
-###Round age
-To-do for RMS when you get all the data ready to go
-```{r}
-round_age <- function(df) {
-  df %<>%
-    mutate(age = round(age, 2))
-  return(df)
-}
-
-#round age for every task df
-sf.df <- round_age(sf.df)
-given.df <- round_age(given.df)
-nextnumber.df <- round_age(nextnumber.df)
-mathfacts.df <- round_age(mathfacts.df)
-highestcount.df <- round_age(highestcount.df)
-```
-
-###Highest count
-Cap IHC and FHC at 140
-To-do for RMS: Make this graph better
-```{r}
-hc.df %<>%
-  mutate(initial_highest = ifelse(initial_highest > 140, 140, initial_highest), 
-         final_highest = ifelse(final_highest > 140, 140, final_highest))
-
-#histogram of initial and final highest counts for a sanity check
-unique.hc.data <- hc.df %>%
-  distinct(SID, initial_highest, final_highest, dataset)
-
-#initial
-ggplot(unique.hc.data, aes(x=initial_highest, fill=dataset)) + 
-  geom_histogram(colour = "black") +
-  theme_bw()+
-  labs(title = "Initial Highest Count") +
-  facet_grid(~dataset) + guides(fill = FALSE)
-
-#final
-ggplot(unique.hc.data, aes(x=final_highest, fill=dataset)) + 
-  geom_histogram(colour = "black") +
-  theme_bw()+
-  labs(title = "Final Highest Count") +
-  facet_grid(~dataset) +
-  guides(fill = FALSE)
-```
-
-##Highest count sanity checks
-To-do for RMS: Fix when you've gone through all of the HC data
-```{r}
-hc.check <- slo_hc.df %>%
-  group_by(SID)%>%
-  filter(last_successful == max(last_successful))%>%
-  mutate(hc.check = ifelse(final_highest >= last_successful, TRUE, FALSE))%>%
-  filter(hc.check == FALSE)
-```
-
-###How many kids had issues with saying large numbers but still applied SF correctly for WCN and SF?
-```{r}
-#number of trials affected in sf
-sf.df %>%
-  group_by(correct, dataset)%>%
-  summarise(n = n())
-
-wcn.df %>%
-  group_by(correct, dataset)%>%
-  summarise(n = n())
-```
-
-###How many kids failed the memory checks in each dataset by number
-```{r}
-#for SF
-sf.df %<>%
-  mutate(mem_check_status = ifelse((mem_check_1 == 1 & is.na(mem_check_2)), "need_1_pass_1",
-                                    ifelse((mem_check_1 == 0 & mem_check_2 == 0), "need_2_fail_2",
-                                           ifelse((mem_check_1 == 1 & mem_check_2 == 1),
-                                                  "unclear_pass1_pass2",
-                                                  ifelse((mem_check_1 == 1 & mem_check_2 == 0),
-                                                         "unclear_pass1_fail2",
-                                                         ifelse((mem_check_1 == 0 & mem_check_2 == 1),
-                                                                "fail1_pass2", "other"))))))
-
-sf.mem.ms <- sf.df %>%
-  group_by(mem_check_status, dataset)%>%
-  summarise(n = n())
-
-ggplot(sf.mem.ms, aes(x = mem_check_status, y = n, fill = mem_check_status)) + 
-  geom_bar(stat = "identity", position = position_dodge()) + 
-  facet_grid(~dataset) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + guides(fill=FALSE)
-
-#what about by number?
-sf.mem.num.ms <- sf.df %>%
-  mutate(starting_num = factor(starting_num))%>%
-  group_by(starting_num, mem_check_status, dataset)%>%
-  summarise(n = n())
-
-ggplot(sf.mem.num.ms, aes(x = starting_num, y = n, fill = mem_check_status)) + 
-  geom_bar(stat = "identity") + 
-  facet_grid(~dataset) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-###Coding check
-Make sure that everything is actually correct
-To-do for RMS: From Slovenia, pull in all the answers that are in the notes
-```{r}
-tmp <- sf.df %>%
-  mutate()
-```
-
+##Classifications
 ###Classify kids as CP or subset
-To-do for RMS: add age when you've spread it
-To-do for RMS: spread this classification to other dfs
 ```{r}
 classify.cp <- function(){
   tmp <- given.df %>%
@@ -419,4 +299,688 @@ cp.lookup <- classify.cp()
 cp.lookup %>%
   group_by(knower.level, dataset)%>%
   summarise(n = n())
+
+cp.lookup %<>%
+  select(-dataset)
+
+hc.df <- right_join(hc.df, cp.lookup, by = "SID")%>%
+  mutate(SID = factor(SID))
+given.df <- right_join(given.df, cp.lookup, by = "SID")%>%
+  mutate(SID = factor(SID))
+sf.df <- right_join(sf.df, cp.lookup, by = "SID")%>%
+  mutate(SID = factor(SID))
+wcn.df <- right_join(wcn.df, cp.lookup, by = "SID")%>%
+  mutate(SID = factor(SID))
+wppsi.df <- right_join(wppsi.df, cp.lookup, by = "SID")%>%
+  mutate(SID = factor(SID))
 ```
+
+
+###Classify kids as productive or nonproductive
+```{r, warning = FALSE}
+hc.df %<>%
+  mutate(last_successful = ifelse(last_successful == "Is quiet", "IDK", last_successful))
+
+hc <- hc.df %>% # replace with your local path
+  select(SID, last_successful, initial_highest, final_highest) %>%
+  mutate_at(c('last_successful','initial_highest','final_highest'),
+            function(col) as.integer(str_replace_all(col,'\\D',''))) %>% # some of these included '?', so i remove any char thats not a digit
+  mutate(last_successful = ifelse(is.na(last_successful), 140, last_successful))%>%
+  filter(!is.na(initial_highest))
+
+tmp <- hc %>%
+  distinct(SID, initial_highest)%>%
+  group_by(SID)%>%
+  summarise(n = n())%>%
+  filter(n > 1)
+# 
+# 
+is.productive = function(subject){
+  # takes as input the data for a single subject
+  # RULES:
+  # - counts to 120 unaided = productive
+  # - after making first error, counts >= 20 higher, with no more than 3 errors on way
+  if(subject$initial_highest[1] >= 140){
+    # if they get to 120 on first try, = productive
+    return(TRUE)
+  } else if(subject$final_highest[1] == 140 & nrow(subject) < 4) {
+    return(TRUE)
+  } else if(subject$final_highest[1] < 140 & nrow(subject) == 1 
+            & subject$final_highest[1] == subject$initial_highest[1]) {
+    return(FALSE)
+  } else if((subject$final_highest[1] - subject$initial_highest[1]) >= 20){
+    # if their final is >= 20 larger than their intial...
+    if(nrow(subject) < 4){
+      # and they've made 3 or fewer total errors, = productive
+      return(TRUE)
+    } 
+    else {
+      for(i in 1:nrow(subject)){ # start at row 2
+        # check if they ever made it >= 20 counts & <= 3 errors after an error
+        runLength = 0 # they just made an error, so no post-error successes yet
+        numErrors = 0 # first row was an error if it's not finalCount == 120
+        prev = subject$last_successful[i]
+        for (j in i+1:nrow(subject)){ # from current row until end...
+          numErrors = numErrors + 1 # new row means new error
+          runLength = runLength + (subject$last_successful[j] - prev)
+          # ^ add difference between current count and last count to run length
+          prev = subject$last_successful[j] # update last count
+          if(runLength >= 20 & numErrors < 4){
+            # if at any point the productivity conditions are met...
+            return(TRUE) # = productive
+          }
+        }
+      }
+      # productivity conditions were never met (because we got to this point) so...
+      return(FALSE) # != productive
+    }
+  } else {
+    # highest is not >= 20 greater than initial
+    return(FALSE)
+  }
+}
+
+# #issues: not working for multiple errors
+# #last successful doesn't not always equal final highest count
+# 
+#make function to run for all participants
+unique_SIDs <- as.vector(unique(hc.df$SID))
+# 
+class_prod <- function(vector) {
+  temp_data <- data.frame()
+  for (i in vector) {
+   
+    prod.class <- data.frame(i, is.productive(subset(hc, SID == i)))
+    names(prod.class) <- c("SID", "productive")
+    temp_data <- bind_rows(temp_data, prod.class)
+  }
+  return(temp_data)
+}
+# 
+
+productive <- class_prod(unique_SIDs)%>%
+  rename(check_prod = productive)%>%
+  mutate(check_prod = ifelse(check_prod == TRUE, "productive", "nonproductive"))
+
+productive_SIDS <- productive %>%
+  filter(check_prod == "productive")%>%
+  distinct(SID)
+
+#assign these to a vector
+prod_SIDS <- as.vector(productive_SIDS$SID)
+
+#This is a function that checks a SID against the productive SIDs in the vector above, and then classifies a participant as Productive or Nonproductive
+productivity_classification <- function(df) {
+  tmp <- df %>%
+    mutate(productive = ifelse(SID %in% prod_SIDS, "productive", "nonproductive"))
+  return(tmp)
+}
+
+#Assign productivity across all tasks
+sf.df <- productivity_classification(sf.df)
+wcn.df <- productivity_classification(wcn.df)
+hc.df <- productivity_classification(hc.df)
+given.df <- productivity_classification(given.df)
+wppsi.df <- productivity_classification(wppsi.df)
+```
+
+#Other manipulations
+##Make sure everything that is coded as correct is actually correct
+```{r}
+##SF##
+tmp <- sf.df %>%
+  mutate(correct_check = ifelse(as.numeric(num_answer) == (starting_num + 1), 1, 0))%>%
+  mutate(check = ifelse(correct == correct_check, TRUE, FALSE))%>%
+  filter(check == FALSE)
+
+#review these, then run the following
+sf.df %<>%
+  mutate(correct = ifelse(as.numeric(num_answer) == (starting_num + 1), 1, 0))
+
+##WCN##
+tmp <- wcn.df %>%
+  mutate(correct_check = ifelse(as.numeric(as.character(num_answer)) == (starting_num + 1), 1, 0))%>%
+  mutate(check = ifelse(correct == correct_check, TRUE, FALSE))%>%
+  filter(check == FALSE)
+
+#review these, then run the following
+wcn.df %<>%
+  mutate(correct = ifelse(correct == 2, NA, correct))%>%
+  filter(!is.na(correct))%>%
+  mutate(correct = ifelse(as.numeric(as.character(num_answer)) == (starting_num + 1), 1, 0))
+```
+
+##Highest contiguous NN
+```{r, warning = FALSE}
+#get unique ids
+unique.nn <- wcn.df %>%
+  distinct(SID)
+
+unique.nn <- as.vector(unique.nn$SID)
+nextnums <- as.vector(c(5, 7, 16, 24, 52, 71, 105, 107, 116, 224, 252, 271))
+
+#this is a function that pulls out the largest number for which a participant had a correct consecutive
+get_contiguous <- function(){
+  contig <- data.frame()
+  for (sub in unique.nn) {
+    tmp <- wcn.df %>%
+      filter(SID == sub, 
+             correct == 0)%>%
+      mutate(starting_num = sort(starting_num))
+    if (length(tmp$SID) == 0) {
+      highest_contig = 271
+      sub_contig <- data.frame(sub, highest_contig)
+      contig <- bind_rows(contig, sub_contig)
+    } else if (sub %in% wcn.failed.SIDs) {
+      highest_contig = 0
+      sub_contig <- data.frame(sub, highest_contig)
+      contig <- bind_rows(contig, sub_contig)
+    } else if (length(tmp$starting_num) > 0 & min(tmp$starting_num) == 5) {
+      highest_contig = 1
+      sub_contig <- data.frame(sub, highest_contig)
+      contig <- bind_rows(contig, sub_contig)
+    } else {
+      min.nn <- min(tmp$starting_num)
+      prev_correct <- nextnums[nextnums < min.nn]
+      highest_contig <- max(prev_correct)
+    
+      sub_contig <- data.frame(sub,
+                             highest_contig)
+      contig <- bind_rows(contig, sub_contig)
+    }
+  }
+  return(contig)
+}
+
+highest_contiguous_nn <- get_contiguous()%>%
+  dplyr::rename(SID = sub)
+
+missing <- unique.demo%>%
+  filter(SID %!in% highest_contiguous_nn$SID)
+
+missing.wcn <- data_frame(missing$SID, NA)%>%
+  dplyr::rename(SID = `missing$SID`, 
+                highest_contig = `NA`)
+
+highest_contiguous_nn <- bind_rows(highest_contiguous_nn, missing.wcn)
+
+#spread this to other dfs
+given.df <- right_join(given.df, highest_contiguous_nn, by = "SID")
+hc.df <- right_join(hc.df, highest_contiguous_nn, by = "SID")
+sf.df <- right_join(sf.df, highest_contiguous_nn, by = "SID")
+wcn.df <- right_join(wcn.df, highest_contiguous_nn, by = "SID")
+wppsi.df <- right_join(wppsi.df, highest_contiguous_nn, by = "SID")
+```
+
+##Within/beyond count range
+```{r}
+sf.df %<>%
+  filter(!is.na(correct))
+
+wcn.df %<>%
+  filter(!is.na(correct))
+
+#first, get initial highest count for each kiddo
+#Make a lookup table with SID and initial highest count
+lookup <- hc.df %>%
+  distinct(SID, initial_highest)
+
+#This is a function that, for each trial, checks the number queried. If number queried is above the child's initial highest count, marks that trial as beyond count range.
+determine_count_range <- function(df) {
+  tmp <- df
+  for (row in 1:nrow(tmp)) {
+    sub = as.character(tmp[row, "SID"])
+    count_range = subset(lookup, SID == sub)$initial_highest
+    tmp[row, "initial_highest_count"] = count_range
+    if (tmp[row, "starting_num"] > count_range) {
+      tmp[row, "count_range"] = "outside"
+    } else {
+      tmp[row, "count_range"] = "within"
+    }
+  }
+  return(tmp)
+}
+
+#Run for each task
+sf.df <- determine_count_range(sf.df)
+wcn.df <- determine_count_range(wcn.df)
+```
+
+##Spread information from demo to every df
+To-do for RMS: This does not work right now because we have subs that do not have data, fix when Slovenian data is totally uploaded.
+```{r, warning = FALSE}
+# first, create a lookup of unique SIDs and demo information
+demo_lookup <- demo.df%>%
+  distinct(SID, age, sex, experimenter, location)
+
+hc.df <- right_join(hc.df, demo_lookup, by = "SID")
+given.df <- right_join(given.df, demo_lookup, by = "SID")
+sf.df <- right_join(sf.df, demo_lookup, by = "SID")
+wcn.df <- right_join(wcn.df, demo_lookup, by = "SID")
+wppsi.df <- right_join(wppsi.df, demo_lookup, by = "SID")
+```
+
+##Add final highest count 
+```{r}
+final <- hc.df %>%
+  distinct(SID, final_highest)
+
+sf.df <- right_join(sf.df, final, by = "SID")
+wcn.df <- right_join(sf.df, final, by = "SID")
+```
+
+Remove NAs that snuck in 
+```{r}
+sf.df %<>%
+  filter(!is.na(dataset))
+wcn.df %<>%
+  filter(!is.na(dataset))
+```
+
+###Round age
+```{r}
+round_age <- function(df) {
+  df %<>%
+    mutate(age = round(age, 2))
+  return(df)
+}
+
+#round age for every task df
+sf.df <- round_age(sf.df)
+given.df <- round_age(given.df)
+wcn.df <- round_age(wcn.df)
+hc.df <- round_age(hc.df)
+wppsi.df <- round_age(wppsi.df)
+
+ggplot(demo.df, aes(x = age, fill = dataset))+
+  geom_histogram(binwidth = .5, colour = "black")+
+  facet_grid(~dataset) + 
+  scale_x_continuous(breaks = seq(3.5, 6.5, .5))
+
+demo.df %>%
+  filter(!is.na(dataset))%>%
+  group_by(dataset)%>%
+  summarise(M_age = mean(age), 
+            SD_age = sd(age),
+            median_age = median(age),
+            n = n())
+```
+
+#Highest count
+```{r}
+hc.df %<>%
+  filter(!is.na(dataset))%>%
+  mutate(initial_highest = ifelse(initial_highest > 140, 140, initial_highest), 
+         final_highest = ifelse(final_highest > 140, 140, final_highest))
+
+unique.hc.data <- hc.df %>%
+  distinct(SID, initial_highest, final_highest, productive, dataset)%>%
+  gather(IHC_FHC,highest_count, initial_highest:final_highest)%>%
+  mutate(highest_count = as.integer(highest_count), 
+         IHC_FHC = factor(IHC_FHC, levels = c("initial_highest", "final_highest"), 
+                          labels = c("Initial Highest Count", "Final Highest Count")))
+
+#initial
+ggplot(unique.hc.data, aes(x=highest_count, fill=productive)) + 
+  geom_histogram(binwidth = 10, colour = "black") +
+  theme_bw(base_size = 10)+
+  labs(title = "Initial/Final Highest Counts by Productivity and Dataset") +
+  facet_grid(IHC_FHC~dataset) +
+  scale_x_continuous(breaks = seq(0, 140, 10))+
+  scale_fill_brewer(palette = "Dark2") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+hc.df %>%
+  filter(is.na(dataset))
+```
+##Scatterplot of IHC and FHC
+```{r}
+initial_final <- hc.df %>%
+  filter(!is.na(dataset))%>%
+  distinct(SID, dataset, initial_highest, final_highest, productive)%>%
+  mutate(initial_highest = as.numeric(initial_highest), 
+         initial_final = as.numeric(final_highest))
+
+ggplot(initial_final, aes(x = initial_highest, y = final_highest, 
+                          color = productive)) +
+  geom_point(size = 1) + geom_jitter(width = .1) +
+  labs(x = "Initial highest count", y = "Final highest count", 
+                      color = "", title = "") +
+  theme_bw(base_size = 13) + 
+  scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  scale_y_continuous(breaks = seq(0, 140, 10)) + 
+  theme(panel.grid.minor = element_blank(), 
+        legend.position = "bottom", 
+        legend.text = element_text(size = 8)) + 
+  facet_grid(~dataset) + 
+  scale_color_brewer(palette = "Dark2") +
+  theme(legend.position = "bottom") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+##Productivity descriptives
+```{r}
+hc.df %>%
+  filter(!is.na(dataset))%>%
+  distinct(SID, age, productive, dataset, initial_highest, final_highest)%>%
+  group_by(dataset, productive)%>%
+  summarise(n = n(),
+            mean_IHC = mean(initial_highest), 
+            sd_IHC = sd(initial_highest), 
+            median_IHC = median(initial_highest), 
+            mean_FHC = mean(final_highest), 
+            sd_FHC = sd(final_highest), 
+            median_FHC = median(final_highest))
+```
+
+###How many kids failed the memory checks in each dataset by number
+To-do for RMS: Update this
+```{r}
+sf.df %<>%
+  filter(!is.na(dataset))%>%
+  filter(exclude_task != 1)%>%
+  mutate(mem_check_1 = ifelse(is.na(mem_check_1), 1, mem_check_1))
+
+
+#for SF
+sf.df %<>%
+  mutate(mem_check_status = ifelse((mem_check_1 == 1 & is.na(mem_check_2)), "need_1_pass_1",
+                                    ifelse((mem_check_1 == 0 & mem_check_2 == 0), "need_2_fail_2",
+                                           ifelse((mem_check_1 == 1 & mem_check_2 == 1),
+                                                  "unclear_pass1_pass2",
+                                                  ifelse((mem_check_1 == 1 & mem_check_2 == 0),
+                                                         "unclear_pass1_fail2",
+                                                         ifelse((mem_check_1 == 0 & mem_check_2 == 1),
+                                                                "fail1_pass2", "other"))))))
+
+sf.mem.ms <- sf.df %>%
+  group_by(mem_check_status, productive, dataset)%>%
+  summarise(n = n())
+
+ggplot(subset(sf.mem.ms), aes(x = mem_check_status, y = n, fill = productive)) + 
+  geom_bar(stat = "identity", position = position_dodge()) + 
+  facet_grid(~dataset) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + guides(fill=FALSE)
+
+#what about by number?
+sf.mem.num.ms <- sf.df %>%
+  mutate(starting_num = factor(starting_num))%>%
+  group_by(starting_num, mem_check_status, dataset, productive)%>%
+  summarise(n = n())
+
+ggplot(subset(sf.mem.num.ms), aes(x = starting_num, y = n, fill = mem_check_status)) + 
+  geom_bar(stat = "identity") + 
+  facet_wrap(productive~dataset) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+#SF
+#Raw performance by dataset
+```{r}
+sf.minus.2 <- sf.df %>%
+  filter(correct != 2)%>%
+  group_by(SID, dataset)%>%
+  summarise(mean = mean(correct))
+
+ ggplot(sf.minus.2, aes(x = dataset, y = mean, fill = dataset)) + 
+   theme_bw() + 
+  geom_boxplot()+
+   langcog::scale_fill_solarized("Dataset")
+```
+
+#By productivity and dataset
+```{r}
+sf.minus.2 <- sf.df %>%
+  filter(correct != 2)%>%
+  group_by(SID, productive, dataset)%>%
+  summarise(mean = mean(correct))
+
+ ggplot(sf.minus.2, aes(x = productive, y = mean, fill = productive)) + 
+  geom_boxplot() + 
+   theme_bw() + 
+   scale_fill_brewer(palette = "Dark2") + 
+   facet_grid(~dataset) +
+   guides(fill = FALSE)
+```
+
+#By productivity and count range
+```{r}
+sf.minus.2 <- sf.df %>%
+  filter(correct != 2)%>%
+  group_by(SID, productive, count_range, dataset)%>%
+  summarise(mean = mean(correct))
+
+ ggplot(sf.minus.2, aes(x = count_range, y = mean, fill = productive)) + 
+  geom_boxplot() + 
+   theme_bw() + 
+   scale_fill_brewer(palette = "Dark2") + 
+   facet_grid(~dataset)
+```
+
+#Sf performance by number and productivity
+```{r}
+sf.minus.2.num <- sf.df %>%
+  filter(correct != 2)%>%
+  mutate(starting_num = factor(starting_num))%>%
+  group_by(productive, dataset, starting_num)%>%
+  langcog::multi_boot_standard("correct", na.rm = TRUE)
+
+ ggplot(sf.minus.2.num, aes(x = starting_num, y = mean, fill = productive)) + 
+  geom_bar(stat = "identity", position= position_dodge()) + 
+  geom_linerange(aes(ymin = ci_lower,
+                      ymax = ci_upper),
+                  size = .3,
+                  show.legend = FALSE,
+                 position=position_dodge(width = 0.9))+
+   theme_bw() + 
+  facet_grid(~dataset) + 
+   scale_fill_brewer(palette = "Dark2") + 
+   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+   theme(legend.position = "bottom")
+
+```
+
+By knower-level
+```{r}
+sf.know <- sf.df %>%
+  filter(correct != 2)%>%
+  group_by(SID, knower.level, dataset)%>%
+  summarise(mean = mean(correct))
+
+ ggplot(sf.know, aes(x = knower.level, y = mean, fill = knower.level)) + 
+  geom_boxplot() + 
+   theme_bw() + 
+   scale_fill_brewer(palette = "Paired") +
+   facet_grid(~dataset) +
+   guides(fill = FALSE)
+```
+
+#WCN
+##Raw performance by dataset
+```{r}
+wcn.minus.2 <- wcn.df %>%
+  filter(correct != 2)%>%
+  group_by(SID, dataset)%>%
+  summarise(mean = mean(correct))
+
+ ggplot(wcn.minus.2, aes(x = dataset, y = mean, fill = dataset)) + 
+  geom_boxplot() + 
+   theme_bw() + 
+   langcog::scale_fill_solarized("Dataset")
+```
+
+##By productivity and dataset
+```{r}
+wcn.minus.2 <- wcn.df %>%
+  filter(correct != 2)%>%
+  group_by(SID, productive, dataset)%>%
+  summarise(mean = mean(correct))
+
+ ggplot(wcn.minus.2, aes(x = productive, y = mean, fill = productive)) + 
+  geom_boxplot() + 
+   theme_bw() + 
+   scale_fill_brewer(palette = "Dark2") +
+   facet_grid(~dataset) +
+   guides(fill = FALSE)
+```
+
+#WCN by productivity and count range
+```{r}
+wcn.minus.2 <- wcn.df %>%
+  filter(correct != 2)%>%
+  group_by(SID, productive, count_range, dataset)%>%
+  summarise(mean = mean(correct))
+
+ ggplot(wcn.minus.2, aes(x = count_range, y = mean, fill = productive)) + 
+  geom_boxplot() + 
+   theme_bw() + 
+   scale_fill_brewer(palette = "Dark2") + 
+   facet_grid(~dataset)
+```
+
+#WCN performance by number and productivity
+```{r}
+wcn.minus.2.num <- wcn.df %>%
+  filter(correct != 2)%>%
+  mutate(starting_num = factor(starting_num))%>%
+  group_by(productive, dataset, starting_num)%>%
+  langcog::multi_boot_standard("correct", na.rm = TRUE)
+
+ ggplot(wcn.minus.2.num, aes(x = starting_num, y = mean, fill = productive)) + 
+  geom_bar(stat = "identity", position= position_dodge()) + 
+  geom_linerange(aes(ymin = ci_lower,
+                      ymax = ci_upper),
+                  size = .3,
+                  show.legend = FALSE,
+                 position=position_dodge(width = 0.9))+
+   theme_bw() + 
+  facet_grid(~dataset) + 
+   scale_fill_brewer(palette = "Dark2") + 
+   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+   theme(legend.position = "bottom")
+
+```
+
+By knower level
+```{r}
+wcn.know <- wcn.df %>%
+  filter(correct != 2)%>%
+  group_by(SID, knower.level, dataset)%>%
+  summarise(mean = mean(correct))
+
+ ggplot(wcn.know, aes(x = knower.level, y = mean, fill = knower.level)) + 
+  geom_boxplot() + 
+   theme_bw() + 
+   scale_fill_brewer(palette = "Paired") +
+   facet_grid(~dataset) +
+   guides(fill = FALSE)
+```
+
+#WPPSI
+To do RMS - there's something wrong here - a bunch of participants are missing
+Mean score (minus first training trials and teaching trials)
+TO do - it looks like there are some errors here - exclude? N = 10
+There are two participants here who are missing data
+```{r}
+#get score
+wppsi.ms <- wppsi.df%>%
+  mutate(trial = factor(trial))%>%
+  filter(trial != "sample item A", 
+         trial != "sample item B", 
+         trial != "Sample item A", 
+         trial != 1, 
+         trial != 2, 
+         trial != 7, 
+         trial != 8)%>%
+  mutate(trial = as.numeric(as.character(trial)))%>%
+  group_by(SID, dataset)%>%
+  summarise(sum_wppsi = sum(correct), 
+            num_trials = n())
+
+ ggplot(wppsi.ms, aes(x = dataset, y = sum_wppsi, fill = dataset)) + 
+  geom_bar(stat = "identity", position = position_dodge())+
+   theme_bw() + 
+   guides(fill = FALSE)
+ 
+ ggplot(wppsi.ms, aes(x = sum_wppsi, fill = dataset)) +
+   geom_histogram(binwidth = 1, colour = "black") +
+   theme_bw() + 
+   facet_grid(~dataset)
+```
+
+#Main analyses
+This first set of analyses replicates, in Cantonese English and Slovenian speaking samples, analyses similar to those previously conducted on English-speaking subjects. To identify whether there is connection between counting experience and Unit Task performance for participants within particular language groups, we will conduct four initial analyses (plus the null model) within each language, predicting Unit Task performance from (1) Productivity (defined above); (2) Final Highest Count; (3) Initial Highest Count; and (4) Highest Contiguous Next Number.
+
+All models will be logistic mixed effects models, predicting performance on the unit task (0 or 1) on a trial as a function of the following predictors, with a random intercept for subject. In R, the formula will be
+glmer(predicted ~ (predictor) + age + within/outside range + (1|subject), family = binomial).
+
+##Make model analysis dfs
+Note that there is a lot more variability in highest counts and highest contiguous NN than in categorical variables. I am centering highest counts and age, and centering and scaling highest contiguous NN (which has the most variability).
+```{r}
+##HK##
+sf.hk.within <- sf.df%>%
+  filter(dataset == "HK")%>%
+  mutate(SID = factor(SID), 
+         productive = factor(productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(final_highest, center = TRUE, scale = FALSE)), 
+         ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = FALSE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)))
+  
+wcn.hk.within <- wcn.df%>%
+  filter(dataset == "HK")%>%
+  mutate(SID = factor(SID), 
+         productive = factor(productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(final_highest.x, center = TRUE, scale = FALSE)), 
+         ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = FALSE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)))
+
+##SLO##
+sf.slo.within <- sf.df%>%
+  filter(dataset == "SLO")%>%
+  mutate(SID = factor(SID), 
+         productive = factor(productive), 
+         count_range = factor(count_range))
+wcn.slo.within <- wcn.df%>%
+  filter(dataset == "SLO")%>%
+  mutate(SID = factor(SID), 
+         productive = factor(productive), 
+         count_range = factor(count_range))
+```
+
+###Simple Models: Unit Task
+Model 0 (null model): Unit.Performance ~ Within/Outside range + Age + (1|subject)
+Model 1: Unit.Performance ~ Productivity + Within/Outside range + Age + (1|subject)
+Model 2: Unit.Performance ~ Final.Count + Within/Outside range + Age + (1|subject)
+Model 3: Unit.Performance ~ Initial.Count + Within/Outside range + Age + (1|subject)
+Model 4: Unit.Performance ~ Highest.Contiguous.Next.Number + Within/Outside range + Age + (1|subject)
+
+####Hong Kong
+```{r}
+sf.hk.within.base <- glmer(correct ~ count_range + age + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+
+sf.hk.within.model1 <- glmer(correct ~ productive + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+sf.hk.within.model2 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+sf.hk.within.model3 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), 
+                             family = "binomial", 
+                           data = sf.hk.within)
+sf.hk.within.model4 <- glmer(correct ~ highest_contig.c + count_range + age.c + (1|SID), 
+                             family = "binomial", 
+                           data = sf.hk.within)
+```
+
+###Simple Models: WCN Task
+
+```{r}
+
+```
+
