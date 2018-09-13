@@ -4,6 +4,8 @@ author: "Rose M. Schneider"
 date: "8/5/2018"
 output: html_document
 ---
+TO-DO
+
 #Setup
 ```{r setup, include=FALSE}
 rm(list = ls())
@@ -23,318 +25,128 @@ library(ggthemes)
 ##Load data
 ###Slovenian
 ```{r}
-#demos
-slo.demo <- read.csv('Data/slo_demo.csv')%>%
-  mutate(dataset = "SLO")%>%
-  filter(SID != "")
-#give n
-slo.gn <- read.csv("Data/slo_given.csv")%>%
-  mutate(dataset = "SLO")%>%
-  select(-age)%>%
-  filter(SID != "")
-#highest count
-slo.hc <- read.csv("Data/slo_hc.csv")%>%
-  mutate(dataset = "SLO")%>%
-  select(-age)%>%
-  filter(SID != "")
-#sf
-slo.sf <- read.csv("Data/slo_sf.csv")%>%
-  mutate(dataset = "SLO")%>%
-  select(-age)%>%
-  filter(SID != "")%>%
-  mutate(num_answer = factor(num_answer))%>%
-  mutate(mem_check_1 = factor(mem_check_1), 
-         mem_check_2 = factor(mem_check_2))
-#wcn
-slo.wcn <- read.csv("Data/slo_wcn.csv")%>%
-  mutate(dataset = "SLO")%>%
-  select(-age)%>%
-  filter(SID != "")%>%
-  mutate(num_answer = factor(num_answer), 
-         repeat_1 = factor(repeat_1), 
-         repeat_2 = factor(repeat_2))
-#wppsi
-slo.wppsi <- read.csv("Data/slo_wppsi.csv")%>%
-  mutate(dataset = "SLO")%>%
-  filter(SID != "")%>%
-  select(-age)
+#slo data
+slo.full.data <- read.csv('Data/SLO_data.csv')%>%
+  mutate(Exclude_task = ifelse(is.na(Exclude_task), 0, as.numeric(as.character(Exclude_task))))%>%
+  mutate(Trial_number = ifelse(Trial_number == '0', "Training", as.character(Trial_number)), 
+         Task_item = factor(Task_item))
+
+#slo highest count
+slo.hc <- read.csv('Data/SLO_HC.csv')
 ```
 
-###Hong Kong 
+###Cantonese
 ```{r}
-#demos
-hk.demo <- read.csv('Data/hk_demo.csv')%>%
-  mutate(dataset = "HK")%>%
-  filter(SID != "")
-#give n
-hk.gn <- read.csv("Data/hk_given.csv")%>%
-  mutate(dataset = "HK")%>%
-  filter(SID != "")%>%
-  select(-age)%>%
-  mutate(trial = ifelse(trial == "second try", 6, trial))
-#highest count
-hk.hc <- read.csv("Data/hk_hc.csv")%>%
-  mutate(dataset = "HK")%>%
-  select(-age)%>%
-  filter(SID != "")%>%
-  mutate(last_successful = factor(last_successful))
-#sf
-hk.sf <- read.csv("Data/hk_sf.csv")%>%
-  mutate(dataset = "HK")%>%
-  select(-age)%>%
-  filter(SID != "")%>%
-  mutate(num_answer = factor(num_answer))%>%
-  mutate(mem_check_1 = factor(mem_check_1), 
-         mem_check_2 = factor(mem_check_2))
-#wcn
-hk.wcn <- read.csv("Data/hk_wcn.csv")%>%
-  mutate(dataset = "HK")%>%
-  select(-age)%>%
-  filter(SID != "")%>%
-  mutate(num_answer = factor(num_answer), 
-         repeat_1 = factor(repeat_1), 
-         repeat_2 = factor(repeat_2))
-#wppsi
-hk.wppsi <- read.csv("Data/hk_wppsi.csv")%>%
-  mutate(dataset = "HK")%>%
-  select(-age)%>%
-  filter(SID != "")
+#hk data
+hk.full.data <- read.csv('Data/HK_data.csv')%>%
+  filter(SID != "CopyPasteMe")%>%
+  droplevels()%>%
+  mutate(Age = as.numeric(as.character(Age)), 
+         Correct = as.integer(as.character(Correct)), 
+         Mem_check_1 = as.integer(Mem_check_1), 
+         Mem_check_2 = as.integer(Mem_check_2))
+
+#hk highest count
+hk.hc <- read.csv('Data/HK_HC.csv')
 ```
 
-###Bind these datasets together 
+##Bind together
 ```{r, warning = FALSE}
-#demos
-demo.raw <- bind_rows(slo.demo, hk.demo)%>%
-  mutate(SID = factor(SID))
+#regular data
+all.data <- bind_rows(slo.full.data, hk.full.data)%>%
+  mutate(Age = round(Age, 2), 
+         Agegroup = cut(Age, breaks = c(3.5, 4, 4.5, 5, 5.5, 6, 6.6), 
+                        labels = c("3.5-4", "4-4.5", "4.5-5", 
+                                   "5-5.5", "5.5-6", "6-6.5")))
+##highest count
+slo.hc %<>%
+  filter(Exclude != 1)%>%
+  mutate(IHC = ifelse(IHC > 140, 140, IHC), 
+         FHC = ifelse(FHC > 140, 140, FHC))
 
-#given
-given.raw <- bind_rows(slo.gn, hk.gn)%>%
-  mutate(SID = factor(SID))
+hk.hc %<>%
+  filter(Exclude != 1)%>%
+  mutate(IHC = ifelse(IHC > 140, 140, IHC), 
+         FHC = ifelse(FHC > 140, 140, FHC))
 
-#hc
-hc.raw <- bind_rows(slo.hc, hk.hc)%>%
-  mutate(SID = factor(SID))
+#bind hk and slo hc data
+slo.hc %<>%
+  mutate(Language = "Slovenian")%>%
+  dplyr::rename(Last_successful = Last_Successful)%>%
+  mutate(Last_successful = as.integer(as.character(Last_successful)))
 
-#sf 
-sf.raw <- bind_rows(slo.sf, hk.sf)%>%
-  mutate(SID = factor(SID))
+hk.hc %<>%
+  mutate(Language = "Cantonese")
 
-#wcn
-wcn.raw <- bind_rows(slo.wcn, hk.wcn)%>%
-  mutate(SID = factor(SID))
-
-#wppsi
-wppsi.raw <- bind_rows(slo.wppsi, hk.wppsi)%>%
-  mutate(SID = factor(SID))
-
+hc.df <- bind_rows(slo.hc, hk.hc)
 ```
 
----
-#Exclusions
-##Global exclusions
+#Classifications
+##CP or subset-knower
 ```{r}
-#first, get every exclusion from every df
-#this is a function that filters down to to excluded participants
-exclude <- function(df){
-  exclusions <- df %>%
-    filter(exclude == 1)%>%
-    distinct(SID, exclude, exclude_reason, dataset)
-  
-    exclusions$dataframe = deparse(substitute(df))
-    return(exclusions)
-}
+cp.df <- all.data %>%
+  filter(Task == "GiveN")%>%
+  group_by(SID)%>%
+  summarise(sum_correct = sum(Correct))%>%
+  mutate(Knower.level = ifelse(sum_correct >= 4, "CP-knower", "Subset-knower"))%>%
+  select(-sum_correct)
 
-#run this function over every df
-get_all_exclusions <- function(){
-  demo.ex <- exclude(demo.raw)
-  given.ex <- exclude(given.raw)
-  hc.ex <- exclude(hc.raw)
-  sf.ex <- exclude(sf.raw)
-  wcn.ex <- exclude(wcn.raw)
-  wppsi.ex <- exclude(wppsi.raw)
-  all_excl <- bind_rows(demo.ex, given.ex, hc.ex, sf.ex, wcn.ex, wppsi.ex)
-  return(all_excl)
-}
+all.data <- full_join(all.data, cp.df, by = "SID")
 
-all_exclusions <- get_all_exclusions()
-
-##Now, filter these down to unique SIDs
-##To-do for RMS: You need to standardize exclusion reasons later
-unique_exclusions <- all_exclusions%>%
-  distinct(SID, exclude_reason)
-unique_exclusions
-
-##Now, exclude these participants from all dataframes
-exclude_SIDs <- as.vector(unique_exclusions$SID)
-#demographics
-demo.df <- demo.raw%>%
-  filter(SID %!in% exclude_SIDs)%>%
-  filter(SID != "19072018-E") #manual exclude - change later
-#given
-given.df <- given.raw%>%
-  filter(SID %!in% exclude_SIDs)%>%
-  filter(SID != "19072018-E") #manual exclude - change later
-#hc
-hc.df <- hc.raw%>%
-  filter(SID %!in% exclude_SIDs)%>%
-  filter(SID != "19072018-E") #manual exclude - change later
-#sf 
-sf.df <- sf.raw%>%
-  filter(SID %!in% exclude_SIDs)%>%
-  filter(SID != "19072018-E") #manual exclude - change later
-#wcn
-wcn.df <- wcn.raw%>%
-  filter(SID %!in% exclude_SIDs)%>%
-  filter(SID != "19072018-E") #manual exclude - change later
-#wppsi
-wppsi.df <- wppsi.raw%>%
-  filter(SID %!in% exclude_SIDs)%>%
-  filter(SID != "19072018-E") #manual exclude - change later
-
-##all kids who needed to be globally excluded should now be
+all.data %>%
+  distinct(SID, Language, Knower.level)%>%
+  group_by(Language, Knower.level)%>%
+  summarise(n=n())%>%
+  kable()
 ```
-
-##Task exclusions for SF, WCN, and WPPSI
+##WPPSI score
 ```{r}
-sf.df %<>%
-  mutate(exclude_task = ifelse(is.na(exclude_task), 0, 1))%>%
-  filter(exclude_task != 1)
+ #get sum per SID, add to sf and wcn for CROSS-LINGUISTIC models
+ wppsi.sid <- all.data %>%
+  filter(Task == "WPPSI")%>%
+  mutate(Trial_number = factor(Trial_number))%>%
+  filter(Trial_number != "sample item A", 
+         Trial_number != "sample item B", 
+         Trial_number != "Sample item A", 
+         Trial_number != '1', 
+         Trial_number != '2', 
+         Trial_number != '7', 
+        Trial_number != '8')%>%
+   group_by(SID)%>%
+   summarise(sum_wppsi = sum(Correct, na.rm = TRUE))
 
-wcn.df %<>%
-  mutate(exclude_task = ifelse(is.na(exclude_task), 0, 1))%>%
-  filter(exclude_task != 1)
-
-wppsi.df %<>%
-  mutate(exclude_task = ifelse(is.na(exclude_task), 0, 1))%>%
-  filter(exclude_task != 1)
-```
-
-##Trial exclusions
-How many trials are we going to exclude from each task
-```{r}
-#get the SIDs that failed practice
-sf.fail <- sf.df %>%
-  filter(trial == "practice", 
-         correct == 0)
-
-sf.failed.SIDs <- as.vector(unique(sf.fail$SID))
-
-sf.df %>%
-  filter(exclude_trial == 1 |
-           is.na(exclude_trial))%>%
-  group_by(exclude_trial_reason)%>%
-  summarise(n = n())%>%
-  mutate(total = sum(n))
-
-#get the SIDS that failed practice
-wcn.fail <- wcn.df %>%
-  filter(trial == "practice", 
-         correct == 0)
-
-wcn.failed.SIDs <- as.vector(unique(wcn.fail$SID))
-
-wcn.df %>%
-  filter(exclude_trial == 1 |
-           is.na(exclude_trial))%>%
-  group_by(exclude_trial_reason)%>%
-  summarise(n = n())%>%
-  mutate(total = sum(n))
-
-```
-
-##Exclude trials and practice trials, also participants that should be excluded from a particular task
-```{r}
-sf.df%<>%
-  filter(exclude_trial != 1, 
-         trial != "practice")%>%
-  mutate(exclude_task = ifelse(is.na(exclude_task), 0, exclude_task))%>%
-  filter(exclude_task != 1)
-  
-
-wcn.df %<>%
-  filter(exclude_trial != 1, 
-         trial != "practice")%>%
-  mutate(exclude_task = ifelse(is.na(exclude_task), 0, exclude_task))%>%
-  filter(exclude_task != 1)
-
-given.df %<>%
-  filter(exclude_trial != 1)
-```
-
----
-#Data manipulations
-##Classify kids as CP or subset
-```{r}
-classify.cp <- function(){
-  tmp <- given.df %>%
-    group_by(SID, dataset)%>%
-    summarise(sum.corr = sum(correct))%>%
-    mutate(knower.level = ifelse(sum.corr >= 4, "CP", "subset"))%>%
-    distinct(SID, dataset, knower.level)
-}
-
-cp.lookup <- classify.cp()
-
-#number of subset and CP knowers by group
-cp.lookup %>%
-  group_by(knower.level, dataset)%>%
-  summarise(n = n())
-
-cp.lookup %<>%
-  select(-dataset)
-
-##Filtering out the NA datasets as we go, because there are kids excluded in particular tasks that might have data from other tasks
-hc.df <- right_join(hc.df, cp.lookup, by = "SID")%>%
-  mutate(SID = factor(SID))%>%
-  filter(!is.na(dataset))
-given.df <- right_join(given.df, cp.lookup, by = "SID")%>%
-  mutate(SID = factor(SID))%>%
-  filter(!is.na(dataset))
-sf.df <- right_join(sf.df, cp.lookup, by = "SID")%>%
-  mutate(SID = factor(SID))%>%
-  filter(!is.na(dataset))
-wcn.df <- right_join(wcn.df, cp.lookup, by = "SID")%>%
-  mutate(SID = factor(SID))%>%
-  filter(!is.na(dataset))
-wppsi.df <- right_join(wppsi.df, cp.lookup, by = "SID")%>%
-  mutate(SID = factor(SID))%>%
-  filter(!is.na(dataset))
+all.data <- full_join(all.data, wppsi.sid, by = "SID")
 ```
 
 
-##Classify kids as productive or nonproductive
+##Productivity
 ```{r, warning = FALSE}
 hc.df %<>%
-  mutate(last_successful = ifelse(last_successful == "Is quiet", "IDK", last_successful))
+  mutate(Last_successful = ifelse(Last_successful == "Is quiet", "IDK", Last_successful))
 
 hc <- hc.df %>% # replace with your local path
-  select(SID, last_successful, initial_highest, final_highest) %>%
-  mutate_at(c('last_successful','initial_highest','final_highest'),
+  select(SID, Last_successful, IHC, FHC) %>%
+  mutate_at(c('Last_successful','IHC','FHC'),
             function(col) as.integer(str_replace_all(col,'\\D',''))) %>% # some of these included '?', so i remove any char thats not a digit
-  mutate(last_successful = ifelse(is.na(last_successful), 140, last_successful))%>%
-  filter(!is.na(initial_highest))
+  mutate(Last_successful = ifelse(is.na(Last_successful), 140, Last_successful))%>%
+  filter(!is.na(IHC))
 
-tmp <- hc %>%
-  distinct(SID, initial_highest)%>%
-  group_by(SID)%>%
-  summarise(n = n())%>%
-  filter(n > 1)
 # 
-# 
+# function for determining productivity
 is.productive = function(subject){
   # takes as input the data for a single subject
   # RULES:
   # - counts to 120 unaided = productive
   # - after making first error, counts >= 20 higher, with no more than 3 errors on way
-  if(subject$initial_highest[1] >= 140){
+  if(subject$IHC[1] >= 140){
     # if they get to 120 on first try, = productive
     return(TRUE)
-  } else if(subject$final_highest[1] == 140 & nrow(subject) < 4) {
+  } else if(subject$FHC[1] == 140 & nrow(subject) < 4) {
     return(TRUE)
-  } else if(subject$final_highest[1] < 140 & nrow(subject) == 1 
-            & subject$final_highest[1] == subject$initial_highest[1]) {
+  } else if(subject$FHC[1] < 140 & nrow(subject) == 1 
+            & subject$FHC[1] == subject$IHC[1]) {
     return(FALSE)
-  } else if((subject$final_highest[1] - subject$initial_highest[1]) >= 20){
+  } else if((subject$FHC[1] - subject$IHC[1]) >= 20){
     # if their final is >= 20 larger than their intial...
     if(nrow(subject) < 4){
       # and they've made 3 or fewer total errors, = productive
@@ -345,12 +157,12 @@ is.productive = function(subject){
         # check if they ever made it >= 20 counts & <= 3 errors after an error
         runLength = 0 # they just made an error, so no post-error successes yet
         numErrors = 0 # first row was an error if it's not finalCount == 120
-        prev = subject$last_successful[i]
+        prev = subject$Last_successful[i]
         for (j in i+1:nrow(subject)){ # from current row until end...
           numErrors = numErrors + 1 # new row means new error
-          runLength = runLength + (subject$last_successful[j] - prev)
+          runLength = runLength + (subject$Last_successful[j] - prev)
           # ^ add difference between current count and last count to run length
-          prev = subject$last_successful[j] # update last count
+          prev = subject$Last_successful[j] # update last count
           if(runLength >= 20 & numErrors < 4){
             # if at any point the productivity conditions are met...
             return(TRUE) # = productive
@@ -365,9 +177,6 @@ is.productive = function(subject){
     return(FALSE)
   }
 }
-
-# #issues: not working for multiple errors
-# #last successful doesn't not always equal final highest count
 # 
 #make function to run for all participants
 unique_SIDs <- as.vector(unique(hc.df$SID))
@@ -375,8 +184,8 @@ unique_SIDs <- as.vector(unique(hc.df$SID))
 class_prod <- function(vector) {
   temp_data <- data.frame()
   for (i in vector) {
-   
     prod.class <- data.frame(i, is.productive(subset(hc, SID == i)))
+    
     names(prod.class) <- c("SID", "productive")
     temp_data <- bind_rows(temp_data, prod.class)
   }
@@ -386,64 +195,30 @@ class_prod <- function(vector) {
 
 productive <- class_prod(unique_SIDs)%>%
   rename(check_prod = productive)%>%
-  mutate(check_prod = ifelse(check_prod == TRUE, "productive", "nonproductive"))
+  mutate(check_prod = ifelse(check_prod == TRUE, "Productive", "Nonproductive"))
 
-productive_SIDS <- productive %>%
-  filter(check_prod == "productive")%>%
-  distinct(SID)
+hc %<>%
+  select(-Last_successful)
 
-#assign these to a vector
-prod_SIDS <- as.vector(productive_SIDS$SID)
+productive <- full_join(productive, hc, by = "SID")%>%
+  distinct(SID, IHC, FHC, check_prod)%>%
+  dplyr::rename(Productive = check_prod)
 
-#This is a function that checks a SID against the productive SIDs in the vector above, and then classifies a participant as Productive or Nonproductive
-productivity_classification <- function(df) {
-  tmp <- df %>%
-    mutate(productive = ifelse(SID %in% prod_SIDS, "productive", "nonproductive"))
-  return(tmp)
-}
-
-#Assign productivity across all tasks
-sf.df <- productivity_classification(sf.df)%>%
-  filter(!is.na(dataset))
-wcn.df <- productivity_classification(wcn.df)%>%
-  filter(!is.na(dataset))
-hc.df <- productivity_classification(hc.df)%>%
-  filter(!is.na(dataset))
-given.df <- productivity_classification(given.df)%>%
-  filter(!is.na(dataset))
-wppsi.df <- productivity_classification(wppsi.df)%>%
-  filter(!is.na(dataset))
+all.data <- full_join(all.data, productive, by = "SID")
 ```
 
-##Make sure everything that is coded as correct is actually correct
-```{r}
-##SF##
-tmp <- sf.df %>%
-  mutate(correct_check = ifelse(as.numeric(num_answer) == (starting_num + 1), 1, 0))%>%
-  mutate(check = ifelse(correct == correct_check, TRUE, FALSE))%>%
-  filter(check == FALSE)
-
-#review these, then run the following
-sf.df %<>%
-  mutate(correct = ifelse(as.numeric(num_answer) == (starting_num + 1), 1, 0))
-
-##WCN##
-tmp <- wcn.df %>%
-  mutate(correct_check = ifelse(as.numeric(as.character(num_answer)) == (starting_num + 1), 1, 0))%>%
-  mutate(check = ifelse(correct == correct_check, TRUE, FALSE))%>%
-  filter(check == FALSE)
-
-#review these, then run the following
-wcn.df %<>%
-  mutate(correct = ifelse(correct == 2, NA, correct))%>%
-  filter(!is.na(correct))%>%
-  mutate(correct = ifelse(as.numeric(as.character(num_answer)) == (starting_num + 1), 1, 0))
-```
-
-##Highest contiguous NN
+##Highest Contiguous NN
 ```{r, warning = FALSE}
+failed.nn <- all.data %>%
+  filter(Task == "NN", 
+         Correct == 0, 
+         Trial_number == "Training")
+
+failed.nn.sids <- unique(as.vector(failed.nn$SID))
+
 #get unique ids
-unique.nn <- wcn.df %>%
+unique.nn <- all.data %>%
+  filter(Task == "NN")%>%
   distinct(SID)
 
 unique.nn <- as.vector(unique.nn$SID)
@@ -453,24 +228,26 @@ nextnums <- as.vector(c(5, 7, 16, 24, 52, 71, 105, 107, 116, 224, 252, 271))
 get_contiguous <- function(){
   contig <- data.frame()
   for (sub in unique.nn) {
-    tmp <- wcn.df %>%
-      filter(SID == sub, 
-             correct == 0)%>%
-      mutate(starting_num = sort(starting_num))
+    tmp <- all.data %>%
+      mutate(Task_item= as.integer(Task_item))%>%
+      filter(Task == "NN",
+             SID == sub, 
+             Correct == 0)%>%
+      mutate(Task_item = sort(as.integer(Task_item)))
     if (length(tmp$SID) == 0) {
       highest_contig = 271
       sub_contig <- data.frame(sub, highest_contig)
       contig <- bind_rows(contig, sub_contig)
-    } else if (sub %in% wcn.failed.SIDs) {
+    } else if (sub %in% failed.nn.sids) {
       highest_contig = 0
       sub_contig <- data.frame(sub, highest_contig)
       contig <- bind_rows(contig, sub_contig)
-    } else if (length(tmp$starting_num) > 0 & min(tmp$starting_num) == 5) {
+    } else if (length(tmp$Task_item) > 0 & min(tmp$Task_item) == 5) {
       highest_contig = 1
       sub_contig <- data.frame(sub, highest_contig)
       contig <- bind_rows(contig, sub_contig)
     } else {
-      min.nn <- min(tmp$starting_num)
+      min.nn <- min(tmp$Task_item)
       prev_correct <- nextnums[nextnums < min.nn]
       highest_contig <- max(prev_correct)
     
@@ -485,141 +262,153 @@ get_contiguous <- function(){
 highest_contiguous_nn <- get_contiguous()%>%
   dplyr::rename(SID = sub)
 
-#spread this to other dfs
-given.df <- right_join(given.df, highest_contiguous_nn, by = "SID")%>%
-  filter(!is.na(dataset))
-hc.df <- right_join(hc.df, highest_contiguous_nn, by = "SID")%>%
-  filter(!is.na(dataset))
-sf.df <- right_join(sf.df, highest_contiguous_nn, by = "SID")%>%
-  filter(!is.na(dataset))
-wcn.df <- right_join(wcn.df, highest_contiguous_nn, by = "SID")%>%
-  filter(!is.na(dataset))
-wppsi.df <- right_join(wppsi.df, highest_contiguous_nn, by = "SID")%>%
-  filter(!is.na(dataset))
+#add this to df 
+all.data <- full_join(all.data, highest_contiguous_nn, by = "SID")
+
+#plot
+all.data %>%
+  filter(!is.na(Language))%>%
+  mutate(highest_contig = factor(highest_contig, levels = c('0', '1', "5", '7', '16', '24', '52', '71', '105', '107', '116', '224', '252', '271')))%>%
+  distinct(SID, highest_contig, Language)%>%
+  ggplot(aes(x = highest_contig, fill = Language)) + 
+  geom_histogram(stat = "count", colour = "black") +
+  facet_wrap(~Language) + 
+  labs(title = "Highest Contiguous NN by language") +
+  theme_bw() + 
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x = "Highest Contiguous NN", y = "Count") + 
+  guides(fill = FALSE)
+
 ```
 
-##Within/beyond count range for SF and WCN
+##Within/outside count range
 ```{r}
-sf.df %<>%
-  filter(!is.na(correct))
-
-wcn.df %<>%
-  filter(!is.na(correct))
-
-#first, get initial highest count for each kiddo
-#Make a lookup table with SID and initial highest count
-lookup <- hc.df %>%
-  distinct(SID, initial_highest)
-
-#This is a function that, for each trial, checks the number queried. If number queried is above the child's initial highest count, marks that trial as beyond count range.
-determine_count_range <- function(df) {
-  tmp <- df
-  for (row in 1:nrow(tmp)) {
-    sub = as.character(tmp[row, "SID"])
-    count_range = subset(lookup, SID == sub)$initial_highest
-    tmp[row, "initial_highest_count"] = count_range
-    if (tmp[row, "starting_num"] > count_range) {
-      tmp[row, "count_range"] = "outside"
-    } else {
-      tmp[row, "count_range"] = "within"
-    }
-  }
-  return(tmp)
-}
-
-#Run for each task
-sf.df <- determine_count_range(sf.df)%>%
-  filter(!is.na(dataset))
-wcn.df <- determine_count_range(wcn.df)%>%
-  filter(!is.na(dataset))
+all.data %<>%
+  mutate(count_range = ifelse((Task == "SF" | Task == "NN") & as.numeric(Task_item) <= IHC, "Within", 
+                              ifelse((Task == "SF" | Task == "NN") & as.numeric(Task_item) > IHC, "Outside", 
+                                     NA)))
 ```
 
-##Spread information from demo to every df
+#Exclusions
+##Global exclusions
+```{r}
+all.data %>%
+  filter(Exclude_analysis == 1)%>%
+  distinct(SID, Exclude_analysis, Exclude_analysis_reason, Language)
+
+#exclude
+all.data %<>%
+  filter(Exclude_analysis != 1)
+
+#Manual exclusions - these are participants who did not receive the correct number of trials in WPPSI. 
+all.data %<>%
+filter(SID != "11072018-L",
+           SID != "12072018-I",
+           SID != "19072018-J",
+           SID != "19072018-M",
+           SID != "19072018-P",
+           SID != "Naj16",
+           SID != "Sol07", 
+         SID != "Naj14")
+
+all.data %<>%
+  filter(!is.na(Language))%>%
+  select(-X)
+```
+
+###Task exclusions
+```{r}
+all.data %>%
+  filter(Exclude_task == 1)%>%
+  distinct(SID, Language, Exclude_task, Excluded_task, Exclude_task_reason)
+
+#exclude
+all.data %<>%
+  filter(Exclude_task != 1)
+```
+
+##Excluded trials
+```{r}
+all.data %>%
+  filter(Exclude_trial == 1)%>%
+  group_by(Task, Exclude_trial_reason)%>%
+  summarise(n = n())
+
+all.data %<>%
+  filter(Exclude_trial != 1)
+
+#how many trials do we have for each task?
+all.data %>%
+  filter(Task == "SF" | 
+         Task == "NN")%>%
+  group_by(Language, Task, Task_item)%>%
+  summarise(n = n())
+```
+
+##Exclude practice trials for SF and NN
+```{r}
+#how many kids failed the practice trials on these tasks?
+all.data %>%
+  filter(Task == "SF" | Task == "NN")%>%
+  filter(Task_item == 1, 
+         Correct == 0)%>%
+  group_by(Task)%>%
+  summarise(n = n())
+
+#exclude practice trials
+all.data %<>%
+  filter(Trial_number != "Training")
+```
+
+#Demographics
 ```{r, warning = FALSE}
-# first, create a lookup of unique SIDs and demo information
-demo_lookup <- demo.df%>%
-  distinct(SID, age, sex, experimenter, location)
+#demos by age group, Language
+all.data %>%
+  distinct(SID, Language, Agegroup, Age)%>%
+  group_by(Language, Agegroup)%>%
+  summarise(n = n(), 
+            Mean_age = mean(Age, na.rm = TRUE), 
+            SD_age = sd(Age, na.rm = TRUE))%>%
+  kable()
 
-hc.df <- right_join(hc.df, demo_lookup, by = "SID")%>%
-  filter(!is.na(dataset))
-given.df <- right_join(given.df, demo_lookup, by = "SID")%>%
-  filter(!is.na(dataset))
-sf.df <- right_join(sf.df, demo_lookup, by = "SID")%>%
-  filter(!is.na(dataset))
-wcn.df <- right_join(wcn.df, demo_lookup, by = "SID")%>%
-  filter(!is.na(dataset))
-wppsi.df <- right_join(wppsi.df, demo_lookup, by = "SID")%>%
-  filter(!is.na(dataset))
+#demos by Language
+all.data %>%
+  distinct(SID, Language, Age)%>%
+  group_by(Language)%>%
+  summarise(n = n(),
+            Mean_age = mean(Age, na.rm = TRUE), 
+            SD_age = sd(Age, na.rm = TRUE))%>%
+  kable()
+  
+#histogram of age
+all.data %>%
+  distinct(SID, Language, Age)%>%
+ggplot(aes(x = Age, fill = Language)) +
+  geom_histogram(binwidth = .5, colour = "black") +
+  theme_bw() + 
+  facet_wrap(~Language) + 
+  scale_x_continuous(breaks = c(3.5, 4, 4.5, 5, 5.5, 6, 6.5)) +
+  scale_fill_brewer(palette = "Dark2") + 
+  guides(fill = FALSE) +
+  labs(y = "Count", title = "Number of children in age bin by language")
 ```
 
-##Add final highest count 
+##Productivity by language
 ```{r}
-final <- hc.df %>%
-  distinct(SID, final_highest)
+all.data %>%
+  distinct(SID, Language, Productive)%>%
+  group_by(Language, Productive)%>%
+  summarise(n = n())%>%
+  kable()
 
-sf.df <- right_join(sf.df, final, by = "SID")
-wcn.df <- right_join(wcn.df, final, by = "SID")
+all.data %>% 
+  filter(is.na(Language))
 ```
 
-###Get WPPSI score, add to SF and WCN
-```{r}
- #get sum per SID, add to sf and wcn for CROSS-LINGUISTIC models
- wppsi.sid <- wppsi.df %>%
-   mutate(trial = factor(trial))%>%
-  filter(trial != "sample item A", 
-         trial != "sample item B", 
-         trial != "Sample item A", 
-         trial != 1, 
-         trial != 2, 
-         trial != 7, 
-         trial != 8)%>%
-   group_by(SID, dataset)%>%
-   summarise(sum_wppsi = sum(correct))
-
-sf.df.cross <- right_join(sf.df, wppsi.sid, by = "SID")
-wcn.df.cross <- right_join(wcn.df, wppsi.sid, by = "SID")
-```
-
-Remove NAs that snuck in 
-```{r}
-sf.df %<>%
-  filter(!is.na(dataset))
-wcn.df %<>%
-  filter(!is.na(dataset))
-```
-
-###Round age
-```{r}
-round_age <- function(df) {
-  df %<>%
-    mutate(age = round(age, 2))
-  return(df)
-}
-
-#round age for every task df
-sf.df <- round_age(sf.df)
-given.df <- round_age(given.df)
-wcn.df <- round_age(wcn.df)
-hc.df <- round_age(hc.df)
-wppsi.df <- round_age(wppsi.df)
-
-ggplot(demo.df, aes(x = age, fill = dataset))+
-  geom_histogram(binwidth = .5, colour = "black")+
-  facet_grid(~dataset) + 
-  scale_x_continuous(breaks = seq(3.5, 6.5, .5))
-
-demo.df %>%
-  filter(!is.na(dataset))%>%
-  group_by(dataset)%>%
-  summarise(M_age = mean(age), 
-            SD_age = sd(age),
-            median_age = median(age),
-            n = n())
-```
----
 #Task visualizations
 ##Highest count
 ###Histogram Initial and Final Highest Count
+
 ```{r}
 hc.df %<>%
   filter(!is.na(dataset))%>%
@@ -647,7 +436,9 @@ ggplot(unique.hc.data, aes(x=highest_count, fill=productive)) +
 hc.df %>%
   filter(is.na(dataset))
 ```
+
 ###Scatterplot of IHC and FHC
+
 ```{r}
 initial_final <- hc.df %>%
   filter(!is.na(dataset))%>%
@@ -673,6 +464,43 @@ ggplot(initial_final, aes(x = initial_highest, y = final_highest,
 
 ```
 
+###Plotting distance between Initial and Final Highest Counts (~Pierina's graph)
+####Cantonese
+```{r}
+ggplot(subset(unique.hc.data, dataset == "HK"), aes(x = SID, y = highest_count)) + 
+  facet_grid(rows = vars(productive)) +
+  geom_line() + 
+  geom_point(aes(shape = IHC_FHC, colour = IHC_FHC), 
+             size = 2, stroke = 1.5) +
+  scale_color_brewer(palette="Dark2") +
+  scale_shape_manual(values = c(4,5,20)) +
+  labs(title="Distance between initial and final highest counts - Cantonese",
+       x = "Each line = individual kids",
+       y="Highest Count by Count Type") +
+  theme_bw(base_size = 7) + 
+  theme(legend.position="bottom", 
+        axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_grid(~productive, scales = "free_x")
+```
+
+####Slovenian
+```{r}
+
+ggplot(subset(unique.hc.data, dataset == "SLO"), aes(x = SID, y = highest_count)) + 
+  facet_grid(rows = vars(productive)) +
+  geom_line() + 
+  geom_point(aes(shape = IHC_FHC, colour = IHC_FHC), 
+             size = 2, stroke = 1.5) +
+  scale_color_brewer(palette="Dark2") +
+  scale_shape_manual(values = c(4,5,20)) +
+  labs(title="Distance between initial and final highest counts - Cantonese",
+       x = "Each line = individual kids",
+       y="Highest Count by Count Type") +
+  theme_bw(base_size = 7) + 
+  theme(legend.position="bottom", 
+        axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_grid(~productive, scales = "free_x")
+```
 
 ###Productivity descriptives
 ```{r}
@@ -688,8 +516,11 @@ hc.df %>%
             sd_FHC = sd(final_highest), 
             median_FHC = median(final_highest))
 ```
+
 ---
+
 ##Unit Task
+
 ###How many kids failed the memory checks in each dataset by number
 
 ```{r}
@@ -728,7 +559,9 @@ ggplot(subset(sf.mem.num.ms), aes(x = starting_num, y = n, fill = mem_check_stat
   facet_wrap(productive~dataset) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 ###Raw performance by dataset
+
 ```{r}
 sf.minus.2 <- sf.df %>%
   filter(correct != 2)%>%
@@ -809,6 +642,7 @@ sf.know <- sf.df %>%
 ```
 
 ---
+
 ##WCN
 ###Raw performance by dataset
 ```{r}
@@ -889,7 +723,9 @@ wcn.know <- wcn.df %>%
    facet_grid(~dataset) +
    guides(fill = FALSE)
 ```
+
 ---
+
 ##WPPSI
 ```{r}
 #get score
@@ -918,9 +754,11 @@ wppsi.ms <- wppsi.df%>%
    facet_grid(~dataset)
 
 ```
+
 ---
+
 #Main analyses
-##Within-language analyses - simple models
+##Within-language analyses
 
 ###Make model analysis dfs
 Note that there is a lot more variability in highest counts and highest contiguous NN than in categorical variables. I am centering age, and centering and scaling FHC, IHC, and highest contiguous NN (which has the most variability).
@@ -935,7 +773,8 @@ sf.hk.within <- sf.df%>%
          age.c = as.vector(scale(age, center = TRUE, scale=TRUE)), 
          fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)))
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))
   
 wcn.hk.within <- wcn.df%>%
   filter(dataset == "HK")%>%
@@ -946,7 +785,8 @@ wcn.hk.within <- wcn.df%>%
          age.c = as.vector(scale(age, center = TRUE, scale=TRUE)), 
          fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)))
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)),
+         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))
 
 ##SLO##
 sf.slo.within <- sf.df%>%
@@ -958,8 +798,10 @@ sf.slo.within <- sf.df%>%
          age.c = as.vector(scale(age, center = TRUE, scale=TRUE)), 
          fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)))%>%
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))%>%
   filter(!is.na(highest_contig.c))
+
 wcn.slo.within <- wcn.df%>%
   filter(dataset == "SLO")%>%
   mutate(SID = factor(SID), 
@@ -969,7 +811,8 @@ wcn.slo.within <- wcn.df%>%
          age.c = as.vector(scale(age, center = TRUE, scale=TRUE)), 
          fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)))%>%
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))%>%
   filter(!is.na(highest_contig.c))
 ```
 
@@ -990,42 +833,57 @@ Model 3: Unit.Performance ~ Initial.Count + Within/Outside range + Age + (1|subj
 Model 4: Unit.Performance ~ Highest.Contiguous.Next.Number + Within/Outside range + Age + (1|subject)
 
 ####Hong Kong
+Build the models
+
+#####Model 0 (base)
 ```{r}
 sf.hk.within.base <- glmer(correct ~ count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.base)
+
+
+```
+
+
+#####Model 1 (Productivity): Not a significant predictor of Unit Task performance (*p* = .69)
+```{r}
 sf.hk.within.model1 <- glmer(correct ~ productive + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.model1)
+anova(sf.hk.within.model1, sf.hk.within.base, test = 'LRT')
+```
+
+#####Model 2 (Final Highest Count): Significant predictor of Unit Task performance (*p* = .002)
+```{r}
 sf.hk.within.model2 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.model2)
+anova(sf.hk.within.model2, sf.hk.within.base, test = 'LRT')
+```
+
+#####Model 3 (Initial Highest Count): Significant predictor of Unit Task Performance (*p* < .0001)
+```{r}
 sf.hk.within.model3 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.model3)
+anova(sf.hk.within.model3, sf.hk.within.base, test = 'LRT')
+```
+
+#####Model 4 (Highest Continguous Next Number): Significant predictor of Unit Task performance (*p* = .001)
+```{r}
 sf.hk.within.model4 <- glmer(correct ~ highest_contig.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.model4)
+anova(sf.hk.within.model4, sf.hk.within.base, test = 'LRT')
 ```
 
-Compare whether predictor significantly predicts performance on unit task
-```{r}
-##Productivity##
-anova(sf.hk.within.model1, sf.hk.within.base, test = 'LRT') #Productivity classification does not significantly predict SF performance
+#####Large model
 
-##Final Highest Count##
-anova(sf.hk.within.model2, sf.hk.within.base, test = 'LRT') #FHC does significantly predict SF performance
+We have three significant predictors of performance on the Unit task (FHC, IHC, and Highest Contiguous NN). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task.
 
-##Initial Highest Count##
-anova(sf.hk.within.model3, sf.hk.within.base, test = 'LRT') #IHC does significantly predict SF performance
-
-##Highest contiguous NN##
-anova(sf.hk.within.model4, sf.hk.within.base, test = 'LRT') ##Highest contiguous NN does significantly predict SF performance
-```
-
-We have three significant predictors of performance on the Unit task (FHC, IHC, and Highest Contiguous NN). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task. 
+######IHC and Highest Contiguous NN: Highest Contig. NN does not significantly explain additional variance (*p* = .13)
 ```{r}
 ##IHC and Highest Contig NN##
 sf.hk.within.plus1 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), 
@@ -1034,68 +892,153 @@ sf.hk.within.plus1 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID),
 sf.hk.within.plus2 <- glmer(correct ~ ihc.c + highest_contig.c + count_range + age.c + (1|SID), 
                             family = "binomial", data = sf.hk.within)
 anova(sf.hk.within.plus2, sf.hk.within.plus1, test = 'LRT') #highest contiguous does not significantly explain additional variance
+```
 
-##IHC and FHC##
+######IHC and FHC: FHC does not significantly explain additional variance (*p* = .36)
+```{r}
 sf.hk.within.plus2 <- glmer(correct ~ ihc.c + fhc.c + count_range + age.c + (1|SID), 
                             family = "binomial", data = sf.hk.within)
 anova(sf.hk.within.plus2, sf.hk.within.plus1, test = 'LRT') #final highest count does not significantly explain additional variance
 ```
 
-Best predictor of Unit Task performance in Cantonese dataset is Initial Highest Count
-####SLO
+###HK Unit Task within-language results:
+IHC emerges as best predictor of performance on this task
 
+##EXPLORE-ATHON
+```{r}
+##EXPLORE
+sf.hk.within.base1 <- glmer(correct ~ starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+summary(sf.hk.within.base1)
+anova(sf.hk.within.base1, sf.hk.within.base, test = 'LRT')
+
+sf.hk.within.prod <- glmer(correct ~ productive + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+summary(sf.hk.within.prod)
+anova(sf.hk.within.prod, sf.hk.within.model1, test = 'LRT')
+
+sf.hk.within.fhc <- glmer(correct ~ fhc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+summary(sf.hk.within.fhc)
+anova(sf.hk.within.fhc, sf.hk.within.model2, test = 'LRT')
+
+sf.hk.within.ihc <- glmer(correct ~ ihc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+summary(sf.hk.within.ihc)
+anova(sf.hk.within.ihc, sf.hk.within.model3, test = 'LRT')
+
+sf.hk.within.highest_contig <- glmer(correct ~ highest_contig.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+summary(sf.hk.within.highest_contig)
+anova(sf.hk.within.highest_contig, sf.hk.within.model4, test = 'LRT')
+
+##compare
+sf.hk.within.ihc.plus1 <- glmer(correct ~ ihc.c + fhc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.hk.within)
+anova(sf.hk.within.ihc.plus1, sf.hk.within.ihc, test = 'LRT')
+```
+
+***
+
+####SLO (Unit Task)
+Build the models 
+
+#####Model 0 (base)
 ```{r}
 sf.slo.within.base <- glmer(correct ~ count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.slo.within)
 summary(sf.slo.within.base)
+
+
+```
+
+#####Model 1 (Productivity): Marginally significant (*p* = .065)
+```{r}
 sf.slo.within.model1 <- glmer(correct ~ productive + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.slo.within)
 summary(sf.slo.within.model1)
+anova(sf.slo.within.model1, sf.slo.within.base, test = 'LRT')
+```
+
+#####Model 2 (Final Highest Count): Barely significant (*p* = .044)
+```{r}
 sf.slo.within.model2 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.slo.within)
 summary(sf.slo.within.model2)
+anova(sf.slo.within.model2, sf.slo.within.base, test = 'LRT')
+```
+
+######Model 3 (Initial Highest Count): Marginally significant (*p* = .057)
+```{r}
 sf.slo.within.model3 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.slo.within)
 summary(sf.slo.within.model3)
+anova(sf.slo.within.model3, sf.slo.within.base, test = 'LRT')
+````
+
+#####Model 4 (Highest contiguous NN): Significant predictor (*p* = .01)
+```{r}
 sf.slo.within.model4 <- glmer(correct ~ highest_contig.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.slo.within) 
 summary(sf.slo.within.model4)
+anova(sf.slo.within.model4, sf.slo.within.base, test = 'LRT')
 ```
 
-Compare whether predictor significantly predicts performance on unit task
-```{r}
-##Productivity##
-anova(sf.slo.within.model1, sf.slo.within.base, test = 'LRT') #Productivity is marginally significant in predicting SF performance
-
-##Final Highest Count##
-anova(sf.slo.within.model2, sf.slo.within.base, test = 'LRT') #FHC barely significant in predicting SF performance
-
-##Initial Highest Count##
-anova(sf.slo.within.model3, sf.slo.within.base, test = 'LRT') #IHC marginally significant in predicting SF performance
-
-##Highest contiguous NN##
-anova(sf.slo.within.model4, sf.slo.within.base, test = 'LRT') ##Highest contiguous NN does significantly predict SF performance
-```
-
+#####Large model: Comparison between FHC and Highest contiguous NN: FHC does not significantly explain additional variance in the model (*p* = .27)
 Highest contiguous and Final Highest count best predictors - compare
 ```{r}
 sf.slo.within.plus1 <- glmer(correct ~ highest_contig.c + count_range + age.c + (1|SID), 
                              data = sf.slo.within, family = "binomial")
-sf.slo.within.plus2 <- glmer(correct ~ highest_contig.c + fhc.c + count_range + age.c + (1|SID), 
+sf.slo.within.plus2 <- glmer(correct ~ fhc.c + highest_contig.c + count_range + age.c + (1|SID), 
                              data = sf.slo.within, family = "binomial")
-anova(sf.slo.within.plus2, sf.slo.within.plus2, test = 'LRT') #highest contig does not significantly explain additional variance
+anova(sf.slo.within.plus2, sf.slo.within.plus1, test = 'LRT')
 ```
 
-Final Highest Count best predictor of Unit Task performance in Slovenian
+##EXPLORE-ATHON
+###Starting number/magnitude
+```{r}
+##EXPLORE
+sf.slo.within.base1 <- glmer(correct ~ starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.slo.within)
+summary(sf.slo.within.base1)
+anova(sf.slo.within.base1, sf.slo.within.base, test = 'LRT')
 
-##Productivity t-test of SF performance
+sf.slo.within.prod <- glmer(correct ~ productive + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.slo.within)
+summary(sf.slo.within.prod)
+anova(sf.slo.within.prod, sf.slo.within.model1, test = 'LRT')
+
+sf.slo.within.fhc <- glmer(correct ~ fhc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.slo.within)
+summary(sf.slo.within.fhc)
+anova(sf.slo.within.fhc, sf.slo.within.model2, test = 'LRT')
+
+sf.slo.within.ihc <- glmer(correct ~ ihc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.slo.within)
+summary(sf.slo.within.ihc)
+anova(sf.slo.within.ihc, sf.slo.within.model3, test = 'LRT')
+
+sf.slo.within.highest_contig <- glmer(correct ~ highest_contig.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.slo.within)
+summary(sf.slo.within.highest_contig)
+anova(sf.slo.within.highest_contig, sf.slo.within.model4, test = 'LRT')
+
+##compare
+sf.slo.within.highest_contig.plus1 <- glmer(correct ~ productive + highest_contig.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                           data = sf.slo.within)
+anova(sf.slo.within.highest_contig.plus1, sf.slo.within.highest_contig, test = 'LRT')
+```
+
+***
+
+##Productivity t-test of Unit Task performance
 Using the Productive/Non-Productive categorical classification outlined above, we will compare performance
 between both groups on the Unit task using t-tests. We may do this by considering average performance
 (averaring the 0’s and 1’s on each task for each participant); should doing so provide greater precision, we may also compare Highest Contiguous Number.
 
-###HK
+###HK: Marginally significant difference between groups (*p* = .06)
 ```{r}
 #with mean performance
 sf.hk.mean.ms <- sf.hk.within %>%
@@ -1106,7 +1049,7 @@ t.test(subset(sf.hk.mean.ms, productive == "productive")$mean,
        subset(sf.hk.mean.ms, productive == "nonproductive")$mean, var.equal = TRUE) #marginally significant difference between productive and nonproductive counters for performance on Unit Task
 ```
 
-###SLO
+###SLO: Significant difference between groups (*p* = .0007)
 ```{r}
 #with mean performance
 sf.slo.mean.ms <- sf.slo.within %>%
@@ -1118,7 +1061,7 @@ t.test(subset(sf.slo.mean.ms, productive == "productive")$mean,
 ```
 
 ##Productivity t-test of Highest contiguous NN
-###HK
+###HK: Significant difference between groups (*p* = .005)
 ```{r}
 sf.hk.mean.nn <- sf.hk.within %>%
   group_by(SID, productive)%>%
@@ -1128,7 +1071,7 @@ t.test(subset(sf.hk.mean.nn, productive == "productive")$mean_nn,
        subset(sf.hk.mean.nn, productive == "nonproductive")$mean_nn, var.equal = TRUE)
 ```
 
-###SLO
+###SLO: Significant difference between groups
 ```{r}
 sf.slo.mean.nn <- sf.slo.within %>%
   group_by(SID, productive)%>%
@@ -1136,15 +1079,10 @@ sf.slo.mean.nn <- sf.slo.within %>%
 
 t.test(subset(sf.slo.mean.nn, productive == "productive")$mean_nn, 
        subset(sf.slo.mean.nn, productive == "nonproductive")$mean_nn, var.equal = TRUE)
-
-ggplot(sf.slo.mean.nn, aes(x = productive, y = mean_nn, fill = productive)) + 
-  geom_boxplot()+
-  theme_bw()+
-  scale_fill_brewer(palette = "Dark2") #Significant difference in highest mean contiguous NN for productive vs. nonproductive counters
 ```
 
 ---
-##WCN Task- simple models
+##WCN Task- within-language analyses, simple models
 
 Model 0 (null model): NextNumber.Performance ~ Within/Outside range + Age + (1|subject)
 Model 1: Next.Number.Performance ~ Productivity + Within/Outside range + Age + (1|subject)
@@ -1152,36 +1090,45 @@ Model 2: Next.Number.Performance ~ Final.Count + Within/Outside range + Age + (1
 Model 3: Next.Number.Performance ~ Initial.Count + Within/Outside range + Age + (1|subject)
 
 ###HK
+Build models
+
+####Model 0 (base)
 ```{r}
 wcn.hk.within.base <- glmer(correct ~ count_range + age.c + (1|SID), family = "binomial", 
                             data = wcn.hk.within)
 summary(wcn.hk.within.base)
+
+
+```
+
+####Model 1 (Productivity): Not a significant predictor (*p* = .267)
+```{r}
 wcn.hk.within.model1 <- glmer(correct ~ productive + count_range + age.c + (1|SID), family = "binomial", 
                             data = wcn.hk.within)
 summary(wcn.hk.within.model1)
+anova(wcn.hk.within.model1, wcn.hk.within.base, test = 'LRT')
+```
+
+####Model 2 (Final Highest Count): Significant predictor (*p* < .0001)
+````{r}
 wcn.hk.within.model2 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
                             data = wcn.hk.within)
 summary(wcn.hk.within.model2)
+anova(wcn.hk.within.model2, wcn.hk.within.base, test = 'LRT')
+````
+
+#####Model 3 (Initial Highest Count): Significant predictor (*p* < .0001)
+```{r}
 wcn.hk.within.model3 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), family = "binomial", 
                             data = wcn.hk.within)
 summary(wcn.hk.within.model3)
+anova(wcn.hk.within.model3, wcn.hk.within.base, test = 'LRT')
 ```
 
-Compare whether predictor significantly predicts performance on WCN task
-```{r}
-##Productivity##
-anova(wcn.hk.within.model1, wcn.hk.within.base, test = 'LRT') #Productivity classification does not significantly predict WCN performance
-
-##Final Highest Count##
-anova(wcn.hk.within.model2, wcn.hk.within.base, test = 'LRT') #FHC does significantly predict SF performance
-
-##Initial Highest Count##
-anova(wcn.hk.within.model3, wcn.hk.within.base, test = 'LRT') #IHC does significantly predict SF performance
-```
-
+#####Large Model - Comparison of FHC and IHC: Both predictors significantly explain unique variance (*p* < .0001)
 We have two significant predictors of performance on the Unit task (FHC and IHC). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task. 
 ```{r}
-##IHC and Highest Contig NN##
+##IHC and FHC##
 wcn.hk.within.plus1 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = wcn.hk.within)
@@ -1190,36 +1137,74 @@ wcn.hk.within.plus2 <- glmer(correct ~ ihc.c + fhc.c + count_range + age.c + (1|
 anova(wcn.hk.within.plus2, wcn.hk.within.plus1, test = 'LRT') #Initial Highest Count explains additional variance in WCN performance
 ```
 
-###SLO
+##EXPLORE-ATHON
+###Starting Number/Magnitude
+```{r}
+###EXPLORE
+wcn.hk.within.base1 <- glmer(correct ~ starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                             data = wcn.hk.within)
+summary(wcn.hk.within.base1)
+anova(wcn.hk.within.base1, wcn.hk.within.base, test = 'LRT')
+wcn.hk.within.prod <- glmer(correct ~ productive + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                             data = wcn.hk.within)
+summary(wcn.hk.within.prod)
+anova(wcn.hk.within.prod, wcn.hk.within.model1, test = 'LRT')
+wcn.hk.within.fhc <- glmer(correct ~ fhc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                             data = wcn.hk.within)
+summary(wcn.hk.within.fhc)
+anova(wcn.hk.within.fhc, wcn.hk.within.model2, test = 'LRT')
+wcn.hk.within.ihc <- glmer(correct ~ ihc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                             data = wcn.hk.within)
+summary(wcn.hk.within.ihc)
+anova(wcn.hk.within.ihc, wcn.hk.within.model3, test = 'LRT')
+
+#compare 
+wcn.hk.within.fhc.plus <- glmer(correct ~ ihc.c + fhc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                             data = wcn.hk.within)
+anova(wcn.hk.within.fhc.plus, wcn.hk.within.fhc, test = 'LRT')
+```
+
+***
+
+###SLO - WCN (within-language)
+Build the models
+
+#####Model 0
 ```{r}
 wcn.slo.within.base <- glmer(correct ~ count_range + age.c + (1|SID), family = "binomial", 
                             data = wcn.slo.within)
 summary(wcn.slo.within.base)
+```
+
+
+####Model 1 (Productivity): Significant predictor (*p* < .0001)
+```{r}
 wcn.slo.within.model1 <- glmer(correct ~ productive + count_range + age.c + (1|SID), family = "binomial", 
                             data = wcn.slo.within)
 summary(wcn.slo.within.model1)
+anova(wcn.slo.within.model1, wcn.slo.within.base, test = 'LRT')
+```
+
+#####Model 2 (FHC): Significant predictor (*p* < .0001)
+```{r}
 wcn.slo.within.model2 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
                             data = wcn.slo.within)
 summary(wcn.slo.within.model2)
+anova(wcn.slo.within.model2, wcn.slo.within.base, test = 'LRT')
+```
+
+#####Model 3 (IHC): Significant predictor (*p* < .0001)
+```{r}
 wcn.slo.within.model3 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), family = "binomial", 
                             data = wcn.slo.within)
 summary(wcn.slo.within.model3)
+anova(wcn.slo.within.model3, wcn.slo.within.base, test = 'LRT')
 ```
 
-Compare whether predictor significantly predicts performance on WCN task
-```{r}
-##Productivity##
-anova(wcn.slo.within.model1, wcn.slo.within.base, test = 'LRT') #Productivity classification does significantly predict WCN performance
-
-##Final Highest Count##
-anova(wcn.slo.within.model2, wcn.slo.within.base, test = 'LRT') #FHC does significantly predict SF performance
-
-##Initial Highest Count##
-anova(wcn.slo.within.model3, wcn.slo.within.base, test = 'LRT') #IHC does significantly predict SF performance
-```
-
+#####Large Model comparison: Productivity, FHC, and IHC
 We have three significant predictors of performance on the Unit task (Productivity, FHC and IHC). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task. 
 
+######Productivity and FHC: Productivity does not explain additional variance (*p* = .99)
 ```{r}
 ##Productive and FHC##
 wcn.slo.within.plus1 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), 
@@ -1228,20 +1213,51 @@ wcn.slo.within.plus1 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID),
 wcn.slo.within.plus2 <- glmer(correct ~ productive + fhc.c + count_range + age.c + (1|SID), 
                             family = "binomial", data = wcn.slo.within)
 anova(wcn.slo.within.plus2, wcn.slo.within.plus1, test = 'LRT') #Productivity does not explain additional variance
+```
 
-##IHC and FHC##
+######IHC and FHC: IHC does not explain additional variance (*p* = .77)
+```{r}
 wcn.slo.within.plus2 <- glmer(correct ~ ihc.c + fhc.c + count_range + age.c + (1|SID), 
                             family = "binomial", data = wcn.slo.within)
 anova(wcn.slo.within.plus2, wcn.slo.within.plus1, test = 'LRT') ##IHC does not explain additional variance
 ```
 
-##Productivity t-test of SF performance
+##EXPLORE-ATHON
+###Starting number/magnitude
+```{r}
+###Explore
+
+wcn.slo.within.base1 <- glmer(correct ~ starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                            data = wcn.slo.within)
+summary(wcn.slo.within.base1)
+anova(wcn.slo.within.base1, wcn.slo.within.base, test = 'LRT')
+wcn.slo.within.prod <- glmer(correct ~ productive + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                            data = wcn.slo.within)
+summary(wcn.slo.within.prod)
+anova(wcn.slo.within.prod, wcn.slo.within.model1, test = 'LRT')
+wcn.slo.within.fhc <- glmer(correct ~ fhc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                            data = wcn.slo.within)
+summary(wcn.slo.within.fhc)
+anova(wcn.slo.within.fhc, wcn.slo.within.model2, test = 'LRT')
+wcn.slo.within.ihc <- glmer(correct ~ ihc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                            data = wcn.slo.within)
+summary(wcn.slo.within.ihc)
+anova(wcn.slo.within.ihc, wcn.slo.within.model3, test = 'LRT')
+
+#compare
+wcn.slo.within.fhc.plus <- glmer(correct ~ productive + fhc.c + starting_num.c + count_range + age.c + (1|SID), family = "binomial", 
+                            data = wcn.slo.within)
+anova(wcn.slo.within.fhc.plus, wcn.slo.within.fhc, test = 'LRT')
+```
+
+***
+
+##Productivity t-test of WCN performance
 Using the Productive/Non-Productive categorical classification outlined above, we will compare performance
 between both groups on the Next Number task using t-tests. We may do this by considering average performance
 (averaring the 0’s and 1’s on each task for each participant).
 
-###HK
-
+###HK: Significant difference between productive and nonproductive counters (*p* = .001)
 ```{r}
 #with mean performance
 wcn.hk.mean.ms <- wcn.hk.within %>%
@@ -1252,7 +1268,7 @@ t.test(subset(wcn.hk.mean.ms, productive == "productive")$mean,
        subset(wcn.hk.mean.ms, productive == "nonproductive")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
 ```
 
-###SLO
+###SLO: Significant difference between groups (*p* < .0001)
 
 ```{r}
 #with mean performance
@@ -1263,7 +1279,9 @@ wcn.slo.mean.ms <- wcn.slo.within %>%
 t.test(subset(wcn.slo.mean.ms, productive == "productive")$mean, 
        subset(wcn.slo.mean.ms, productive == "nonproductive")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
 ```
+
 ---
+
 #Cross-linguistic comparisons
 Our second set of analyses is aimed at understanding cross-linguistic differences in performance on the Unit Task. To do this, we will analyze all participants, from all language groups, in a single model. We will then construct our models from above, but will add (a) a measure of Working Memory and (b) the interaction of Initial Highest Count and Language group to each model. These models therefore allow us to test whether (a) language; (b) counting ability; or (c) some interaction between the two predict unit performance. We include Working Memory in all cross-linguistic models with the intention of taking into account baseline differences in processing across samples.
 
@@ -1279,7 +1297,7 @@ Make model dfs
 
 We will then compare Model 0a (the Null Model) to each of the models containing measures of productivity (1a, 2a, and 3a) using a likelihood ratio test in testing whether these measures of productivity significantly explain variance in children’s performance. Should effects of Language emerge, we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., Unit.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)). After running the four models above, any predictor that significantly (p &lt;.05) predicted Unit Task Performance will be added into Model 6a, which will be our “Large” model (containing all predictors that significantly predicted Unit Task Performance in the simple models). We will construct model 6a hierarchically. Model comparisons will be performed at each stage by running a likelihood ratio test between reduced and full models, with significant effects retained in the full model (Model 6a). Model selection will be done on the basis of AIC evaluation and significant Chi-square statistic.
 
-##Make model dfs
+###Make model dfs
 ```{r}
 ##HK##
 sf.df.cross %<>%
@@ -1292,7 +1310,8 @@ sf.df.cross %<>%
          age.c = as.vector(scale(age, center = TRUE, scale=FALSE)), 
          fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)))
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))
   
 wcn.df.cross %<>%
 select(-dataset.x, -X)%>%
@@ -1304,7 +1323,8 @@ select(-dataset.x, -X)%>%
          age.c = as.vector(scale(age, center = TRUE, scale=FALSE)), 
          fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)))
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)),
+         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))
 
 sf.df.cross %<>%
   mutate(Language = ifelse(dataset == "HK", "Cantonese", "Slovene"), 
@@ -1323,35 +1343,65 @@ wcn.df.cross %<>%
 
 ##Unit Task: Cross linguistic models
 
+###Model 0 (base)
 ```{r}
 sf.cross.base <- glmer(correct ~ Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                        family = "binomial", data = sf.df.cross)
 summary(sf.cross.base)
+```
+
+###Model 1 (Productivity): Not a signficant predictor (*p* = .82)
+```{r}
 sf.cross.model1 <- glmer(correct ~ productive + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                        family = "binomial", data = sf.df.cross)
-sumamry(sf.cross.model1)
+summary(sf.cross.model1)
+anova(sf.cross.model1, sf.cross.base, test = 'LRT')
+```
+
+###Model 2 (Final Highest Count): Not a significant predictor (*p* = .88)
+```{r}
 sf.cross.model2 <- glmer(correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                        family = "binomial", data = sf.df.cross)
 summary(sf.cross.model2)
+anova(sf.cross.model2, sf.cross.base, test = 'LRT')
+```
+
+###Model 3 (Highest Contiguous NN): Significant predictor (*p* = .03)
+```{r}
 sf.cross.model3 <- glmer(correct ~ highest_contig.c + Language*ihc.c + count_range + age.c + wppsi.c +
                            (1|SID), 
                        family = "binomial", data = sf.df.cross)
 summary(sf.cross.model3)
+anova(sf.cross.model3, sf.cross.base, test = 'LRT')
 ```
 
-Model comparison
+##EXPLORE-ATHON
+###Starting Number/magnitude
 ```{r}
-##Productivity##
-anova(sf.cross.model1, sf.cross.base, test = 'LRT')#productivity does not significantly improve model fit
+##Explore
+sf.cross.base1 <- glmer(correct ~ starting_num.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross)
+summary(sf.cross.base1)
+anova(sf.cross.base1, sf.cross.base, test = 'LRT')
 
-###FHC###
-anova(sf.cross.model2, sf.cross.base, test = 'LRT')#Neither does FHC
+sf.cross.prod <- glmer(correct ~ productive + starting_num.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross)
+summary(sf.cross.prod)
+anova(sf.cross.prod, sf.cross.model1, test = 'LRT')
 
-##Highest NN##
-anova(sf.cross.model3, sf.cross.base, test = 'LRT') #Highest contiguous NN does
+sf.cross.fhc <- glmer(correct ~ fhc.c + starting_num.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross)
+summary(sf.cross.fhc)
+anova(sf.cross.fhc, sf.cross.model2, test = 'LRT')
+
+sf.cross.highest_contig <- glmer(correct ~ highest_contig.c + starting_num.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross)
+summary(sf.cross.highest_contig)
+anova(sf.cross.highest_contig, sf.cross.model3, test = 'LRT')
 ```
 
 ---
+
 ##WCN
 Our third set of analyses is aimed at understanding cross-linguistic differences in performance on the next number task. To do this, we will analyze all participants, from all language groups, in a single model. As above, we add WM, and the language by IHC interaction.
 C
@@ -1363,32 +1413,38 @@ Model 1b: Next.Number.Performance ~ Productivity + Language*IHC + Within/Outside
 Model 2b: Next.Number.Performance ~ Final.Count + Language*IHC + Within/Outside range + Age + WM +
 (1|subject)
 
-Should effects of Language emerge, we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects. Should effects of Language emerge, we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., Unit.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)). After running these three models, any predictor that significantly (p &lt;.05) predicted Next Number Performance (as assessed by running a likelihood ratio test on the Null Model (Model 0b) and Models 1b and 2b) will be added into Model 7b, which will be our “Large” model (containing all predictors that significantly predicted Next Number Performance in the simple models).
-
 We will construct Model 7b hierarchically. Model comparisons will be performed at each stage by running a likelihood ratio test between reduced and full models, with significant effects retained in the full model (Model 7b). Model selection will be done on the basis of AIC evaluation and significant Chi-square statistic.
+
+###Model 0 (base)
 ```{r}
 wcn.cross.base <- glmer(correct ~ Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                         family = "binomial", data = wcn.df.cross)
 summary(wcn.cross.base)
+
+
+```
+
+###Model 1 (Productivity): Marginally significant (*p* = .06)
+```{r}
 wcn.cross.model1 <- glmer(correct ~ productive + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                         family = "binomial", data = wcn.df.cross, 
                         control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
 summary(wcn.cross.model1)
+anova(wcn.cross.model1, wcn.cross.base, test = 'LRT')
+```
+
+###Model 2 (Final Highest Count): Significant predictor (*p* = .002)
+```{r}
 wcn.cross.model2 <- glmer(correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
                             (1|SID), data = wcn.df.cross, family = "binomial")
 summary(wcn.cross.model2)
+anova(wcn.cross.model2, wcn.cross.base, test = 'LRT')
 ```
 
-Model comparison - productivity effects
-```{r}
-##PRODUCTIVITY##
-anova(wcn.cross.model1, wcn.cross.base, test = 'LRT')#Productivity not signficant
+Should effects of Language emerge, we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., Unit.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)). After running these three models, any predictor that significantly (p &lt;.05) predicted Next Number Performance (as assessed by running a likelihood ratio test on the Null Model (Model 0b) and Models 1b and 2b) will be added into Model 7b, which will be our “Large” model (containing all predictors that significantly predicted Next Number Performance in the simple models).
 
-##FHC#
-anova(wcn.cross.model2, wcn.cross.base, test = 'LRT')#FHC significant
-```
-
+###Model comparison: Removing effect of Language from FHC model: FHC still significant predictor (*p* = .03)
 There is a significant effect of Language: we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., WCN.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)).
 ```{r}
 wcn.nolang.base <- glmer(correct ~ ihc.c + count_range + age.c + wppsi.c + (1|SID), 
@@ -1397,4 +1453,72 @@ wcn.nolang.model1 <- glmer(correct ~ fhc.c + ihc.c + count_range + age.c + wppsi
                          data = wcn.df.cross, family = "binomial")
 anova(wcn.nolang.model1, wcn.nolang.base, test = 'LRT') #FHC is still significant
 
+```
+
+
+##EXPLORE-ATHON
+###Starting Number/Magnitude
+```{r}
+##EXPLORE
+wcn.cross.base1 <- glmer(correct ~ starting_num.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross)
+summary(wcn.cross.base1)
+anova(wcn.cross.base1, wcn.cross.base, test = 'LRT')
+
+wcn.cross.prod <- glmer(correct ~ productive + starting_num.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross, control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+summary(wcn.cross.prod)
+anova(wcn.cross.prod, wcn.cross.model1, test = 'LRT')
+
+wcn.cross.fhc <- glmer(correct ~ fhc.c + starting_num.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross)
+summary(wcn.cross.fhc)
+anova(wcn.cross.fhc, wcn.cross.model2, test = 'LRT')
+
+#compare
+wcn.cross.fhc.plus <- glmer(correct ~ productive + fhc.c + starting_num.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross, control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+anova(wcn.cross.fhc.plus, wcn.cross.fhc, test = 'LRT')
+
+```
+
+---
+
+#Counting distribution
+We plan to conduct descriptive analyses to describe the ways in which Initial Highest Count differs across
+languages.
+```{r}
+hc.df.cross <- right_join(hc.df, wppsi.sid, by = "SID")%>%
+  distinct(SID, initial_highest, final_highest, dataset.x, productive, age, highest_contig, sum_wppsi)%>%
+  mutate(Language = ifelse(dataset.x == "HK", "Cantonese", "Slovene"))
+
+hc.df.cross %>%
+  group_by(Language)%>%
+  summarise(mean = mean(initial_highest), 
+            sd = sd(initial_highest), 
+            median = median(initial_highest))
+```
+
+In addition, we plan to test whether children in transparent languages can become productive with less counting experience. To test this, we will consider non-productive counters (those who were labeled as non-Productive). We will then ask whether IHC for these non-productive counters differs across languages. We will only conduct these analyses if we have at least 30 non-productive counters in each language. If count-list transparency allows children to converge on a productive count rule more quickly, then children who learn a system with a transparent-count list should move to the “productive counter” category on the basis of relatively less experience than children who learn a system with an opaque- count list. This predicts that, when considering non-Productive counters, initial highest count should be higher for opaque languages (like English) than for Slovenian, and higher for Slovenian than for Cantonese. The model would like this: 
+
+Model 1: IHC ~ Language + Age + WM, data = NonProductiveCounters
+
+###Model: Nonproductive Slovenians have significantly *lower* IHC than Cantonese speakers
+```{r}
+ihc.cross <- hc.df.cross%>%
+  filter(productive == "nonproductive")%>%
+  mutate(Language = factor(Language))
+
+ihc.model.1 = lm(initial_highest ~ Language + age + sum_wppsi, data = ihc.cross)
+summary(ihc.model.1)
+```
+
+In addition, we will test whether count-list transparency allows children to acquire some degree of productivity, even before they are labeled productive counters based on their overall counting performance. To test this, we will predict Highest Contiguous Next Number from Language. If transparent languages allow children to generate a productive counting rule, speakers of these transparent languages may perform better on the Next Number task than speakers of non- transparent languages, even when only considering non-productive counters. Model 2: Highest.Contiguous.NextNumber ~ Language + Age + WM + (1|subject), data = NonProductiveCounters
+
+###Model: No effect of Language here
+```{r}
+highest_contig.model <- lm(highest_contig ~ Language + age + sum_wppsi, data = ihc.cross)
+summary(highest_contig.model)
 ```
