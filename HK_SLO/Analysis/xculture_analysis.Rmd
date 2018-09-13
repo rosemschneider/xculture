@@ -43,8 +43,8 @@ hk.full.data <- read.csv('Data/HK_data.csv')%>%
   droplevels()%>%
   mutate(Age = as.numeric(as.character(Age)), 
          Correct = as.integer(as.character(Correct)), 
-         Mem_check_1 = as.integer(Mem_check_1), 
-         Mem_check_2 = as.integer(Mem_check_2))
+         Mem_check_1 = as.integer(as.character(Mem_check_1)), 
+         Mem_check_2 = as.integer(as.character(Mem_check_2)))
 
 #hk highest count
 hk.hc <- read.csv('Data/HK_HC.csv')
@@ -360,6 +360,12 @@ all.data %<>%
   filter(Trial_number != "Training")
 ```
 
+##Memory checks - NAs to 1
+```{r}
+all.data %<>%
+  mutate(Mem_check_1 = ifelse(is.na(Mem_check_1), 1, Mem_check_1))
+```
+
 #Demographics
 ```{r, warning = FALSE}
 #demos by age group, Language
@@ -401,8 +407,24 @@ all.data %>%
   summarise(n = n())%>%
   kable()
 
-all.data %>% 
-  filter(is.na(Language))
+all.data %<>% 
+  filter(!is.na(Language))
+```
+
+###Productivity descriptives
+```{r}
+all.data %>%
+  filter(!is.na(Language))%>%
+  distinct(SID, Age, Productive, Language, IHC, FHC)%>%
+  group_by(Language, Productive)%>%
+  summarise(n = n(),
+            mean_IHC = round(mean(IHC), 2), 
+            sd_IHC = round(sd(IHC), 2), 
+            median_IHC = round(median(IHC), 2), 
+            mean_FHC = round(mean(FHC), 2), 
+            sd_FHC = round(sd(FHC), 2), 
+            median_FHC = round(median(FHC), 2))%>%
+  kable()
 ```
 
 #Task visualizations
@@ -410,44 +432,35 @@ all.data %>%
 ###Histogram Initial and Final Highest Count
 
 ```{r}
-hc.df %<>%
-  filter(!is.na(dataset))%>%
-  mutate(initial_highest = ifelse(initial_highest > 140, 140, initial_highest), 
-         final_highest = ifelse(final_highest > 140, 140, final_highest))
-
-unique.hc.data <- hc.df %>%
-  distinct(SID, initial_highest, final_highest, productive, dataset)%>%
-  gather(IHC_FHC,highest_count, initial_highest:final_highest)%>%
+unique.hc.data <- all.data %>%
+  distinct(SID, IHC, FHC, Productive, Language)%>%
+  gather(IHC_FHC,highest_count, IHC:FHC)%>%
   mutate(highest_count = as.integer(highest_count), 
-         IHC_FHC = factor(IHC_FHC, levels = c("initial_highest", "final_highest"), 
+         IHC_FHC = factor(IHC_FHC, levels = c("IHC", "FHC"), 
                           labels = c("Initial Highest Count", "Final Highest Count")))
 
 #initial
-ggplot(unique.hc.data, aes(x=highest_count, fill=productive)) + 
+ggplot(unique.hc.data, aes(x=highest_count, fill=Productive)) + 
   geom_histogram(binwidth = 10, colour = "black") +
   theme_bw(base_size = 10)+
   labs(title = "Initial/Final Highest Counts by Productivity and Dataset") +
-  facet_grid(IHC_FHC~dataset) +
+  facet_grid(IHC_FHC~Language) +
   scale_x_continuous(breaks = seq(0, 140, 10))+
-  scale_fill_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Set1") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
         panel.grid.minor = element_blank())
 
-hc.df %>%
-  filter(is.na(dataset))
 ```
 
 ###Scatterplot of IHC and FHC
-
 ```{r}
-initial_final <- hc.df %>%
-  filter(!is.na(dataset))%>%
-  distinct(SID, dataset, initial_highest, final_highest, productive)%>%
-  mutate(initial_highest = as.numeric(initial_highest), 
-         initial_final = as.numeric(final_highest))
+initial_final <- all.data %>%
+  distinct(SID, Language, IHC, FHC, Productive)%>%
+  mutate(IHC = as.numeric(IHC), 
+         FHC = as.numeric(FHC))
 
-ggplot(initial_final, aes(x = initial_highest, y = final_highest, 
-                          color = productive)) +
+ggplot(initial_final, aes(x = IHC, y = FHC, 
+                          color = Productive)) +
   geom_point(size = 1) + geom_jitter(width = .1) +
   labs(x = "Initial highest count", y = "Final highest count", 
                       color = "", title = "") +
@@ -457,107 +470,65 @@ ggplot(initial_final, aes(x = initial_highest, y = final_highest,
   theme(panel.grid.minor = element_blank(), 
         legend.position = "bottom", 
         legend.text = element_text(size = 8)) + 
-  facet_grid(~dataset) + 
-  scale_color_brewer(palette = "Dark2") +
+  facet_grid(~Language) + 
+  scale_color_brewer(palette = "Set1") +
   theme(legend.position = "bottom") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
-###Plotting distance between Initial and Final Highest Counts (~Pierina's graph)
-####Cantonese
+###Plotting distance between Initial and Final Highest Counts (~Pierina's graph) for Productive counters
 ```{r}
-ggplot(subset(unique.hc.data, dataset == "HK"), aes(x = SID, y = highest_count)) + 
-  facet_grid(rows = vars(productive)) +
+ggplot(subset(unique.hc.data, Productive == "Productive"), aes(x = SID, y = highest_count)) + 
+  facet_grid(rows = vars(Productive)) +
   geom_line() + 
   geom_point(aes(shape = IHC_FHC, colour = IHC_FHC), 
              size = 2, stroke = 1.5) +
-  scale_color_brewer(palette="Dark2") +
+  scale_color_brewer(palette="Paired", direction = 1) +
   scale_shape_manual(values = c(4,5,20)) +
-  labs(title="Distance between initial and final highest counts - Cantonese",
+  labs(title="Distance between initial and final highest counts",
        x = "Each line = individual kids",
        y="Highest Count by Count Type") +
   theme_bw(base_size = 7) + 
   theme(legend.position="bottom", 
         axis.text.x = element_text(angle = 90, hjust = 1)) +
-  facet_grid(~productive, scales = "free_x")
+  facet_wrap(~Language, scales = "free_x")
 ```
 
-####Slovenian
-```{r}
 
-ggplot(subset(unique.hc.data, dataset == "SLO"), aes(x = SID, y = highest_count)) + 
-  facet_grid(rows = vars(productive)) +
-  geom_line() + 
-  geom_point(aes(shape = IHC_FHC, colour = IHC_FHC), 
-             size = 2, stroke = 1.5) +
-  scale_color_brewer(palette="Dark2") +
-  scale_shape_manual(values = c(4,5,20)) +
-  labs(title="Distance between initial and final highest counts - Cantonese",
-       x = "Each line = individual kids",
-       y="Highest Count by Count Type") +
-  theme_bw(base_size = 7) + 
-  theme(legend.position="bottom", 
-        axis.text.x = element_text(angle = 90, hjust = 1)) +
-  facet_grid(~productive, scales = "free_x")
-```
 
-###Productivity descriptives
-```{r}
-hc.df %>%
-  filter(!is.na(dataset))%>%
-  distinct(SID, age, productive, dataset, initial_highest, final_highest)%>%
-  group_by(dataset, productive)%>%
-  summarise(n = n(),
-            mean_IHC = mean(initial_highest), 
-            sd_IHC = sd(initial_highest), 
-            median_IHC = median(initial_highest), 
-            mean_FHC = mean(final_highest), 
-            sd_FHC = sd(final_highest), 
-            median_FHC = median(final_highest))
-```
 
 ---
 
 ##Unit Task
-
 ###How many kids failed the memory checks in each dataset by number
 
 ```{r}
-sf.df %<>%
-  mutate(mem_check_1 = ifelse(is.na(mem_check_1), 1, mem_check_1))
-
-
 #for SF
-sf.df %<>%
-  mutate(mem_check_status = ifelse((mem_check_1 == 1 & is.na(mem_check_2)), "need_1_pass_1",
-                                    ifelse((mem_check_1 == 0 & mem_check_2 == 0), "need_2_fail_2",
-                                           ifelse((mem_check_1 == 1 & mem_check_2 == 1),
+sf.df <- all.data %>%
+  filter(Task == "SF")%>%
+  mutate(mem_check_status = ifelse((Mem_check_1 == 1 & is.na(Mem_check_2)), "Needed_1_passed_1",
+                                    ifelse((Mem_check_1 == 0 & Mem_check_2 == 0), "Needed_2_failed_2",
+                                           ifelse((Mem_check_1 == 1 & Mem_check_2 == 1),
                                                   "unclear_pass1_pass2",
-                                                  ifelse((mem_check_1 == 1 & mem_check_2 == 0),
-                                                         "unclear_pass1_fail2",
-                                                         ifelse((mem_check_1 == 0 & mem_check_2 == 1),
-                                                                "fail1_pass2", "other"))))))
+                                                  ifelse((Mem_check_1 == 1 & Mem_check_2 == 0),
+                                                         "unclear_passed1_failed2",
+                                                         ifelse((Mem_check_1 == 0 & Mem_check_2 == 1),
+                                                                "failed1_passed2", "other"))))))
 
-sf.mem.ms <- sf.df %>%
-  group_by(mem_check_status, productive, dataset)%>%
-  summarise(n = n())
-
-ggplot(subset(sf.mem.ms), aes(x = mem_check_status, y = n, fill = productive)) + 
-  geom_bar(stat = "identity", position = position_dodge()) + 
-  facet_grid(~dataset) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + guides(fill=FALSE)
-
-#what about by number?
+#by number
 sf.mem.num.ms <- sf.df %>%
-  mutate(starting_num = factor(starting_num))%>%
-  group_by(starting_num, mem_check_status, dataset, productive)%>%
+  mutate(Task_item = factor(Task_item, levels = c("5", '7', '16', '24', '52', '71', '105', '107', '116', '224', '252', '271')))%>%
+  filter(!is.na(Productive))%>%
+  group_by(Task_item, mem_check_status, Language, Productive)%>%
   summarise(n = n())
 
-ggplot(subset(sf.mem.num.ms), aes(x = starting_num, y = n, fill = mem_check_status)) + 
+ggplot(subset(sf.mem.num.ms), aes(x = Task_item, y = n, fill = mem_check_status)) + 
   geom_bar(stat = "identity") + 
-  facet_wrap(productive~dataset) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  facet_grid(Productive~Language) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Number queried", y = "Number of trials", title = "Memory checks by number in Unit Task")
 ```
 
 ###Raw performance by dataset
