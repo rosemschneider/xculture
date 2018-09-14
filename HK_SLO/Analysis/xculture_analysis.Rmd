@@ -87,7 +87,7 @@ hc.df <- bind_rows(slo.hc, hk.hc)
 cp.df <- all.data %>%
   filter(Task == "GiveN")%>%
   group_by(SID)%>%
-  summarise(sum_correct = sum(Correct))%>%
+  summarise(sum_correct = sum(Correct, na.rm = TRUE))%>%
   mutate(Knower.level = ifelse(sum_correct >= 4, "CP-knower", "Subset-knower"))%>%
   select(-sum_correct)
 
@@ -531,88 +531,268 @@ ggplot(subset(sf.mem.num.ms), aes(x = Task_item, y = n, fill = mem_check_status)
   labs(x = "Number queried", y = "Number of trials", title = "Memory checks by number in Unit Task")
 ```
 
-###Raw performance by dataset
-
+###Raw performance by Language
 ```{r}
-sf.minus.2 <- sf.df %>%
-  filter(correct != 2)%>%
-  group_by(SID, dataset)%>%
-  summarise(mean = mean(correct))
-
- ggplot(sf.minus.2, aes(x = dataset, y = mean, fill = dataset)) + 
-   theme_bw() + 
-  geom_boxplot()+
-   langcog::scale_fill_solarized("Dataset")
+all.data %>%
+  filter(Task == "SF")%>%
+  group_by(SID, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", alpha = .5, colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw() + 
+  theme(legend.position = "none") +
+  ggtitle("Overall mean correct on Unit Task") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  geom_violin(alpha = .1) + 
+  scale_fill_brewer(palette = "Dark2")
 ```
 
-###By productivity and dataset
+###Performance by language, productivity
 ```{r}
-sf.minus.2 <- sf.df %>%
-  filter(correct != 2)%>%
-  group_by(SID, productive, dataset)%>%
-  summarise(mean = mean(correct))
-
- ggplot(sf.minus.2, aes(x = productive, y = mean, fill = productive)) + 
-  geom_boxplot() + 
-   theme_bw() + 
-   scale_fill_brewer(palette = "Dark2") + 
-   facet_grid(~dataset) +
-   guides(fill = FALSE)
+all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "SF")%>%
+  group_by(SID, Productive, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", alpha = .5, colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  facet_grid(~Productive)+
+  theme_bw() + 
+  theme(legend.position = "none") +
+  ggtitle("Performance on Unit Task by language, productivity") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  geom_violin(alpha = .1) + 
+  scale_fill_brewer(palette = "Dark2")
 ```
 
 ###By productivity and count range
 ```{r}
-sf.minus.2 <- sf.df %>%
-  filter(correct != 2)%>%
-  group_by(SID, productive, count_range, dataset)%>%
-  summarise(mean = mean(correct))
+count_range_pal <- brewer.pal(n = 9, "Spectral")[8:9]
 
- ggplot(sf.minus.2, aes(x = count_range, y = mean, fill = productive)) + 
-  geom_boxplot() + 
-   theme_bw() + 
-   scale_fill_brewer(palette = "Dark2") + 
-   facet_grid(~dataset)
+all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "SF")%>%
+  group_by(SID, count_range, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = count_range, y = mean, fill=Language)) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw() + 
+  ggtitle("Performance on Unit Task by language, within/outside IHC") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  scale_fill_brewer(palette = "Dark2")
 ```
 
 ###SF performance by number and productivity
+TO-DO RMS: This is a mess, fix it up
 ```{r}
-sf.minus.2.num <- sf.df %>%
-  filter(correct != 2)%>%
-  mutate(starting_num = factor(starting_num))%>%
-  group_by(productive, dataset, starting_num)%>%
-  langcog::multi_boot_standard("correct", na.rm = TRUE)
+sf.ms <- all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "SF")%>%
+  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", "24", "52", "71", 
+                                                  "105", "107", "116", "224", "252", "271")))%>%
+  mutate(Task_item = as.integer(as.character(Task_item)))%>%
+  group_by(Task_item, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE)))%>%
+  mutate(se = sd/(sqrt(length(unique(subset(all.data, Task == "SF")$SID)))), 
+         upper = mean+se, 
+         lower = mean-se)
 
- ggplot(sf.minus.2.num, aes(x = starting_num, y = mean, fill = productive)) + 
-  geom_bar(stat = "identity", position= position_dodge()) + 
-  geom_linerange(aes(ymin = ci_lower,
-                      ymax = ci_upper),
-                  size = .3,
-                  show.legend = FALSE,
-                 position=position_dodge(width = 0.9))+
-   theme_bw() + 
-  facet_grid(~dataset) + 
-   scale_fill_brewer(palette = "Dark2") + 
-   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-   theme(legend.position = "bottom")
-
+spline_int <- as.data.frame(spline(sf.ms$Task_item, sf.ms$mean))
+  
+  ggplot(sf.ms, aes(x = Task_item, y = mean, fill=Language)) +
+    geom_point(position = position_dodge(width = .95)) + 
+    geom_errorbar(aes(ymin=lower, ymax = upper), width=0.2, size=1) + 
+    stat_smooth(aes(y=mean, x=Task_item), method = lm, formula = y ~ poly(x, 23), se = FALSE)
+    scale_x_continuous(breaks = c(5, 7, 16, 24, 52, 71, 105, 107, 116, 224, 252, 271)) + 
+    ylab("Mean correct")
+    xlab('') + 
+    facet_grid(~Productive)+
+    theme_bw()
+    
+    
+    
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="point") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  facet_grid(~Productive)+
+  theme_bw() + 
+  ggtitle("Performance on Unit Task by language, productivity, within/outside IHC") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+    scale_x_continuous(breaks = c(5, 7, 16, 24, 52, 71, 105, 107, 116, 224, 252, 271)) +
+  scale_fill_manual(values = count_range_pal)
 ```
 
 ###By knower-level
 ```{r}
-sf.know <- sf.df %>%
-  filter(correct != 2)%>%
-  group_by(SID, knower.level, dataset)%>%
-  summarise(mean = mean(correct))
+knower.pal <- brewer.pal(n = 9, "Paired")[3:9]
 
- ggplot(sf.know, aes(x = knower.level, y = mean, fill = knower.level)) + 
-  geom_boxplot() + 
-   theme_bw() + 
-   scale_fill_brewer(palette = "Paired") +
-   facet_grid(~dataset) +
-   guides(fill = FALSE)
+all.data %>%
+  filter(!is.na(Knower.level))%>%
+  filter(Task == "SF")%>%
+  group_by(SID, Knower.level, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = Language, y = mean, fill=Knower.level)) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw() + 
+  ggtitle("Performance on Unit Task by language, knower-level") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  scale_fill_manual(values = count_range_pal)
 ```
 
 ---
+
+##WCN
+```{r}
+all.data %>%
+  filter(Task == "NN")%>%
+  group_by(SID, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", alpha = .5, colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw() + 
+  theme(legend.position = "none") +
+  ggtitle("Overall mean correct on NN Task") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  geom_violin(alpha = .1) + 
+  scale_fill_brewer(palette = "Dark2")
+```
+
+##Performance by language, productivity
+```{r}
+all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "NN")%>%
+  group_by(SID, Productive, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", alpha = .5, colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  facet_grid(~Productive)+
+  theme_bw() + 
+  theme(legend.position = "none") +
+  ggtitle("Performance on NN Task by language, productivity") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  geom_violin(alpha = .1) + 
+  scale_fill_brewer(palette = "Dark2")
+```
+
+##Performance by count range
+```{r}
+count_range_pal <- brewer.pal(n = 9, "Spectral")[8:9]
+
+all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "NN")%>%
+  group_by(SID, count_range, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = count_range, y = mean, fill=Language)) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw() + 
+  ggtitle("Performance on NN Task by language, within/outside IHC") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+##By knower level
+```{r}
+knower.pal <- brewer.pal(n = 9, "Paired")[3:9]
+
+all.data %>%
+  filter(!is.na(Knower.level))%>%
+  filter(Task == "NN")%>%
+  group_by(SID, Knower.level, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = Language, y = mean, fill=Knower.level)) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw() + 
+  ggtitle("Performance on NN Task by language, knower-level") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  scale_fill_manual(values = count_range_pal)
+```
+
+---
+##SF and NN together
+```{r}
+all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "NN" | Task == "SF")%>%
+  group_by(SID, Task, Productive, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = Task, y = mean, fill=Language)) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw() + 
+  facet_wrap(~Productive) +
+  ggtitle("Performance on Unit and NN Tasks by language, productivity") +
+  theme(text = element_text(size = 12)) +
+  ylim(0, 1.0) +
+  scale_fill_brewer(palette = "Dark2")
+```
 
 ##WCN
 ###Raw performance by dataset
