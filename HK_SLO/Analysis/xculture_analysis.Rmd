@@ -5,6 +5,7 @@ date: "8/5/2018"
 output: html_document
 ---
 TO-DO
+- str of data, change silent to NA
 
 #Setup
 ```{r setup, include=FALSE}
@@ -29,7 +30,8 @@ library(ggthemes)
 slo.full.data <- read.csv('Data/SLO_data.csv')%>%
   mutate(Exclude_task = ifelse(is.na(Exclude_task), 0, as.numeric(as.character(Exclude_task))))%>%
   mutate(Trial_number = ifelse(Trial_number == '0', "Training", as.character(Trial_number)), 
-         Task_item = factor(Task_item))
+         Task_item = factor(Task_item))%>%
+  mutate(Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)))
 
 #slo highest count
 slo.hc <- read.csv('Data/SLO_HC.csv')
@@ -44,7 +46,8 @@ hk.full.data <- read.csv('Data/HK_data.csv')%>%
   mutate(Age = as.numeric(as.character(Age)), 
          Correct = as.integer(as.character(Correct)), 
          Mem_check_1 = as.integer(as.character(Mem_check_1)), 
-         Mem_check_2 = as.integer(as.character(Mem_check_2)))
+         Mem_check_2 = as.integer(as.character(Mem_check_2)))%>%
+  mutate(Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)))
 
 #hk highest count
 hk.hc <- read.csv('Data/HK_HC.csv')
@@ -57,7 +60,8 @@ all.data <- bind_rows(slo.full.data, hk.full.data)%>%
   mutate(Age = round(Age, 2), 
          Agegroup = cut(Age, breaks = c(3.5, 4, 4.5, 5, 5.5, 6, 6.6), 
                         labels = c("3.5-4", "4-4.5", "4.5-5", 
-                                   "5-5.5", "5.5-6", "6-6.5")))
+                                   "5-5.5", "5.5-6", "6-6.5")))%>%
+  select(-X)
 ##highest count
 slo.hc %<>%
   filter(Exclude != 1)%>%
@@ -312,8 +316,7 @@ filter(SID != "11072018-L",
          SID != "Naj14")
 
 all.data %<>%
-  filter(!is.na(Language))%>%
-  select(-X)
+  filter(!is.na(Language))
 ```
 
 ###Task exclusions
@@ -545,7 +548,7 @@ all.data %>%
                position = position_dodge(width=0.90), width = 0.2)+
   ylab("Mean correct") + 
   xlab('') + 
-  theme_bw() + 
+  theme_bw(base_size = 13) + 
   theme(legend.position = "none") +
   ggtitle("Overall mean correct on Unit Task") +
   theme(text = element_text(size = 12)) +
@@ -603,49 +606,29 @@ all.data %>%
   scale_fill_brewer(palette = "Dark2")
 ```
 
-###SF performance by number and productivity
-TO-DO RMS: This is a mess, fix it up
+###Item performance by productivity, Unit Task
 ```{r}
-sf.ms <- all.data %>%
+all.data %>%
   filter(!is.na(Productive))%>%
   filter(Task == "SF")%>%
   mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", "24", "52", "71", 
                                                   "105", "107", "116", "224", "252", "271")))%>%
-  mutate(Task_item = as.integer(as.character(Task_item)))%>%
-  group_by(Task_item, Language)%>%
-  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
-            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE)))%>%
-  mutate(se = sd/(sqrt(length(unique(subset(all.data, Task == "SF")$SID)))), 
-         upper = mean+se, 
-         lower = mean-se)
-
-spline_int <- as.data.frame(spline(sf.ms$Task_item, sf.ms$mean))
-  
-  ggplot(sf.ms, aes(x = Task_item, y = mean, fill=Language)) +
-    geom_point(position = position_dodge(width = .95)) + 
-    geom_errorbar(aes(ymin=lower, ymax = upper), width=0.2, size=1) + 
-    stat_smooth(aes(y=mean, x=Task_item), method = lm, formula = y ~ poly(x, 23), se = FALSE)
-    scale_x_continuous(breaks = c(5, 7, 16, 24, 52, 71, 105, 107, 116, 224, 252, 271)) + 
-    ylab("Mean correct")
-    xlab('') + 
-    facet_grid(~Productive)+
-    theme_bw()
-    
-    
-    
-  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
-                      geom="point") +
-  stat_summary(fun.data = mean_se, geom="errorbar", 
-               position = position_dodge(width=0.90), width = 0.2)+
-  ylab("Mean correct") + 
-  xlab('') + 
-  facet_grid(~Productive)+
-  theme_bw() + 
-  ggtitle("Performance on Unit Task by language, productivity, within/outside IHC") +
-  theme(text = element_text(size = 12)) +
-  ylim(0, 1.0) +
-    scale_x_continuous(breaks = c(5, 7, 16, 24, 52, 71, 105, 107, 116, 224, 252, 271)) +
-  scale_fill_manual(values = count_range_pal)
+  group_by(Productive, Task_item, Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE), 
+            n = n(), 
+            sd = sd(Correct, na.rm = TRUE), 
+            se = sd/sqrt(n)) %>%
+  ggplot(aes(x = Task_item, y = mean, colour = Language, group= Language)) +
+  geom_point(size = 2) + 
+  geom_line() +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
+                width = .1) +
+  theme_bw(base_size = 13) + 
+  facet_wrap(~Productive) +
+  scale_colour_brewer(palette = "Dark2") +
+  theme(legend.position = "bottom") +
+  labs(x = "Number queried", y = "Mean performance", title = "Mean Unit Task performance by language and Productivity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ###By knower-level
@@ -675,6 +658,7 @@ all.data %>%
 ---
 
 ##WCN
+###Overall performance by language
 ```{r}
 all.data %>%
   filter(Task == "NN")%>%
@@ -688,7 +672,7 @@ all.data %>%
                position = position_dodge(width=0.90), width = 0.2)+
   ylab("Mean correct") + 
   xlab('') + 
-  theme_bw() + 
+  theme_bw(base_size = 13) + 
   theme(legend.position = "none") +
   ggtitle("Overall mean correct on NN Task") +
   theme(text = element_text(size = 12)) +
@@ -713,7 +697,7 @@ all.data %>%
   ylab("Mean correct") + 
   xlab('') + 
   facet_grid(~Productive)+
-  theme_bw() + 
+  theme_bw(base_size = 13) + 
   theme(legend.position = "none") +
   ggtitle("Performance on NN Task by language, productivity") +
   theme(text = element_text(size = 12)) +
@@ -746,7 +730,32 @@ all.data %>%
   scale_fill_brewer(palette = "Dark2")
 ```
 
-##By knower level
+###By item, productivity
+```{r}
+all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "NN")%>%
+  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", "24", "52", "71", 
+                                                  "105", "107", "116", "224", "252", "271")))%>%
+  group_by(Productive, Task_item, Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE), 
+            n = n(), 
+            sd = sd(Correct, na.rm = TRUE), 
+            se = sd/sqrt(n)) %>%
+  ggplot(aes(x = Task_item, y = mean, colour = Language, group= Language)) +
+  geom_point(size = 2) + 
+  geom_line() +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
+                width = .1) +
+  theme_bw(base_size = 13) + 
+  facet_wrap(~Productive) +
+  scale_colour_brewer(palette = "Dark2") +
+  theme(legend.position = "bottom") +
+  labs(x = "Number queried", y = "Mean performance", title = "Mean WCN Task performance by language and Productivity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+###By knower level
 ```{r}
 knower.pal <- brewer.pal(n = 9, "Paired")[3:9]
 
@@ -776,138 +785,83 @@ all.data %>%
 all.data %>%
   filter(!is.na(Productive))%>%
   filter(Task == "NN" | Task == "SF")%>%
-  group_by(SID, Task, Productive, Language)%>%
-  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
-            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
-  ggplot(aes(x = Task, y = mean, fill=Language)) +
-  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
-                      geom="bar", colour = "black") +
-  stat_summary(fun.data = mean_se, geom="errorbar", 
-               position = position_dodge(width=0.90), width = 0.2)+
-  ylab("Mean correct") + 
-  xlab('') + 
-  theme_bw() + 
-  facet_wrap(~Productive) +
-  ggtitle("Performance on Unit and NN Tasks by language, productivity") +
-  theme(text = element_text(size = 12)) +
-  ylim(0, 1.0) +
-  scale_fill_brewer(palette = "Dark2")
-```
-
-##WCN
-###Raw performance by dataset
-```{r}
-wcn.minus.2 <- wcn.df %>%
-  filter(correct != 2)%>%
-  group_by(SID, dataset)%>%
-  summarise(mean = mean(correct))
-
- ggplot(wcn.minus.2, aes(x = dataset, y = mean, fill = dataset)) + 
-  geom_boxplot() + 
-   theme_bw() + 
-   langcog::scale_fill_solarized("Dataset")
-```
-
-###By productivity and dataset
-```{r}
-wcn.minus.2 <- wcn.df %>%
-  filter(correct != 2)%>%
-  group_by(SID, productive, dataset)%>%
-  summarise(mean = mean(correct))
-
- ggplot(wcn.minus.2, aes(x = productive, y = mean, fill = productive)) + 
-  geom_boxplot() + 
-   theme_bw() + 
-   scale_fill_brewer(palette = "Dark2") +
-   facet_grid(~dataset) +
-   guides(fill = FALSE)
-```
-
-###WCN by productivity and count range
-```{r}
-wcn.minus.2 <- wcn.df %>%
-  filter(correct != 2)%>%
-  group_by(SID, productive, count_range, dataset)%>%
-  summarise(mean = mean(correct))
-
- ggplot(wcn.minus.2, aes(x = count_range, y = mean, fill = productive)) + 
-  geom_boxplot() + 
-   theme_bw() + 
-   scale_fill_brewer(palette = "Dark2") + 
-   facet_grid(~dataset)
-```
-
-###WCN performance by number and productivity
-```{r}
-wcn.minus.2.num <- wcn.df %>%
-  filter(correct != 2)%>%
-  mutate(starting_num = factor(starting_num))%>%
-  group_by(productive, dataset, starting_num)%>%
-  langcog::multi_boot_standard("correct", na.rm = TRUE)
-
- ggplot(wcn.minus.2.num, aes(x = starting_num, y = mean, fill = productive)) + 
-  geom_bar(stat = "identity", position= position_dodge()) + 
-  geom_linerange(aes(ymin = ci_lower,
-                      ymax = ci_upper),
-                  size = .3,
-                  show.legend = FALSE,
-                 position=position_dodge(width = 0.9))+
-   theme_bw() + 
-  facet_grid(~dataset) + 
-   scale_fill_brewer(palette = "Dark2") + 
-   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-   theme(legend.position = "bottom")
-
-```
-
-###By knower level
-```{r}
-wcn.know <- wcn.df %>%
-  filter(correct != 2)%>%
-  group_by(SID, knower.level, dataset)%>%
-  summarise(mean = mean(correct))
-
- ggplot(wcn.know, aes(x = knower.level, y = mean, fill = knower.level)) + 
-  geom_boxplot() + 
-   theme_bw() + 
-   scale_fill_brewer(palette = "Paired") +
-   facet_grid(~dataset) +
-   guides(fill = FALSE)
+  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", "24", "52", "71", 
+                                                  "105", "107", "116", "224", "252", "271")))%>%
+  group_by(Task, Productive, Task_item, Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE), 
+            n = n(), 
+            sd = sd(Correct, na.rm = TRUE), 
+            se = sd/sqrt(n)) %>%
+  ggplot(aes(x = Task_item, y = mean, colour = Language, group= Language)) +
+  geom_point(size = 2) + 
+  geom_line() +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
+                width = .1) +
+  theme_bw(base_size = 10) + 
+  facet_grid(Task~Productive) +
+  scale_colour_brewer(palette = "Dark2") +
+  theme(legend.position = "bottom") +
+  labs(x = "Number queried", y = "Mean performance", title = "Mean Unit and NN Task performance by language and Productivity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ---
-
 ##WPPSI
 ```{r}
-#get score
-wppsi.ms <- wppsi.df%>%
-  mutate(trial = factor(trial))%>%
-  filter(trial != "sample item A", 
-         trial != "sample item B", 
-         trial != "Sample item A", 
-         trial != 1, 
-         trial != 2, 
-         trial != 7, 
-         trial != 8)%>%
-  mutate(trial = as.numeric(as.character(trial)))%>%
-  group_by(SID, dataset)%>%
-  summarise(sum_wppsi = sum(correct), 
+##histogram of WPPSI scores
+wppsi.ms <- all.data %>%
+  filter(Task == "WPPSI")%>%
+  filter(Trial_number != "Sample item B", 
+         Trial_number != "Sample item A", 
+         Trial_number != "1", 
+         Trial_number != '2', 
+         Trial_number != '7', 
+         Trial_number != '8')%>%
+  mutate(Trial_number = as.numeric(as.character(Trial_number)))%>%
+  group_by(SID, Language)%>%
+  summarise(sum_wppsi = sum(as.numeric(as.character(Correct)), na.rm = TRUE), 
             num_trials = n())
-
- ggplot(wppsi.ms, aes(x = dataset, y = sum_wppsi, fill = dataset)) + 
-  geom_bar(stat = "identity", position = position_dodge())+
-   theme_bw() + 
-   guides(fill = FALSE)
  
- ggplot(wppsi.ms, aes(x = sum_wppsi, fill = dataset)) +
+ ggplot(wppsi.ms, aes(x = sum_wppsi, fill = Language)) +
    geom_histogram(binwidth = 1, colour = "black") +
    theme_bw() + 
-   facet_grid(~dataset)
-
+   facet_grid(~Language)+
+   scale_fill_brewer(palette = "Dark2") + 
+   labs(title = "Frequency of WPPSI scores by language") +
+   guides(fill = FALSE)
+ 
+##Mean WPPSI scores 
+all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "WPPSI")%>%
+  filter(Trial_number != "Sample item B", 
+         Trial_number != "Sample item A", 
+         Trial_number != "1", 
+         Trial_number != '2', 
+         Trial_number != '7', 
+         Trial_number != '8')%>%
+  mutate(Trial_number = as.numeric(as.character(Trial_number)))%>%
+  group_by(SID, Language)%>%
+  summarise(mean = mean(sum_wppsi, na.rm=TRUE),
+            sd = sd(sum_wppsi, na.rm=TRUE)) %>%
+  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", alpha = .5, colour = "black") +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean WPPSI score") + 
+  xlab('') + 
+  theme_bw(base_size = 13) + 
+  theme(legend.position = "none") +
+  ggtitle("Mean WPPSI score by Language") +
+  theme(text = element_text(size = 12)) +
+  geom_violin(alpha = .1) + 
+  scale_fill_brewer(palette = "Dark2")
+ 
 ```
 
----
 
+---
 #Main analyses
 ##Within-language analyses
 
@@ -915,55 +869,59 @@ wppsi.ms <- wppsi.df%>%
 Note that there is a lot more variability in highest counts and highest contiguous NN than in categorical variables. I am centering age, and centering and scaling FHC, IHC, and highest contiguous NN (which has the most variability).
 ```{r}
 ##HK##
-sf.hk.within <- sf.df%>%
-  filter(dataset == "HK")%>%
+sf.hk.within <- all.data%>%
+  filter(Task == "SF")%>%
+  filter(Language== "Cantonese")%>%
   mutate(SID = factor(SID), 
-         productive = factor(productive), 
+         Productive = factor(Productive), 
          count_range = factor(count_range), 
          highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(age, center = TRUE, scale=TRUE)), 
-         fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))
   
-wcn.hk.within <- wcn.df%>%
-  filter(dataset == "HK")%>%
+wcn.hk.within <- all.data%>%
+  filter(Task == "NN")%>%
+  filter(Language == "Cantonese")%>%
   mutate(SID = factor(SID), 
-         productive = factor(productive), 
+         Productive = factor(Productive), 
          count_range = factor(count_range), 
          highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(age, center = TRUE, scale=TRUE)), 
-         fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)),
-         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))
 
 ##SLO##
-sf.slo.within <- sf.df%>%
-  filter(dataset == "SLO")%>%
+sf.slo.within <- all.data%>%
+  filter(Task == "SF")%>%
+  filter(Language == "Slovenian")%>%
   mutate(SID = factor(SID), 
-         productive = factor(productive), 
+         Productive = factor(Productive), 
          count_range = factor(count_range), 
          highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(age, center = TRUE, scale=TRUE)), 
-         fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))%>%
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
   filter(!is.na(highest_contig.c))
 
-wcn.slo.within <- wcn.df%>%
-  filter(dataset == "SLO")%>%
+wcn.slo.within <- all.data%>%
+  filter(Language == "Slovenian")%>%
+  filter(Task == "NN")%>%
   mutate(SID = factor(SID), 
-         productive = factor(productive), 
+         Productive = factor(Productive), 
          count_range = factor(count_range), 
          highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(age, center = TRUE, scale=TRUE)), 
-         fhc.c = as.vector(scale(final_highest, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(initial_highest_count, center = TRUE, scale = TRUE)), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(starting_num, center = TRUE, scale = TRUE)))%>%
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
   filter(!is.na(highest_contig.c))
 ```
 
@@ -988,17 +946,15 @@ Build the models
 
 #####Model 0 (base)
 ```{r}
-sf.hk.within.base <- glmer(correct ~ count_range + age.c + (1|SID), family = "binomial", 
+sf.hk.within.base <- glmer(Correct ~ count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.base)
-
-
 ```
 
 
-#####Model 1 (Productivity): Not a significant predictor of Unit Task performance (*p* = .69)
+#####Model 1 (Productivity): Not a significant predictor of Unit Task performance (*p* = .70)
 ```{r}
-sf.hk.within.model1 <- glmer(correct ~ productive + count_range + age.c + (1|SID), family = "binomial", 
+sf.hk.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.model1)
 anova(sf.hk.within.model1, sf.hk.within.base, test = 'LRT')
@@ -1006,7 +962,7 @@ anova(sf.hk.within.model1, sf.hk.within.base, test = 'LRT')
 
 #####Model 2 (Final Highest Count): Significant predictor of Unit Task performance (*p* = .002)
 ```{r}
-sf.hk.within.model2 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
+sf.hk.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.model2)
 anova(sf.hk.within.model2, sf.hk.within.base, test = 'LRT')
@@ -1014,7 +970,7 @@ anova(sf.hk.within.model2, sf.hk.within.base, test = 'LRT')
 
 #####Model 3 (Initial Highest Count): Significant predictor of Unit Task Performance (*p* < .0001)
 ```{r}
-sf.hk.within.model3 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), 
+sf.hk.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.model3)
@@ -1023,7 +979,7 @@ anova(sf.hk.within.model3, sf.hk.within.base, test = 'LRT')
 
 #####Model 4 (Highest Continguous Next Number): Significant predictor of Unit Task performance (*p* = .001)
 ```{r}
-sf.hk.within.model4 <- glmer(correct ~ highest_contig.c + count_range + age.c + (1|SID), 
+sf.hk.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.hk.within)
 summary(sf.hk.within.model4)
@@ -1034,20 +990,20 @@ anova(sf.hk.within.model4, sf.hk.within.base, test = 'LRT')
 
 We have three significant predictors of performance on the Unit task (FHC, IHC, and Highest Contiguous NN). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task.
 
-######IHC and Highest Contiguous NN: Highest Contig. NN does not significantly explain additional variance (*p* = .13)
+######IHC and Highest Contiguous NN: Highest Contig. NN does not significantly explain additional variance (*p* = .09)
 ```{r}
 ##IHC and Highest Contig NN##
-sf.hk.within.plus1 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), 
+sf.hk.within.plus1 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.hk.within)
-sf.hk.within.plus2 <- glmer(correct ~ ihc.c + highest_contig.c + count_range + age.c + (1|SID), 
+sf.hk.within.plus2 <- glmer(Correct ~ ihc.c + highest_contig.c + count_range + age.c + (1|SID), 
                             family = "binomial", data = sf.hk.within)
 anova(sf.hk.within.plus2, sf.hk.within.plus1, test = 'LRT') #highest contiguous does not significantly explain additional variance
 ```
 
 ######IHC and FHC: FHC does not significantly explain additional variance (*p* = .36)
 ```{r}
-sf.hk.within.plus2 <- glmer(correct ~ ihc.c + fhc.c + count_range + age.c + (1|SID), 
+sf.hk.within.plus2 <- glmer(Correct ~ ihc.c + fhc.c + count_range + age.c + (1|SID), 
                             family = "binomial", data = sf.hk.within)
 anova(sf.hk.within.plus2, sf.hk.within.plus1, test = 'LRT') #final highest count does not significantly explain additional variance
 ```
@@ -1091,58 +1047,61 @@ anova(sf.hk.within.ihc.plus1, sf.hk.within.ihc, test = 'LRT')
 
 ***
 
-####SLO (Unit Task)
+#SLO (Unit Task)
 Build the models 
 
 #####Model 0 (base)
 ```{r}
-sf.slo.within.base <- glmer(correct ~ count_range + age.c + (1|SID), family = "binomial", 
+sf.slo.within.base <- glmer(Correct ~ count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.slo.within)
 summary(sf.slo.within.base)
-
-
 ```
 
-#####Model 1 (Productivity): Marginally significant (*p* = .065)
+#####Model 1 (Productivity): Barely significant (*p* = .04)
 ```{r}
-sf.slo.within.model1 <- glmer(correct ~ productive + count_range + age.c + (1|SID), family = "binomial", 
+sf.slo.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.slo.within)
 summary(sf.slo.within.model1)
 anova(sf.slo.within.model1, sf.slo.within.base, test = 'LRT')
 ```
 
-#####Model 2 (Final Highest Count): Barely significant (*p* = .044)
+#####Model 2 (Final Highest Count): Barely significant (*p* = .04)
 ```{r}
-sf.slo.within.model2 <- glmer(correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
+sf.slo.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.slo.within)
 summary(sf.slo.within.model2)
 anova(sf.slo.within.model2, sf.slo.within.base, test = 'LRT')
 ```
 
-######Model 3 (Initial Highest Count): Marginally significant (*p* = .057)
+######Model 3 (Initial Highest Count): Marginally significant (*p* = .07)
 ```{r}
-sf.slo.within.model3 <- glmer(correct ~ ihc.c + count_range + age.c + (1|SID), 
+sf.slo.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.slo.within)
 summary(sf.slo.within.model3)
 anova(sf.slo.within.model3, sf.slo.within.base, test = 'LRT')
 ````
 
-#####Model 4 (Highest contiguous NN): Significant predictor (*p* = .01)
+#####Model 4 (Highest contiguous NN): Significant predictor (*p* = .02)
 ```{r}
-sf.slo.within.model4 <- glmer(correct ~ highest_contig.c + count_range + age.c + (1|SID), 
+sf.slo.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.slo.within) 
 summary(sf.slo.within.model4)
 anova(sf.slo.within.model4, sf.slo.within.base, test = 'LRT')
 ```
 
-#####Large model: Comparison between FHC and Highest contiguous NN: FHC does not significantly explain additional variance in the model (*p* = .27)
+#####Large model: Comparison between FHC and Highest contiguous NN: FHC does not significantly explain additional variance in the model (*p* = .2); Productivity does not significantly explain additional variance in the model (*p* = .12)
 Highest contiguous and Final Highest count best predictors - compare
 ```{r}
-sf.slo.within.plus1 <- glmer(correct ~ highest_contig.c + count_range + age.c + (1|SID), 
+sf.slo.within.plus1 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
                              data = sf.slo.within, family = "binomial")
-sf.slo.within.plus2 <- glmer(correct ~ fhc.c + highest_contig.c + count_range + age.c + (1|SID), 
+sf.slo.within.plus2 <- glmer(Correct ~ fhc.c + highest_contig.c + count_range + age.c + (1|SID), 
+                             data = sf.slo.within, family = "binomial")
+anova(sf.slo.within.plus2, sf.slo.within.plus1, test = 'LRT')
+
+#Test with productivity
+sf.slo.within.plus2 <- glmer(Correct ~ Productive + highest_contig.c + count_range + age.c + (1|SID), 
                              data = sf.slo.within, family = "binomial")
 anova(sf.slo.within.plus2, sf.slo.within.plus1, test = 'LRT')
 ```
