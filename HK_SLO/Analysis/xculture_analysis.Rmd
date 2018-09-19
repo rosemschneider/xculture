@@ -31,7 +31,10 @@ slo.full.data <- read.csv('Data/SLO_data.csv')%>%
   mutate(Exclude_task = ifelse(is.na(Exclude_task), 0, as.numeric(as.character(Exclude_task))))%>%
   mutate(Trial_number = ifelse(Trial_number == '0', "Training", as.character(Trial_number)), 
          Task_item = factor(Task_item))%>%
-  mutate(Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)))
+  mutate(Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)))%>%
+  filter(SID != "CopyPasteMe")%>%
+  mutate(Age = as.numeric(as.character(Age)), 
+         Correct = as.numeric(as.character(Correct)))
 
 #slo highest count
 slo.hc <- read.csv('Data/SLO_HC.csv')
@@ -132,7 +135,8 @@ all.data <- full_join(all.data, wppsi.sid, by = "SID")
 Children are classified as productive if they are able to count at least 2 decades higher than an error without making more than 3 errors along the way, OR if they are able to count to 140 without making an error.
 ```{r, warning = FALSE}
 hc.df %<>%
-  mutate(Last_successful = ifelse(Last_successful == "Is quiet", "IDK", Last_successful))
+  mutate(Last_successful = ifelse(Last_successful == "Is quiet", "IDK", Last_successful))%>%
+  filter(Exclude != 1)
 
 hc <- hc.df %>% # replace with your local path
   select(SID, Last_successful, IHC, FHC) %>%
@@ -276,20 +280,6 @@ highest_contiguous_nn <- get_contiguous()%>%
 #add this to df 
 all.data <- full_join(all.data, highest_contiguous_nn, by = "SID")
 
-#plot
-all.data %>%
-  filter(!is.na(Language))%>%
-  mutate(highest_contig = factor(highest_contig, levels = c('0', '1', "5", '7', '16', '24', '52', '71', '105', '107', '116', '224', '252', '271')))%>%
-  distinct(SID, highest_contig, Language)%>%
-  ggplot(aes(x = highest_contig, fill = Language)) + 
-  geom_histogram(stat = "count", colour = "black") +
-  facet_wrap(~Language) + 
-  labs(title = "Highest Contiguous NN by language") +
-  theme_bw() + 
-  scale_fill_brewer(palette = "Dark2") +
-  labs(x = "Highest Contiguous NN", y = "Count") + 
-  guides(fill = FALSE)
-
 ```
 
 ##Within/outside count range
@@ -324,6 +314,7 @@ filter(SID != "11072018-L",
            SID != "Naj16",
            SID != "Sol07", 
          SID != "Naj14")
+
 
 all.data %<>%
   filter(!is.na(Language))
@@ -380,7 +371,8 @@ all.data %<>%
 Some participants have NAs rather than 1 for their first memory check. 
 ```{r}
 all.data %<>%
-  mutate(Mem_check_1 = ifelse(is.na(Mem_check_1), 1, Mem_check_1))
+  mutate(Mem_check_1 = ifelse((Task == "SF" & is.na(Mem_check_1)), 1, Mem_check_1), 
+         Mem_check_2 = ifelse((Task == "SF" & Mem_check_1 == 0 & is.na(Mem_check_2)), 1, NA))
 ```
 
 ---
@@ -1477,6 +1469,7 @@ summary(sf.cross.base)
 ```
 
 ##Model 1 (Productivity): Not a signficant predictor (*p* = .82)
+NOTE: Model is currently failing to converge, may need to look at optimizer
 ```{r}
 sf.cross.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                        family = "binomial", data = sf.df.cross)
@@ -1485,6 +1478,7 @@ anova(sf.cross.model1, sf.cross.base, test = 'LRT')
 ```
 
 ##Model 2 (Final Highest Count): Not a significant predictor (*p* = .88)
+NOTE: Model is failing to converge, may need to look at optimizer
 ```{r}
 sf.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                        family = "binomial", data = sf.df.cross)
@@ -1544,9 +1538,22 @@ summary(wcn.cross.model2)
 anova(wcn.cross.model2, wcn.cross.base, test = 'LRT')
 ```
 
-Should effects of Language emerge, we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., Unit.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)). After running these three models, any predictor that significantly (p &lt;.05) predicted Next Number Performance (as assessed by running a likelihood ratio test on the Null Model (Model 0b) and Models 1b and 2b) will be added into Model 7b, which will be our “Large” model (containing all predictors that significantly predicted Next Number Performance in the simple models).
+##Large model
+NOTE: Models failing to converge, may need to look at optimizer
+Comparing productivity and FHC
+```{r}
+wcn.cross.plus1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
+                           (1|SID), family = "binomial", data = wcn.df.cross)
+wcn.cross.plus2 <- glmer(Correct ~ Productive + fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
+                           (1|SID), family = "binomial", data = wcn.df.cross)
+anova(wcn.cross.plus1, wcn.cross.plus2, test = 'LRT')
+```
 
 ##Model comparison: Removing effect of Language from FHC model: FHC still significant predictor (*p* = .03)
+NOTE: Need to do this with productivity as well
+
+Should effects of Language emerge, we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., Unit.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)). After running these three models, any predictor that significantly (p &lt;.05) predicted Next Number Performance (as assessed by running a likelihood ratio test on the Null Model (Model 0b) and Models 1b and 2b) will be added into Model 7b, which will be our “Large” model (containing all predictors that significantly predicted Next Number Performance in the simple models).
+
 There is a significant effect of Language: we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., WCN.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)).
 ```{r}
 wcn.nolang.base <- glmer(Correct ~ ihc.c + count_range + age.c + wppsi.c + (1|SID), 
@@ -1565,9 +1572,9 @@ languages.
 ```{r}
 hc.df %>%
   group_by(Language)%>%
-  summarise(mean = mean(IHC), 
-            sd = sd(IHC), 
-            median = median(IHC))
+  summarise(mean = mean(IHC, na.rm = TRUE), 
+            sd = sd(IHC, na.rm = TRUE), 
+            median = median(IHC, na.rm = TRUE))
 ```
 
 In addition, we plan to test whether children in transparent languages can become productive with less counting experience. To test this, we will consider non-productive counters (those who were labeled as non-Productive). We will then ask whether IHC for these non-productive counters differs across languages. We will only conduct these analyses if we have at least 30 non-productive counters in each language. If count-list transparency allows children to converge on a productive count rule more quickly, then children who learn a system with a transparent-count list should move to the “productive counter” category on the basis of relatively less experience than children who learn a system with an opaque- count list. This predicts that, when considering non-Productive counters, initial highest count should be higher for opaque languages (like English) than for Slovenian, and higher for Slovenian than for Cantonese. The model would like this: 
@@ -1576,11 +1583,14 @@ Model 1: IHC ~ Language + Age + WM, data = NonProductiveCounters
 
 ###Model: Nonproductive Slovenians have significantly *lower* IHC than Cantonese speakers
 ```{r}
-ihc.cross <- hc.df.cross%>%
-  filter(productive == "nonproductive")%>%
-  mutate(Language = factor(Language))
+ihc.cross <- all.data %>%
+  distinct(SID, Language, Age, sum_wppsi, Productive, IHC)%>%
+  filter(Productive == "Nonproductive")%>%
+  mutate(Language = factor(Language))%>%
+  mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
 
-ihc.model.1 = lm(initial_highest ~ Language + age + sum_wppsi, data = ihc.cross)
+ihc.model.1 = lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross)
 summary(ihc.model.1)
 ```
 
@@ -1588,6 +1598,27 @@ In addition, we will test whether count-list transparency allows children to acq
 
 ###Model: No effect of Language here
 ```{r}
-highest_contig.model <- lm(highest_contig ~ Language + age + sum_wppsi, data = ihc.cross)
+wcn.model <- all.data %>%
+  distinct(SID, Language, Age, sum_wppsi, Productive, highest_contig)%>%
+  filter(Productive == "Nonproductive")%>%
+  mutate(Language = factor(Language))%>%
+  mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
+
+highest_contig.model <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model)
 summary(highest_contig.model)
 ```
+
+TO-do for RMS: 
+- Follow up analysis for productivity:lang interactions: In the event that, when analyzing each language group separately, we find evidence that a particular counting/productivity measure (Next Number, Final HC, Productivity) improves model fit for one language group by not another, we will conduct a follow-up analysis testing whether productivity classification interacts with language group. We will compare the model containing an interaction to one that excludes the interaction. It is important to note that our critical effect of interest is not necessarily a [Productivity Measure]:[Language Group] interaction, although finding such an interaction may be interpretable (e.g., it may suggest that productivity predicts other measures to a greater degree in some languages vs. others): ProductivityLang: Unit ~ Productivity Measure (Highest NN, FHC, Productivity classification)*Language.Group +
+Language*IHC + Within/Outside range + Age + WM (1|subject)
+- Exploratory analyses
+- Cluster analysis...
+- Frequency of error types
+- Test whether modes differ across languages
+- Include vs. exclude memory check failure SF trials
+- Highest contiguous Successor vs. Highest contiguous NN
+- Teacher survey data...
+- Comparison of numbers on NN and SF
+- Comparison of above and below 100 for NN and SF
+- 
