@@ -8,7 +8,7 @@ TO-DO
 - str of data, change silent to NA
 
 #Setup
-```{r setup, include=FALSE}
+```{r}
 rm(list = ls())
 require("knitr")
 opts_knit$set(root.dir = "~/Documents/Projects/xculture/HK_SLO") #this is specific to RMS, change accordingly
@@ -34,7 +34,7 @@ slo.full.data <- read.csv('Data/SLO_data.csv')%>%
   mutate(Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)))%>%
   filter(SID != "CopyPasteMe")%>%
   mutate(Age = as.numeric(as.character(Age)), 
-         Correct = as.numeric(as.character(Correct)))
+         Correct = as.integer(as.character(Correct)))
 
 #slo highest count
 slo.hc <- read.csv('Data/SLO_HC.csv')
@@ -102,12 +102,6 @@ cp.df <- all.data %>%
   select(-sum_correct)
 
 all.data <- full_join(all.data, cp.df, by = "SID")
-
-all.data %>%
-  distinct(SID, Language, Knower.level)%>%
-  group_by(Language, Knower.level)%>%
-  summarise(n=n())%>%
-  kable()
 ```
 
 ##WPPSI score
@@ -304,7 +298,7 @@ all.data %>%
 all.data %<>%
   filter(Exclude_analysis != 1)
 
-#Manual exclusions - these are participants who did not receive the correct number of trials in WPPSI. 
+#Manual exclusions - these are participants who did not receive the correct number of trials in WPPSI. Manually excluded for now because we're in a position to replace them. 
 all.data %<>%
 filter(SID != "11072018-L",
            SID != "12072018-I",
@@ -321,7 +315,8 @@ all.data %<>%
 ```
 
 ###Task exclusions
-Children were excluded from a given task if they did some complete at least TWO trials of that task (in addition to the training trial). In order to be considered as having completed a trial of the task, a child must at least say "I don't know."  
+TO-DO RMS: Automate this in code
+Children were excluded from a given task if they did not complete at least TWO trials of that task (in addition to the training trial). In order to be considered as having completed a trial of the task, a child must at least say "I don't know."  These children were excluded manually.
 ```{r}
 all.data %>%
   filter(Exclude_task == 1)%>%
@@ -368,14 +363,15 @@ all.data %<>%
 ```
 
 ##Memory checks - NAs to 1
-Some participants have NAs rather than 1 for their first memory check. 
+Some participants have NAs rather than 1 for their first memory check. Also, if first mem check is a 0, and second is NA, change that second one to 1.
 ```{r}
 all.data %<>%
-  mutate(Mem_check_1 = ifelse((Task == "SF" & is.na(Mem_check_1)), 1, Mem_check_1), 
-         Mem_check_2 = ifelse((Task == "SF" & Mem_check_1 == 0 & is.na(Mem_check_2)), 1, NA))
+  mutate(Mem_check_1 == ifelse(Task == "SF" & is.na(Mem_check_1), 1, Mem_check_1))%>%
+  mutate(Mem_check_2 == ifelse(Task == "SF" & is.na(Mem_check_2) & Mem_check_1 == 0, 1, Mem_check_2))
 ```
 
 ---
+
 #Demographics
 ```{r, warning = FALSE}
 #demos by age group, Language
@@ -543,7 +539,7 @@ ggplot(subset(sf.mem.num.ms), aes(x = Task_item, y = n, fill = mem_check_status)
   labs(x = "Number queried", y = "Number of trials", title = "Memory checks by number in Unit Task")
 ```
 
-###Raw performance by Language
+###Overall performance by Language
 ```{r}
 all.data %>%
   filter(Task == "SF")%>%
@@ -667,7 +663,7 @@ all.data %>%
 ---
 
 ##WCN
-###Raw performance by language
+###Overall performance by language
 ```{r}
 all.data %>%
   filter(Task == "NN")%>%
@@ -1070,7 +1066,7 @@ sf.slo.within.base <- glmer(Correct ~ count_range + age.c + (1|SID), family = "b
 summary(sf.slo.within.base)
 ```
 
-##Model 1 (Productivity): Barely significant (*p* = .04)
+##Model 1 (Productivity): Marginally significant (*p* = .07)
 ```{r}
 sf.slo.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.slo.within)
@@ -1078,7 +1074,7 @@ summary(sf.slo.within.model1)
 anova(sf.slo.within.model1, sf.slo.within.base, test = 'LRT')
 ```
 
-##Model 2 (Final Highest Count): Barely significant (*p* = .04)
+##Model 2 (Final Highest Count): Significant (*p* = .02)
 ```{r}
 sf.slo.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
                            data = sf.slo.within)
@@ -1086,7 +1082,7 @@ summary(sf.slo.within.model2)
 anova(sf.slo.within.model2, sf.slo.within.base, test = 'LRT')
 ```
 
-##Model 3 (Initial Highest Count): Marginally significant (*p* = .07)
+##Model 3 (Initial Highest Count): Significant (*p* = .03)
 ```{r}
 sf.slo.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
@@ -1095,7 +1091,7 @@ summary(sf.slo.within.model3)
 anova(sf.slo.within.model3, sf.slo.within.base, test = 'LRT')
 ````
 
-##Model 4 (Highest contiguous NN): Significant predictor (*p* = .02)
+##Model 4 (Highest contiguous NN): Significant predictor (*p* = .007)
 ```{r}
 sf.slo.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
                              family = "binomial", 
@@ -1104,7 +1100,7 @@ summary(sf.slo.within.model4)
 anova(sf.slo.within.model4, sf.slo.within.base, test = 'LRT')
 ```
 
-##Large model: Comparison between FHC and Highest contiguous NN: FHC does not significantly explain additional variance in the model (*p* = .2); Productivity does not significantly explain additional variance in the model (*p* = .12)
+##Large model: Comparison between FHC and Highest contiguous NN: FHC does not significantly explain additional variance in the model (*p* = .17)
 Highest contiguous and Final Highest count best predictors - compare
 ```{r}
 sf.slo.within.plus1 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
@@ -1112,12 +1108,10 @@ sf.slo.within.plus1 <- glmer(Correct ~ highest_contig.c + count_range + age.c + 
 sf.slo.within.plus2 <- glmer(Correct ~ fhc.c + highest_contig.c + count_range + age.c + (1|SID), 
                              data = sf.slo.within, family = "binomial")
 anova(sf.slo.within.plus2, sf.slo.within.plus1, test = 'LRT')
-
-#Test with productivity
-sf.slo.within.plus2 <- glmer(Correct ~ Productive + highest_contig.c + count_range + age.c + (1|SID), 
-                             data = sf.slo.within, family = "binomial")
-anova(sf.slo.within.plus2, sf.slo.within.plus1, test = 'LRT')
 ```
+
+###SLO results (interim)
+Highest contiguous NN emerges as best predictor
 
 ###Exploratory analysis
 Adding starting number magnitude
@@ -1194,7 +1188,7 @@ t.test(subset(sf.hk.mean.nn, Productive == "Productive")$mean_nn,
        subset(sf.hk.mean.nn, Productive == "Nonproductive")$mean_nn, var.equal = TRUE)
 ```
 
-###SLO: Significant difference between groups (*p* = .0007)
+###SLO: Significant difference between groups (*p* = .001)
 ```{r}
 sf.slo.mean.nn <- sf.slo.within %>%
   group_by(SID, Productive)%>%
@@ -1468,7 +1462,7 @@ sf.cross.base <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c 
 summary(sf.cross.base)
 ```
 
-##Model 1 (Productivity): Not a signficant predictor (*p* = .82)
+##Model 1 (Productivity): Not a signficant predictor (*p* = .84)
 NOTE: Model is currently failing to converge, may need to look at optimizer
 ```{r}
 sf.cross.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
@@ -1477,8 +1471,7 @@ summary(sf.cross.model1)
 anova(sf.cross.model1, sf.cross.base, test = 'LRT')
 ```
 
-##Model 2 (Final Highest Count): Not a significant predictor (*p* = .88)
-NOTE: Model is failing to converge, may need to look at optimizer
+##Model 2 (Final Highest Count): Not a significant predictor (*p* = .97)
 ```{r}
 sf.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                        family = "binomial", data = sf.df.cross)
@@ -1486,7 +1479,7 @@ summary(sf.cross.model2)
 anova(sf.cross.model2, sf.cross.base, test = 'LRT')
 ```
 
-##Model 3 (Highest Contiguous NN): Significant predictor (*p* = .02)
+##Model 3 (Highest Contiguous NN): Significant predictor (*p* = .012)
 ```{r}
 sf.cross.model3 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + age.c + wppsi.c +
                            (1|SID), 
@@ -1520,7 +1513,7 @@ summary(wcn.cross.base)
 
 ```
 
-###Model 1 (Productivity): Marginally significant (*p* = .05)
+###Model 1 (Productivity): Significant (*p* = .04)
 ```{r}
 wcn.cross.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                         family = "binomial", data = wcn.df.cross, 
@@ -1530,7 +1523,7 @@ summary(wcn.cross.model1)
 anova(wcn.cross.model1, wcn.cross.base, test = 'LRT')
 ```
 
-##Model 2 (Final Highest Count): Significant predictor (*p* = .002)
+##Model 2 (Final Highest Count): Significant predictor (*p* = .0008)
 ```{r}
 wcn.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
                             (1|SID), data = wcn.df.cross, family = "binomial")
@@ -1549,7 +1542,7 @@ wcn.cross.plus2 <- glmer(Correct ~ Productive + fhc.c + Language*ihc.c + count_r
 anova(wcn.cross.plus1, wcn.cross.plus2, test = 'LRT')
 ```
 
-##Model comparison: Removing effect of Language from FHC model: FHC still significant predictor (*p* = .03)
+##Model comparison: Removing effect of Language from FHC model: FHC still significant predictor (*p* = .04)
 NOTE: Need to do this with productivity as well
 
 Should effects of Language emerge, we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., Unit.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)). After running these three models, any predictor that significantly (p &lt;.05) predicted Next Number Performance (as assessed by running a likelihood ratio test on the Null Model (Model 0b) and Models 1b and 2b) will be added into Model 7b, which will be our “Large” model (containing all predictors that significantly predicted Next Number Performance in the simple models).
@@ -1581,7 +1574,7 @@ In addition, we plan to test whether children in transparent languages can becom
 
 Model 1: IHC ~ Language + Age + WM, data = NonProductiveCounters
 
-###Model: Nonproductive Slovenians have significantly *lower* IHC than Cantonese speakers
+###Model: Nonproductive Slovenians have significantly lower IHC than Cantonese speakers
 ```{r}
 ihc.cross <- all.data %>%
   distinct(SID, Language, Age, sum_wppsi, Productive, IHC)%>%
