@@ -56,7 +56,7 @@ hk.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SL
 hk.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/HK_HC.csv')
 ```
 
-##English
+##English - US
 ```{r}
 us.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/US_data.csv') %>%
   filter(SID != "CopyPasteMe")%>%
@@ -65,15 +65,39 @@ us.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SL
          Mem_check_1 = as.integer(as.character(Mem_check_1)), 
          Mem_check_2 = as.integer(as.character(Mem_check_2)), 
          Correct = as.integer(as.character(Correct)))%>%
-  mutate(Exclude_task = ifelse(is.na(Exclude_task), 0, 1))
+  mutate(Exclude_task = ifelse(is.na(Exclude_task), 0, 1))%>%
+  mutate(Language = ifelse(Language == "English", "English - US", as.character(Language)))
 
 us.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/US_HC.csv')
+```
+
+##India data
+TO-DO RMS: There is someone with a "ChangeMe" for language - find out who and fix. Currently they are excluded
+TO-DO RMS: It looks like people have been entering some weird stuff for memory checks - fix this on the actual data sheet, as well as all of the Languages
+TO-DO RMS: There are some notes in the data about exclusions - make sure these are incorporated in the final data set
+TO-DO RMS: Need to deal with all of the help responses
+```{r}
+india.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/India/Data/India_Data.csv')%>%
+  filter(SID != "CopyPasteMe", 
+         Language != "ChangeMe")%>%
+  droplevels()%>%
+  mutate(Language = ifelse(Language == "Hin", "Hindi", as.character(Language)), 
+         Language = ifelse(Language == "HIndi", "Hindi", as.character(Language)), 
+         Language = ifelse(Language == "Guajrati", "Gujarati", as.character(Language)), 
+         Language = ifelse(Language == "Gujarayi", "Gujarati", as.character(Language)), 
+         Language = ifelse(Language == "Hindi ", "Hindi", as.character(Language)),  
+         Language = ifelse(Language == "Gujarati ", "Gujarati", as.character(Language)), 
+         Language = ifelse(Language == "Gujar", "Gujarati", as.character(Language)), 
+         Language = ifelse(Language == "Engish", "English", as.character(Language)), 
+         Language = ifelse(Language == "English", "English - India", as.character(Language)))%>%
+  mutate(Language = factor(Language))
+
 ```
 
 ##Bind together
 ```{r, warning = FALSE}
 #regular data
-all.data <- bind_rows(slo.full.data, hk.full.data, us.full.data)%>%
+all.data <- bind_rows(slo.full.data, hk.full.data, us.full.data, india.full.data)%>%
   mutate(Age = round(Age, 2), 
          Agegroup = cut(Age, breaks = c(3.5, 4, 4.5, 5, 5.5, 6, 6.6), 
                         labels = c("3.5-4", "4-4.5", "4.5-5", 
