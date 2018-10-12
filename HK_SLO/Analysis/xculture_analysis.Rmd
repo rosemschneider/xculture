@@ -115,7 +115,8 @@ india.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/In
   mutate(Response = ifelse(Response == "<NA>", NA, as.character(Response)))%>%
   select(-Unit_task_repeat_alts)%>%
   mutate(Language = ifelse(Language == "English", "English - India", as.character(Language)))%>%
-  mutate(Task = ifelse(Task == "WCN", "NN", as.character(Task)))
+  mutate(Task = ifelse(Task == "WCN", "NN", as.character(Task)))%>%
+  mutate(Trial_number = ifelse(Trial_number == "training", "Training", as.character(Trial_number)))
 ```
 
 ##India HC
@@ -151,7 +152,7 @@ india.full.data %<>%
 #regular data
 all.data <- bind_rows(slo.full.data, hk.full.data, us.full.data, india.full.data)%>%
   mutate(Age = round(Age, 2), 
-         Agegroup = cut(Age, breaks = c(3.5, 4, 4.5, 5, 5.5, 6, 6.6), 
+         Agegroup = cut(Age, breaks = c(3.49, 4, 4.5, 5, 5.5, 6, 6.66), 
                         labels = c("3.5-4", "4-4.5", "4.5-5", 
                                    "5-5.5", "5.5-6", "6-6.5")))%>%
   select(-X)%>%
@@ -328,7 +329,6 @@ productive <- class_prod(unique_SIDs)%>%
   mutate(check_prod = ifelse(check_prod == TRUE, "Productive", "Nonproductive"))
 
 #manually add child who broke productivity code: CH-VC-1, IHC 20, FHC 56, productive
-productive <- rbind(productive, c('CH-VC-1', 'Productive', 20, 56))
 
 hc %<>%
   select(-Last_successful)
@@ -336,6 +336,8 @@ hc %<>%
 productive <- full_join(productive, hc, by = "SID")%>%
   distinct(SID, IHC, FHC, check_prod)%>%
   dplyr::rename(Productive = check_prod)
+
+productive <- rbind(productive, c('CH-VC-1', 'Productive', 20, 56))
 
 all.data <- full_join(all.data, productive, by = "SID")
 ```
@@ -593,6 +595,10 @@ all.data %<>%
 
 ###Productivity descriptives
 ```{r}
+all.data %<>%
+  mutate(IHC = as.integer(IHC), 
+         FHC = as.integer(FHC))
+
 all.data %>%
   filter(!is.na(Productive))%>% #filtering out cases with no productivity classification
   filter(!is.na(Language))%>%
@@ -615,14 +621,18 @@ all.data %>%
 ###Histogram Initial and Final Highest Count
 ```{r}
 unique.hc.data <- all.data %>%
-  distinct(SID, IHC, FHC, Productive, Language)%>%
+  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
+  distinct(SID, IHC, FHC, Productive, Language, Dataset)%>%
   gather(IHC_FHC,highest_count, IHC:FHC)%>%
   mutate(highest_count = as.integer(highest_count), 
          IHC_FHC = factor(IHC_FHC, levels = c("IHC", "FHC"), 
                           labels = c("Initial Highest Count", "Final Highest Count")))
 
-#initial
-ggplot(unique.hc.data, aes(x=highest_count, fill=Productive)) + 
+#Initial/Final, HK/SLO/US
+unique.hc.data %>%
+  filter(Dataset == "HK/SLO/US")%>%
+ggplot(aes(x=highest_count, fill=Productive)) + 
   geom_histogram(binwidth = 10, colour = "black") +
   theme_bw(base_size = 10)+
   labs(title = "Initial/Final Highest Counts by Productivity and Dataset") +
@@ -630,19 +640,58 @@ ggplot(unique.hc.data, aes(x=highest_count, fill=Productive)) +
   scale_x_continuous(breaks = seq(0, 140, 10))+
   scale_fill_brewer(palette = "Set1") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        panel.grid.minor = element_blank())
+        panel.grid.minor = element_blank())+
+  theme(legend.position = "bottom")
+
+#Initial/Final, India
+unique.hc.data %>%
+  filter(Dataset == "India")%>%
+ggplot(aes(x=highest_count, fill=Productive)) + 
+  geom_histogram(binwidth = 10, colour = "black") +
+  theme_bw(base_size = 10)+
+  labs(title = "Initial/Final Highest Counts by Productivity and Dataset") +
+  facet_grid(IHC_FHC~Language) +
+  scale_x_continuous(breaks = seq(0, 140, 10))+
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        panel.grid.minor = element_blank()) +
+  theme(legend.position = "bottom")
 
 ```
 
 ###Scatterplot of IHC and FHC
 ```{r}
 initial_final <- all.data %>%
+   mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
   filter(!is.na(Productive))%>%
-  distinct(SID, Language, IHC, FHC, Productive)%>%
+  distinct(SID, Language, IHC, FHC, Productive, Dataset)%>%
   mutate(IHC = as.numeric(IHC), 
          FHC = as.numeric(FHC))
 
-ggplot(initial_final, aes(x = IHC, y = FHC, 
+#IHC/FHC scatter, HK/SLO/US
+initial_final %>%
+  filter(Dataset == "HK/SLO/US")%>%
+ggplot(aes(x = IHC, y = FHC, 
+                          color = Productive)) +
+  geom_point(size = 1) + geom_jitter(width = .1) +
+  labs(x = "Initial highest count", y = "Final highest count", 
+                      color = "", title = "") +
+  theme_bw(base_size = 13) + 
+  scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  scale_y_continuous(breaks = seq(0, 140, 10)) + 
+  theme(panel.grid.minor = element_blank(), 
+        legend.position = "bottom", 
+        legend.text = element_text(size = 8)) + 
+  facet_wrap(~Language, ncol = 3) + 
+  scale_color_brewer(palette = "Set1") +
+  theme(legend.position = "bottom") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#IHC/FHC scatter, India
+initial_final %>%
+  filter(Dataset == "India")%>%
+ggplot(aes(x = IHC, y = FHC, 
                           color = Productive)) +
   geom_point(size = 1) + geom_jitter(width = .1) +
   labs(x = "Initial highest count", y = "Final highest count", 
@@ -662,7 +711,30 @@ ggplot(initial_final, aes(x = IHC, y = FHC,
 
 ###Plotting distance between Initial and Final Highest Counts (~Pierina's graph) for Productive counters (this is a mess)
 ```{r}
-ggplot(subset(unique.hc.data, Productive == "Productive"), aes(x = SID, y = highest_count)) + 
+#HK/SLO/US
+unique.hc.data %>%
+  filter(Dataset == "HK/SLO/US", 
+         Productive == "Productive")%>%
+ggplot(aes(x = SID, y = highest_count)) + 
+  facet_grid(rows = vars(Productive)) +
+  geom_line() + 
+  geom_point(aes(shape = IHC_FHC, colour = IHC_FHC), 
+             size = 2, stroke = 1.5) +
+  scale_color_brewer(palette="Paired", direction = 1) +
+  scale_shape_manual(values = c(4,5,20)) +
+  labs(title="Distance between initial and final highest counts",
+       x = "Each line = individual kids",
+       y="Highest Count by Count Type") +
+  theme_bw(base_size = 7) + 
+  theme(legend.position="bottom", 
+        axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_wrap(~Language, scales = "free_x")
+
+#India
+unique.hc.data %>%
+  filter(Dataset == "India", 
+         Productive == "Productive")%>%
+ggplot(aes(x = SID, y = highest_count)) + 
   facet_grid(rows = vars(Productive)) +
   geom_line() + 
   geom_point(aes(shape = IHC_FHC, colour = IHC_FHC), 
