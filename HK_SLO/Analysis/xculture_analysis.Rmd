@@ -90,7 +90,8 @@ india.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/In
                 Exclude_trial_reason = Exclude_trial_reason_validate, 
                 Correct = Correct_final)%>%
   mutate(Response = ifelse(Response == "<NA>", NA, as.character(Response)))%>%
-  select(-Unit_task_repeat_alts)
+  select(-Unit_task_repeat_alts)%>%
+  mutate(Language = ifelse(Language == "English", "English - India", as.character(Language)))
 ```
 
 ##India HC
@@ -112,7 +113,13 @@ india.full.data %<>%
   mutate(Exclude_analysis = ifelse(Exclude_analysis == "HELP", 1, as.character(Exclude_analysis)), 
          Exclude_task = ifelse(Exclude_task == "HELP", 1, as.character(Exclude_task)), 
          Exclude_trial = ifelse(Exclude_task == "HELP", 1, as.character(Exclude_trial)), 
-         )
+         Exclude_analysis = as.integer(Exclude_analysis), 
+         Exclude_task = as.integer(Exclude_task), 
+         Exclude_trial = as.integer(Exclude_trial))%>%
+  mutate(Mem_check_2 = ifelse(Mem_check_2 == "IDK", 0, 
+                              ifelse(Mem_check_2 == "18", 0, as.integer(as.character(Mem_check_2)))))
+
+
 
 ```
 
@@ -124,7 +131,8 @@ all.data <- bind_rows(slo.full.data, hk.full.data, us.full.data, india.full.data
          Agegroup = cut(Age, breaks = c(3.5, 4, 4.5, 5, 5.5, 6, 6.6), 
                         labels = c("3.5-4", "4-4.5", "4.5-5", 
                                    "5-5.5", "5.5-6", "6-6.5")))%>%
-  select(-X)
+  select(-X)%>%
+  mutate(Language = factor(Language))
 ##highest count
 
 slo.hc %<>%
@@ -154,8 +162,12 @@ india.hc %<>%
          FHC = as.integer(as.character(FHC)), 
          IHC = ifelse(IHC > 140, 140, IHC), 
          FHC = ifelse(FHC > 140, 140, FHC))%>%
-  mutate(Language = ifelse(Language == "English", "English - India", as.character(Language)))%>%
-  mutate(Exclude = as.integer(as.character(Exclude)))
+  mutate(Language = ifelse(Language == "English", "English - India", as.character(Language)), 
+         Language = ifelse(Language == "English ", "English - India", as.character(Language)), 
+         Language = ifelse(Language == "Hindi ", "Hindi", as.character(Language)), 
+         Language = ifelse(Language == "Gujarati ", "Gujarati", as.character(Language)))%>%
+  mutate(Exclude = as.integer(as.character(Exclude)))%>%
+  mutate(Language = factor(Language))
 
 #bind hk and slo hc data
 slo.hc %<>%
@@ -169,7 +181,8 @@ hk.hc %<>%
 us.hc %<>%
   mutate(Language = "English")
 
-hc.df <- bind_rows(slo.hc, hk.hc, us.hc, india.hc)
+hc.df <- bind_rows(slo.hc, hk.hc, us.hc, india.hc)%>%
+  mutate(Language = factor(Language))
 ```
 
 ---
@@ -215,7 +228,8 @@ Children are classified as productive if they are able to count at least 2 decad
 ```{r, warning = FALSE}
 hc.df %<>%
   mutate(Last_successful = ifelse(Last_successful == "Is quiet", "IDK", Last_successful))%>%
-  filter(Exclude != 1)
+  filter(Exclude != 1)%>%
+  filter(SID != "CH-VC-1")#excluding this kid because they break my productivity code
 
 hc <- hc.df %>% # replace with your local path
   select(SID, Last_successful, IHC, FHC, Language) %>%
@@ -349,6 +363,11 @@ ggplot(unique.hc.data, aes(x=highest_count, fill=Productive)) +
   scale_fill_brewer(palette = "Set1") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
         panel.grid.minor = element_blank())
+
+hc.df %>%
+  distinct(SID, Language)%>%
+  group_by(Language)%>%
+  summarise(n = n())
 ```
 
 ##Highest Contiguous NN
