@@ -339,7 +339,9 @@ productive <- full_join(productive, hc, by = "SID")%>%
 
 productive <- rbind(productive, c('CH-VC-1', 'Productive', 20, 56))
 
-all.data <- full_join(all.data, productive, by = "SID")
+all.data <- full_join(all.data, productive, by = "SID")%>%
+  mutate(IHC = as.integer(IHC), 
+         FHC = as.integer(FHC))
 ```
 
 ##Highest Contiguous NN
@@ -1158,7 +1160,8 @@ all.data %>%
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and IHC by Language", x = "IHC", 
        y = "Mean Unit Task Performance")+
-  facet_grid(~Dataset)
+  facet_grid(~Dataset) +
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE)
 
 all.data %>%
   filter(Task == "NN")%>%
@@ -1173,6 +1176,7 @@ all.data %>%
   theme_bw(base_size = 10) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and IHC by Language", x = "IHC", 
        y = "Mean NN Task Performance") + 
@@ -1191,6 +1195,7 @@ all.data %>%
   theme_bw(base_size = 10) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and IHC by Language", x = "IHC", 
        y = "Mean Unit Task Performance")+
@@ -1209,6 +1214,7 @@ all.data %>%
   theme_bw(base_size = 10) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and IHC by Language", x = "IHC", 
        y = "Mean NN Task Performance") + 
@@ -1231,6 +1237,7 @@ all.data %>%
   theme_bw(base_size = 10) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and FHC by Language", x = "FHC", 
        y = "Mean Unit Task Performance") +
@@ -1249,6 +1256,7 @@ all.data %>%
   theme_bw(base_size = 10) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and FHC by Language", x = "FHC", 
        y = "Mean NN Task Performance") + 
@@ -1267,6 +1275,7 @@ all.data %>%
   theme_bw(base_size = 10) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and FHC by Language", x = "FHC", 
        y = "Mean Unit Task Performance") +
@@ -1285,6 +1294,7 @@ all.data %>%
   theme_bw(base_size = 10) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and FHC by Language", x = "FHC", 
        y = "Mean NN Task Performance") +
