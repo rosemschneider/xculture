@@ -131,9 +131,16 @@ india.hc <- read.csv("/Users/roseschneider/Documents/Projects/xculture/India/Dat
 #only keeping the SIDs that are included in Highest Count
 included_SIDs <- as.vector(unique(india.hc$SID))
 
+#check to see if there are any SID mismatches
+check <- india.full.data %>%
+  filter(SID %!in% included_SIDs)%>%
+  distinct(SID)
+
 #filter india.full.data to keep only these kiddos
 india.full.data %<>%
   filter(SID %in% included_SIDs)
+
+
 
 #Also temporary, we're going to assume that all kids with HELP are to be excluded
 india.full.data %<>%
@@ -792,7 +799,9 @@ ggplot(subset(sf.mem.num.ms), aes(x = Task_item, y = n, fill = mem_check_status)
 ```{r}
 all.data %>%
   filter(Task == "SF")%>%
-  group_by(SID, Language)%>%
+  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
+  group_by(SID, Language, Dataset)%>%
   summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
             sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
   ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
@@ -808,7 +817,8 @@ all.data %>%
   theme(text = element_text(size = 12)) +
   ylim(0, 1.0) +
   geom_violin(alpha = .1) + 
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_brewer(palette = "Dark2") +
+  facet_grid(~Dataset, scale = "free_x")
 ```
 
 ###Performance by language, productivity
@@ -828,7 +838,7 @@ all.data %>%
                position = position_dodge(width=0.90), width = 0.2)+
   ylab("Mean correct") + 
   xlab('') + 
-  facet_grid(~Productive)+
+  facet_grid(Productive~Dataset, scale = "free_x")+
   theme_bw() + 
   theme(legend.position = "none") +
   ggtitle("Performance on Unit Task by language, productivity") +
@@ -848,7 +858,7 @@ all.data %>%
    mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
                             Language == "Slovenian", "HK/SLO/US", "India"))%>%
   filter(Task == "SF")%>%
-  group_by(SID, count_range, Language, Dataset)%>%
+  group_by(SID, count_range, Language, Productive, Dataset)%>%
   summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
             sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
   ggplot(aes(x = count_range, y = mean, fill=Language)) +
@@ -863,7 +873,7 @@ all.data %>%
   theme(text = element_text(size = 12)) +
   ylim(0, 1.0) +
   scale_fill_brewer(palette = "Dark2") + 
-  facet_grid(~Dataset)
+  facet_grid(Productive~Dataset)
 ```
 
 ###Item performance by productivity, Unit Task
@@ -927,7 +937,9 @@ all.data %>%
 ```{r}
 all.data %>%
   filter(Task == "NN")%>%
-  group_by(SID, Language)%>%
+  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
+  group_by(SID, Language, Dataset)%>%
   summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
             sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
   ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
@@ -943,15 +955,18 @@ all.data %>%
   theme(text = element_text(size = 12)) +
   ylim(0, 1.0) +
   geom_violin(alpha = .1) + 
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_brewer(palette = "Dark2") +
+  facet_grid(~Dataset, scale = "free_x")
 ```
 
 ###Performance by language, productivity
 ```{r}
 all.data %>%
   filter(!is.na(Productive))%>%
+  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
   filter(Task == "NN")%>%
-  group_by(SID, Productive, Language)%>%
+  group_by(SID, Productive, Language, Dataset)%>%
   summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
             sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
   ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
@@ -961,7 +976,7 @@ all.data %>%
                position = position_dodge(width=0.90), width = 0.2)+
   ylab("Mean correct") + 
   xlab('') + 
-  facet_grid(~Productive)+
+  facet_grid(Productive~Dataset, scale = "free_x")+
   theme_bw(base_size = 13) + 
   theme(legend.position = "none") +
   ggtitle("Performance on NN Task by language, productivity") +
@@ -981,7 +996,7 @@ all.data %>%
   mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
                             Language == "Slovenian", "HK/SLO/US", "India"))%>%
   filter(Task == "NN")%>%
-  group_by(SID, count_range, Language, Dataset)%>%
+  group_by(SID, count_range, Language, Dataset, Productive)%>%
   summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
             sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
   ggplot(aes(x = count_range, y = mean, fill=Language)) +
@@ -996,7 +1011,7 @@ all.data %>%
   theme(text = element_text(size = 12)) +
   ylim(0, 1.0) +
   scale_fill_brewer(palette = "Dark2") +
-  facet_grid(~Dataset)
+facet_grid(Productive~Dataset)
 ```
 
 ###By item, productivity
@@ -1019,7 +1034,7 @@ all.data %>%
   geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
                 width = .1) +
   theme_bw(base_size = 13) + 
-  facet_grid(Dataset~Productive) +
+  facet_grid(Productive~Dataset) +
   scale_colour_brewer(palette = "Dark2") +
   theme(legend.position = "bottom") +
   labs(x = "Number queried", y = "Mean performance", title = "Mean WCN Task performance by language and Productivity") +
@@ -1112,6 +1127,8 @@ wppsi.ms <- all.data %>%
 ##Mean WPPSI scores 
 all.data %>%
   filter(!is.na(Productive))%>%
+  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
   filter(Task == "WPPSI")%>%
   filter(Trial_number != "Sample item B", 
          Trial_number != "Sample item A", 
@@ -1120,7 +1137,7 @@ all.data %>%
          Trial_number != '7', 
          Trial_number != '8')%>%
   mutate(Trial_number = as.numeric(as.character(Trial_number)))%>%
-  group_by(SID, Language)%>%
+  group_by(SID, Language, Dataset)%>%
   summarise(mean = mean(sum_wppsi, na.rm=TRUE),
             sd = sd(sum_wppsi, na.rm=TRUE)) %>%
   ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
@@ -1135,7 +1152,8 @@ all.data %>%
   ggtitle("Mean WPPSI score by Language") +
   theme(text = element_text(size = 12)) +
   geom_violin(alpha = .1) + 
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_brewer(palette = "Dark2")+
+  facet_grid(~Dataset, scale = "free_x")
  
 ```
 
