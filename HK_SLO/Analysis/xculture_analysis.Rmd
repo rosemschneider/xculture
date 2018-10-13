@@ -1409,7 +1409,7 @@ wcn.slo.within <- all.data%>%
          starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
   filter(!is.na(highest_contig.c))
 
-##English
+##US
 sf.us.within <- all.data%>%
   filter(Task == "SF")%>%
   filter(Language == "English")%>%
@@ -1438,6 +1438,93 @@ wcn.us.within <- all.data%>%
          starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
   filter(!is.na(highest_contig.c))
 
+##English - India
+sf.ind.eng.within <- all.data %>%
+  filter(Task == "SF")%>%
+  filter(Language == "English - India")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+  filter(!is.na(highest_contig.c))
+
+wcn.ind.eng.within <- all.data %>%
+  filter(Language == "English - India")%>%
+  filter(Task == "NN")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+  filter(!is.na(highest_contig.c))
+
+#Hindi
+sf.hindi.within <- all.data %>%
+  filter(Task == "SF")%>%
+  filter(Language == "Hindi")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+  filter(!is.na(highest_contig.c))
+
+wcn.hindi.within <- all.data %>%
+  filter(Language == "Hindi")%>%
+  filter(Task == "NN")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+  filter(!is.na(highest_contig.c))
+
+
+#Gujarati
+sf.gujarati.within <- all.data %>%
+  filter(Task == "SF")%>%
+  filter(Language == "Gujarati")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+  filter(!is.na(highest_contig.c))
+
+wcn.gujarati.within <- all.data %>%
+  filter(Language == "Gujarati")%>%
+  filter(Task == "NN")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=TRUE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+  filter(!is.na(highest_contig.c))
 ```
 
 ###Unit Task
@@ -1651,7 +1738,7 @@ anova(sf.slo.within.highest_contig.plus1, sf.slo.within.highest_contig, test = '
 
 --- 
 
-#English: Within-language models, Unit Task
+#English (US): Within-language models, Unit Task
 Build the models
 ##Model 0 (base)
 ```{r}
@@ -1713,6 +1800,204 @@ summary(sf.us.within.large)
 
 ---
 
+#English (India): Within-language models, Unit Task (recall that these models include starting magnitude, centered)
+Build the models
+
+##Model 0 (base)
+```{r}
+sf.ind.eng.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.ind.eng.within)
+summary(sf.ind.eng.within.base)
+```
+
+
+##Model 1 (Productivity)
+```{r}
+sf.ind.eng.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.ind.eng.within)
+summary(sf.ind.eng.within.model1)
+anova(sf.ind.eng.within.model1, sf.ind.eng.within.base, test = 'LRT')
+```
+
+##Model 2 (Final Highest Count)
+```{r}
+sf.ind.eng.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.ind.eng.within)
+summary(sf.ind.eng.within.model2)
+anova(sf.ind.eng.within.model2, sf.ind.eng.within.base, test = 'LRT')
+```
+
+##Model 3 (Initial Highest Count)
+```{r}
+sf.ind.eng.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.ind.eng.within)
+summary(sf.ind.eng.within.model3)
+anova(sf.ind.eng.within.model3, sf.ind.eng.within.base, test = 'LRT')
+```
+
+##Model 4 (Highest Continguous Next Number)
+```{r}
+sf.ind.eng.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.ind.eng.within)
+summary(sf.ind.eng.within.model4)
+anova(sf.ind.eng.within.model4, sf.ind.eng.within.base, test = 'LRT')
+```
+
+##Large model
+
+We have three/4 significant predictors of performance on the Unit task (Productivity, FHC, IHC, and Highest Contiguous NN). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task.
+```{r}
+##FHC and Highest Contig NN##
+sf.ind.eng.within.plus1 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), 
+                             family = "binomial", 
+                           data = sf.ind.eng.within)
+sf.ind.eng.within.plus2 <- glmer(Correct ~ highest_contig.c + fhc.c + count_range + age.c + starting_num.c + (1|SID), 
+                            family = "binomial", data = sf.ind.eng.within)
+##Compare
+anova(sf.ind.eng.within.plus1, sf.ind.eng.within.plus2, test = 'LRT') #highest contig currently does not add anything to the model
+
+##FHC and IHC
+sf.ind.eng.within.plus2 <- glmer(Correct ~ ihc.c + fhc.c + count_range + age.c + starting_num.c + (1|SID), 
+                            family = "binomial", data = sf.ind.eng.within)
+anova(sf.ind.eng.within.plus1, sf.ind.eng.within.plus2, test = 'LRT') #IHC currently doesn't add anything to the model
+
+##FHC and Productivity
+sf.ind.eng.within.plus2 <- glmer(Correct ~ Productive + fhc.c + count_range + age.c + starting_num.c + (1|SID), 
+                            family = "binomial", data = sf.ind.eng.within)
+anova(sf.ind.eng.within.plus1, sf.ind.eng.within.plus2, test = 'LRT') #Productivity currently doesn't add anything to the model 
+```
+
+---
+
+#Hindi: Within-language models, Unit Task
+Build the models
+
+##Model 0 (base)
+```{r}
+sf.hindi.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.hindi.within)
+summary(sf.hindi.within.base)
+```
+
+
+##Model 1 (Productivity)
+```{r}
+sf.hindi.within.model1 <- glmer(Correct ~ Productive + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.hindi.within)
+summary(sf.hindi.within.model1)
+anova(sf.hindi.within.model1, sf.hindi.within.base, test = 'LRT')
+```
+
+##Model 2 (Final Highest Count)
+```{r}
+sf.hindi.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.hindi.within)
+summary(sf.hindi.within.model2)
+anova(sf.hindi.within.model2, sf.hindi.within.base, test = 'LRT')
+```
+
+##Model 3 (Initial Highest Count)
+```{r}
+sf.hindi.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.hindi.within)
+summary(sf.hindi.within.model3)
+anova(sf.hindi.within.model3, sf.hindi.within.base, test = 'LRT')
+```
+
+##Model 4 (Highest Continguous Next Number)
+```{r}
+sf.hindi.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.hindi.within)
+summary(sf.hindi.within.model4)
+anova(sf.hindi.within.model4, sf.hindi.within.base, test = 'LRT')
+```
+
+##Large model
+
+IHC v. FHC v. Highest Contig
+```{r}
+##FHC and Highest Contig NN##
+sf.hindi.within.plus1 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID),
+                             family = "binomial",
+                           data = sf.hindi.within)
+sf.hindi.within.plus2 <- glmer(Correct ~ highest_contig.c + ihc.c + count_range + age.c + starting_num.c + (1|SID),
+                            family = "binomial", data = sf.hindi.within)
+##Compare
+anova(sf.hindi.within.plus1, sf.hindi.within.plus2, test = 'LRT') #highest contig currently does not add anything to the model
+
+##FHC and IHC
+sf.hindi.within.plus2 <- glmer(Correct ~ fhc.c + ihc.c + count_range + age.c + starting_num.c + (1|SID),
+                            family = "binomial", data = sf.hindi.within)
+anova(sf.hindi.within.plus1, sf.hindi.within.plus2, test = 'LRT') #FHC marginal
+```
+
+---
+
+#Gujarati: Within-language models, Unit Task
+Build the models
+
+##Model 0 (base)
+```{r}
+sf.gujarati.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.gujarati.within)
+summary(sf.gujarati.within.base)
+```
+
+
+##Model 1 (Productivity)
+```{r}
+sf.gujarati.within.model1 <- glmer(Correct ~ Productive + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.gujarati.within)
+summary(sf.gujarati.within.model1)
+anova(sf.gujarati.within.model1, sf.gujarati.within.base, test = 'LRT')
+```
+
+##Model 2 (Final Highest Count)
+```{r}
+sf.gujarati.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.gujarati.within)
+summary(sf.gujarati.within.model2)
+anova(sf.gujarati.within.model2, sf.gujarati.within.base, test = 'LRT')
+```
+
+##Model 3 (Initial Highest Count)
+```{r}
+sf.gujarati.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.gujarati.within)
+summary(sf.gujarati.within.model3)
+anova(sf.gujarati.within.model3, sf.gujarati.within.base, test = 'LRT')
+```
+
+##Model 4 (Highest Continguous Next Number)
+```{r}
+sf.gujarati.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                           data = sf.gujarati.within)
+summary(sf.gujarati.within.model4)
+anova(sf.gujarati.within.model4, sf.gujarati.within.base, test = 'LRT')
+```
+
+##Large model
+
+No large model yet
+```{r, include = FALSE}
+# ##FHC and Highest Contig NN##
+# sf.hindi.within.plus1 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID),
+#                              family = "binomial",
+#                            data = sf.hindi.within)
+# sf.hindi.within.plus2 <- glmer(Correct ~ highest_contig.c + ihc.c + count_range + age.c + starting_num.c + (1|SID),
+#                             family = "binomial", data = sf.hindi.within)
+# ##Compare
+# anova(sf.hindi.within.plus1, sf.hindi.within.plus2, test = 'LRT') #highest contig currently does not add anything to the model
+# 
+# ##FHC and IHC
+# sf.hindi.within.plus2 <- glmer(Correct ~ fhc.c + ihc.c + count_range + age.c + starting_num.c + (1|SID),
+#                             family = "binomial", data = sf.hindi.within)
+# anova(sf.hindi.within.plus1, sf.hindi.within.plus2, test = 'LRT') #FHC marginal
+```
+
+
+---
+
 ##Productivity t-test of Unit Task performance
 Using the Productive/Non-Productive categorical classification outlined above, we will compare performance
 between both groups on the Unit task using t-tests. We may do this by considering average performance
@@ -1751,6 +2036,8 @@ t.test(subset(sf.us.mean.ms, Productive == "Productive")$mean,
        subset(sf.us.mean.ms, Productive == "Nonproductive")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
 ```
 
+---
+
 ##Productivity t-test of Highest contiguous NN
 ###HK: Significant difference between groups (*p* = .01)
 ```{r}
@@ -1782,6 +2069,38 @@ sf.us.mean.nn <- sf.us.within %>%
 t.test(subset(sf.us.mean.nn, Productive == "Productive")$mean_nn, 
        subset(sf.us.mean.nn, Productive == "Nonproductive")$mean_nn, var.equal = TRUE)
 ```
+
+###India-Eng: NS
+```{r}
+sf.ind.eng.mean.nn <- sf.ind.eng.within %>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig))
+
+t.test(subset(sf.ind.eng.mean.nn, Productive == "Productive")$mean_nn, 
+       subset(sf.ind.eng.mean.nn, Productive == "Nonproductive")$mean_nn, var.equal = TRUE)
+```
+
+###Hindi: Significant difference between groups  (ns)
+```{r}
+sf.hindi.mean.nn <- sf.hindi.within %>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig))
+
+t.test(subset(sf.hindi.mean.nn, Productive == "Productive")$mean_nn, 
+       subset(sf.hindi.mean.nn, Productive == "Nonproductive")$mean_nn, var.equal = TRUE)
+```
+
+
+###Gujarati: Significant difference between groups 
+```{r}
+sf.gujarati.mean.nn <- sf.gujarati.within %>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig))
+
+t.test(subset(sf.gujarati.mean.nn, Productive == "Productive")$mean_nn, 
+       subset(sf.gujarati.mean.nn, Productive == "Nonproductive")$mean_nn, var.equal = TRUE)
+```
+
 
 ---
 
@@ -2002,6 +2321,102 @@ wcn.us.within.plus3 <- glmer(Correct ~ ihc.c + Productive + fhc.c + count_range 
 anova(wcn.us.within.plus3, wcn.us.within.plus2, wcn.us.within.plus1, test = 'LRT') #Productivity does not explain additional variance
 summary(wcn.us.within.plus3)
 ```
+
+---
+
+#India English: Within-language analyses, NN task
+##Model 0 (base)
+```{r}
+wcn.ind.eng.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                            data = wcn.ind.eng.within)
+summary(wcn.ind.eng.within.base)
+```
+
+##Model 1 (Productivity)
+```{r}
+wcn.ind.eng.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                            data = wcn.ind.eng.within)
+summary(wcn.ind.eng.within.model1)
+anova(wcn.ind.eng.within.model1, wcn.ind.eng.within.base, test = 'LRT')
+```
+
+##Model 2 (Final Highest Count)
+````{r}
+wcn.ind.eng.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                            data = wcn.ind.eng.within)
+summary(wcn.ind.eng.within.model2)
+anova(wcn.ind.eng.within.model2, wcn.ind.eng.within.base, test = 'LRT')
+````
+
+##Model 3 (Initial Highest Count)
+```{r}
+wcn.ind.eng.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                            data = wcn.ind.eng.within)
+summary(wcn.ind.eng.within.model3)
+anova(wcn.ind.eng.within.model3, wcn.ind.eng.within.base, test = 'LRT')
+```
+
+##Large Model - Comparison of FHC and IHC
+
+```{r}
+##IHC and FHC##
+wcn.ind.eng.within.plus1 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID), 
+                             family = "binomial", 
+                           data = wcn.ind.eng.within)
+wcn.ind.eng.within.plus2 <- glmer(Correct ~ fhc.c + ihc.c + count_range + age.c + starting_num.c + (1|SID), 
+                            family = "binomial", data = wcn.ind.eng.within)
+anova(wcn.ind.eng.within.plus2, wcn.ind.eng.within.plus1, test = 'LRT') #FHC currently doesn't add anything
+summary(wcn.ind.eng.within.plus2)
+```
+
+---
+
+#Hindi: Within-language analyses, NN
+
+##Model 0 (base)
+```{r}
+wcn.hindi.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                            data = wcn.hindi.within)
+summary(wcn.hindi.within.base)
+```
+
+##Model 1 (Productivity): Not a significant predictor (*p* = .24)
+```{r}
+wcn.hindi.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                            data = wcn.hindi.within)
+summary(wcn.hindi.within.model1)
+anova(wcn.hindi.within.model1, wcn.hindi.within.base, test = 'LRT')
+```
+
+##Model 2 (Final Highest Count): Significant predictor (*p* < .0001)
+````{r}
+wcn.hindi.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                            data = wcn.hindi.within)
+summary(wcn.hindi.within.model2)
+anova(wcn.hindi.within.model2, wcn.hindi.within.base, test = 'LRT')
+````
+
+##Model 3 (Initial Highest Count): Significant predictor (*p* < .0001)
+```{r}
+wcn.hindi.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+                            data = wcn.hindi.within)
+summary(wcn.hindi.within.model3)
+anova(wcn.hindi.within.model3, wcn.hindi.within.base, test = 'LRT')
+```
+
+##Large Model - Comparison of FHC and IHC
+ 
+```{r}
+##IHC and FHC##
+wcn.hindi.within.plus1 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID), 
+                             family = "binomial", 
+                           data = wcn.hindi.within)
+wcn.hindi.within.plus2 <- glmer(Correct ~ fhc.c + ihc.c + count_range + age.c + starting_num.c + (1|SID), 
+                            family = "binomial", data = wcn.hk.within)
+anova(wcn.hindi.within.plus2, wcn.hindi.within.plus1, test = 'LRT') 
+summary(wcn.hk.within.plus2)
+```
+
 
 ---
 
