@@ -1217,7 +1217,7 @@ all.data %>%
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and IHC by Language", x = "IHC", 
        y = "Mean Unit Task Performance")+
-  facet_grid(Dataset~Productive, scale = "free_x")
+  facet_grid(Productive~Dataset, scale = "free_x")
 
 all.data %>%
   filter(Task == "NN")%>%
@@ -1236,7 +1236,7 @@ all.data %>%
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and IHC by Language", x = "IHC", 
        y = "Mean NN Task Performance") + 
-  facet_grid(Dataset~Productive, scale = "free_x")
+  facet_grid(Productive~Dataset, scale = "free_x")
 ```
 
 
@@ -1297,7 +1297,7 @@ all.data %>%
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and FHC by Language", x = "FHC", 
        y = "Mean Unit Task Performance") +
-  facet_grid(Dataset~Productive, scale = "free_x")
+  facet_grid(Productive~Dataset, scale = "free_x")
 
 all.data %>%
   filter(Task == "NN")%>%
@@ -1316,7 +1316,7 @@ all.data %>%
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and FHC by Language", x = "FHC", 
        y = "Mean NN Task Performance") +
-  facet_grid(Dataset~Productive, scale = "free_x")
+  facet_grid(Productive~Dataset, scale = "free_x")
 ```
 
 ##Unit performance by highest contiguous NN for each language
