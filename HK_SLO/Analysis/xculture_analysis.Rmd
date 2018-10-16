@@ -2053,7 +2053,7 @@ anova(sf.hindi.within.model3, sf.hindi.within.base, test = 'LRT')
 anova(sf.hindi.within.model4, sf.hindi.within.base, test = 'LRT')
 ```
 
-##Large model
+##Large model -- Warning, convergence issues for IHC + FHC model
 
 IHC v. FHC v. Highest Contig
 ```{r}
@@ -2179,7 +2179,7 @@ mtable.sf.gujarati.large <- mtable('FHC alone' = sf.gujarati.within.plus1,
 mtable.sf.gujarati.large
 ```
 
-##Gujarati Unit Task (interim) within-language results: FHC and Productivity emerge as best predictor of performance on Unit Task
+
 
 ---
 
@@ -2866,7 +2866,7 @@ wcn.df.cross <- all.data %>%
 
 ---
 
-#Unit Task: Cross linguistic models - Warning, Convergence issues! 
+#Unit Task: Cross linguistic models - Warning, Convergence issues with highest contiguous model 
 ##Build the models
 ```{r}
 #base
@@ -2946,7 +2946,7 @@ Cross-Linguistic Models
 We will construct Model 7b hierarchically. Model comparisons will be performed at each stage by running a likelihood ratio test between reduced and full models, with significant effects retained in the full model (Model 7b). Model selection will be done on the basis of AIC evaluation and significant Chi-square statistic.
 
 ##Build the models - warning! Convergence issues!
-NB - this model is currently failing to converge, may need to look at optimizer
+NB - these models are currently failing to converge, may need to look at optimizer
 ```{r}
 #base
 wcn.cross.base <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
@@ -3056,7 +3056,7 @@ wcn.df.cross.ind <- all.data %>%
 
 ---
 
-#Unit Task: Cross linguistic models - Warning, Convergence issues! 
+#Unit Task: Cross linguistic models - Warning, Convergence issues for fhc and highest contiguous models
 ##Build the models
 ```{r}
 #base
@@ -3124,7 +3124,7 @@ mtable.sf.cross.ind.large
 
 #Cross-linguistic models: NN task, India
 ##Build the models - warning! Convergence issues!
-NB - this model is currently failing to converge, may need to look at optimizer
+NB - these model are currently failing to converge, may need to look at optimizer
 ```{r}
 #base
 wcn.cross.ind.base <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c + starting_num.c +(1|SID), 
@@ -3226,17 +3226,29 @@ In addition, we plan to test whether children in transparent languages can becom
 
 Model 1: IHC ~ Language + Age + WM, data = NonProductiveCounters
 
-###Model: Nonproductive US English and Slovenians have significantly lower IHC than Cantonese speakers
+###Model
 ```{r}
 ihc.cross <- all.data %>%
-  distinct(SID, Language, Age, sum_wppsi, Productive, IHC)%>%
+   filter(!is.na(Productive))%>%
+  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
+  distinct(SID, Language, Age, sum_wppsi, Productive, IHC, Dataset)%>%
   filter(Productive == "Nonproductive")%>%
   mutate(Language = factor(Language))%>%
   mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
          wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
 
-ihc.model.1 = lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross)
-summary(ihc.model.1)
+ihc.cross.hk.slo <- ihc.cross %>%
+  filter(Dataset == "HK/SLO/US")
+
+ihc.cross.model.hk.slo <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.hk.slo)
+summary(ihc.cross.model.hk.slo)
+
+ihc.cross.ind <- ihc.cross %>%
+  filter(Dataset == "India")
+
+ihc.cross.model.ind <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.ind)
+summary(ihc.cross.model.ind)
 ```
 
 In addition, we will test whether count-list transparency allows children to acquire some degree of productivity, even before they are labeled productive counters based on their overall counting performance. To test this, we will predict Highest Contiguous Next Number from Language. If transparent languages allow children to generate a productive counting rule, speakers of these transparent languages may perform better on the Next Number task than speakers of non- transparent languages, even when only considering non-productive counters. Model 2: Highest.Contiguous.NextNumber ~ Language + Age + WM + (1|subject), data = NonProductiveCounters
@@ -3244,57 +3256,28 @@ In addition, we will test whether count-list transparency allows children to acq
 ###Model: No effect of Language here
 ```{r}
 wcn.model <- all.data %>%
-  distinct(SID, Language, Age, sum_wppsi, Productive, highest_contig)%>%
+  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
+  distinct(SID, Language, Age, sum_wppsi, Productive, highest_contig, Dataset)%>%
   filter(Productive == "Nonproductive")%>%
   mutate(Language = factor(Language))%>%
   mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
          wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
 
-highest_contig.model <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model)
-summary(highest_contig.model)
+wcn.model.hk.slo <- wcn.model %>%
+  filter(Dataset == "HK/SLO/US")
+
+highest_contig.model.hk.slo <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model.hk.slo)
+summary(highest_contig.model.hk.slo)
+
+wcn.model.ind <- wcn.model %>%
+  filter(Dataset == "India")
+
+highest_contig.model.ind <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model.ind)
+summary(highest_contig.model.ind)
+
 ```
-
 ---
-
-#Cross-linguistic analyses, Unit Task (India)
-
-##Make the dfs
-```{r}
-##SF
-sf.df.cross <- all.data %>%
-  filter(Task == "SF")%>%
-  mutate(SID = factor(SID), 
-         Productive = factor(Productive), 
-         count_range = factor(count_range), 
-         highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE))) %>%
-  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
-  mutate(Language = factor(Language))
-  
-wcn.df.cross <- all.data %>%
-  filter(Task == "NN")%>%
-  mutate(SID = factor(SID), 
-         Productive = factor(Productive), 
-         count_range = factor(count_range), 
-         highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)),
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE))) %>%
-  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
-  mutate(Language = factor(Language))
-```
-
----
-#Cross-linguistic analysies, NN Task (India)
-
----
-
 
 TO-do for RMS: 
 - Follow up analysis for productivity:lang interactions: In the event that, when analyzing each language group separately, we find evidence that a particular counting/productivity measure (Next Number, Final HC, Productivity) improves model fit for one language group by not another, we will conduct a follow-up analysis testing whether productivity classification interacts with language group. We will compare the model containing an interaction to one that excludes the interaction. It is important to note that our critical effect of interest is not necessarily a [Productivity Measure]:[Language Group] interaction, although finding such an interaction may be interpretable (e.g., it may suggest that productivity predicts other measures to a greater degree in some languages vs. others): ProductivityLang: Unit ~ Productivity Measure (Highest NN, FHC, Productivity classification)*Language.Group +
