@@ -9,7 +9,7 @@ TO-DO
 - Break apart India and HK/SLO data for visualizations - it's getting crazy
 
 #Setup
-```{r}
+```{r, include = FALSE}
 rm(list = ls())
 require("knitr")
 opts_knit$set(root.dir = "~/Documents/Projects/xculture/HK_SLO/") #this is specific to RMS, change accordingly
@@ -260,7 +260,10 @@ Children are classified as productive if they are able to count at least 2 decad
 hc.df %<>%
   mutate(Last_successful = ifelse(Last_successful == "Is quiet", "IDK", Last_successful))%>%
   filter(Exclude != 1)%>%
-  filter(SID != "CH-VC-1")#excluding this kid because they break my productivity code
+  filter(SID != "CH-VC-1", 
+         SID != "SR-8-MP", 
+         SID != "CH-MV-14", 
+         SID != 'GV-21-SB')#excluding these kids because they break my productivity code
 
 hc <- hc.df %>% # replace with your local path
   dplyr::select(SID, Last_successful, IHC, FHC, Language) %>%
@@ -335,7 +338,10 @@ productive <- class_prod(unique_SIDs)%>%
   dplyr::rename(check_prod = productive)%>%
   mutate(check_prod = ifelse(check_prod == TRUE, "Productive", "Nonproductive"))
 
-#manually add child who broke productivity code: CH-VC-1, IHC 20, FHC 56, productive
+#manually add child who broke productivity code: CH-VC-1, IHC 20, FHC 56, nonproductive, 
+#SR-8-MP, IHC = 19, FHC = 39, Nonproductive
+#CH-MV-14, IHC = 48, FHC = 68, Nonproductive
+#GV-21-SB, IHC = 20, FHC = 40, nonproductive
 
 hc %<>%
   dplyr::select(-Last_successful)
@@ -344,7 +350,11 @@ productive <- full_join(productive, hc, by = "SID")%>%
   distinct(SID, IHC, FHC, check_prod)%>%
   dplyr::rename(Productive = check_prod)
 
-productive <- rbind(productive, c('CH-VC-1', 'Productive', 20, 56))
+#manually add back in kids who break the code
+productive <- rbind(productive, c('CH-VC-1', 'Nonproductive', 20, 56))
+productive <- rbind(productive, c('SR-8-MP', 'Nonproductive', 19, 39))
+productive <- rbind(productive, c('CH-MV-14', 'Nonproductive', 48, 68))
+productive <- rbind(productive, c("GV-21-SB", 'Nonproductive', 20, 40))
 
 all.data <- full_join(all.data, productive, by = "SID")%>%
   mutate(IHC = as.integer(IHC), 
@@ -416,9 +426,7 @@ all.data <- full_join(all.data, highest_contiguous_nn, by = "SID")
 Each trial on the Unit or WCN task was determined to be either within or outside a child's unprompted count range (IHC).
 ```{r}
 all.data %<>%
-  mutate(count_range = ifelse((Task == "SF" | Task == "NN") & as.numeric(Task_item) <= IHC, "Within", 
-                              ifelse((Task == "SF" | Task == "NN") & as.numeric(Task_item) > IHC, "Outside", 
-                                     NA)))
+  mutate(count_range = ifelse((Task == "SF" | Task == "NN") & as.numeric(Task_item) <= IHC, "Within", "Outside"))
 ```
 
 ---
@@ -650,7 +658,8 @@ ggplot(aes(x=highest_count, fill=Productive)) +
   scale_fill_brewer(palette = "Set1") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
         panel.grid.minor = element_blank())+
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") + 
+  labs(x = "Highest count", y = "Frequency")
 
 #Initial/Final, India
 unique.hc.data %>%
@@ -664,7 +673,8 @@ ggplot(aes(x=highest_count, fill=Productive)) +
   scale_fill_brewer(palette = "Set1") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
         panel.grid.minor = element_blank()) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") + 
+  labs(x = "Highest count", y = "Frequency")
 
 ```
 
@@ -718,8 +728,8 @@ ggplot(aes(x = IHC, y = FHC,
 
 ```
 
-###Plotting distance between Initial and Final Highest Counts (~Pierina's graph) for Productive counters (this is a mess)
-```{r}
+
+```{r, include = FALSE}
 #HK/SLO/US
 unique.hc.data %>%
   filter(Dataset == "HK/SLO/US", 
@@ -766,7 +776,6 @@ ggplot(aes(x = SID, y = highest_count)) +
 
 ##Unit Task
 ###How many kids failed the memory checks in each dataset by number
-TO-DO RMS: There are a bunch of NAs for India data - what's going on here
 ```{r}
 #for SF
 sf.df <- all.data %>%
@@ -814,7 +823,9 @@ all.data %>%
   theme_bw(base_size = 13) + 
   theme(legend.position = "none") +
   ggtitle("Overall mean correct on Unit Task") +
-  theme(text = element_text(size = 12)) +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank()) +
   ylim(0, 1.0) +
   geom_violin(alpha = .1) + 
   scale_fill_brewer(palette = "Dark2") +
@@ -846,7 +857,9 @@ all.data %>%
   ylim(0, 1.0) +
   geom_violin(alpha = .1) + 
   scale_fill_brewer(palette = "Dark2") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank())
 ```
 
 ###By productivity and count range
@@ -873,7 +886,10 @@ all.data %>%
   theme(text = element_text(size = 12)) +
   ylim(0, 1.0) +
   scale_fill_brewer(palette = "Dark2") + 
-  facet_grid(Productive~Dataset)
+  facet_grid(Productive~Dataset) +
+  theme(panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank(),
+        legend.position = "bottom")
 ```
 
 ###Item performance by productivity, Unit Task
@@ -924,7 +940,9 @@ all.data %>%
   xlab('') + 
   theme_bw() + 
   ggtitle("Performance on Unit Task by language, knower-level") +
-  theme(text = element_text(size = 12)) +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank()) +
   ylim(0, 1.0) +
   scale_fill_manual(values = count_range_pal) + 
   facet_grid(~Dataset, scale = "free_x")
@@ -952,7 +970,9 @@ all.data %>%
   theme_bw(base_size = 13) + 
   theme(legend.position = "none") +
   ggtitle("Overall mean correct on NN Task") +
-  theme(text = element_text(size = 12)) +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank()) +
   ylim(0, 1.0) +
   geom_violin(alpha = .1) + 
   scale_fill_brewer(palette = "Dark2") +
@@ -980,7 +1000,9 @@ all.data %>%
   theme_bw(base_size = 13) + 
   theme(legend.position = "none") +
   ggtitle("Performance on NN Task by language, productivity") +
-  theme(text = element_text(size = 12)) +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank()) +
   ylim(0, 1.0) +
   geom_violin(alpha = .1) + 
   scale_fill_brewer(palette = "Dark2") + 
@@ -1008,7 +1030,10 @@ all.data %>%
   xlab('') + 
   theme_bw() + 
   ggtitle("Performance on NN Task by language, within/outside IHC") +
-  theme(text = element_text(size = 12)) +
+  theme(text = element_text(size = 12),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank(), 
+        legend.position = "bottom") +
   ylim(0, 1.0) +
   scale_fill_brewer(palette = "Dark2") +
 facet_grid(Productive~Dataset)
@@ -1062,7 +1087,9 @@ all.data %>%
   xlab('') + 
   theme_bw() + 
   ggtitle("Performance on NN Task by language, knower-level") +
-  theme(text = element_text(size = 12)) +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank()) +
   ylim(0, 1.0) +
   scale_fill_manual(values = count_range_pal)+
   facet_grid(~Dataset, scale= "free_x")
@@ -1147,13 +1174,16 @@ all.data %>%
                position = position_dodge(width=0.90), width = 0.2)+
   ylab("Mean WPPSI score") + 
   xlab('') + 
-  theme_bw(base_size = 13) + 
+  theme_bw(base_size = 12) + 
   theme(legend.position = "none") +
   ggtitle("Mean WPPSI score by Language") +
-  theme(text = element_text(size = 12)) +
+  theme(text = element_text(size = 12),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank()) +
   geom_violin(alpha = .1) + 
   scale_fill_brewer(palette = "Dark2")+
-  facet_grid(~Dataset, scale = "free_x")
+  facet_grid(~Dataset, scale = "free_x")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
  
 ```
 
@@ -1172,14 +1202,15 @@ all.data %>%
   ggplot(aes(x = IHC, y = mean_unit, colour = Language, group = Language)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and IHC by Language", x = "IHC", 
        y = "Mean Unit Task Performance")+
   facet_grid(~Dataset) +
-  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE)
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 all.data %>%
   filter(Task == "NN")%>%
@@ -1191,14 +1222,15 @@ all.data %>%
   ggplot(aes(x = IHC, y = mean_nn, colour = Language, group = Language)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and IHC by Language", x = "IHC", 
        y = "Mean NN Task Performance") + 
-  facet_grid(~Dataset)
+  facet_grid(~Dataset)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 all.data %>%
   filter(Task == "SF") %>%
@@ -1210,14 +1242,15 @@ all.data %>%
   ggplot(aes(x = IHC, y = mean_unit, colour = Language, group = Language)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and IHC by Language", x = "IHC", 
        y = "Mean Unit Task Performance")+
-  facet_grid(Productive~Dataset, scale = "free_x")
+  facet_grid(Productive~Dataset, scale = "free_x")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 all.data %>%
   filter(Task == "NN")%>%
@@ -1229,14 +1262,15 @@ all.data %>%
   ggplot(aes(x = IHC, y = mean_nn, colour = Language, group = Language)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and IHC by Language", x = "IHC", 
        y = "Mean NN Task Performance") + 
-  facet_grid(Productive~Dataset, scale = "free_x")
+  facet_grid(Productive~Dataset, scale = "free_x")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
@@ -1252,14 +1286,15 @@ all.data %>%
   ggplot(aes(x = FHC, y = mean_unit, colour = Language, group = Language)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and FHC by Language", x = "FHC", 
        y = "Mean Unit Task Performance") +
-  facet_grid(~Dataset)
+  facet_grid(~Dataset)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 all.data %>%
   filter(Task == "NN")%>%
@@ -1271,14 +1306,15 @@ all.data %>%
   ggplot(aes(x = FHC, y = mean_nn, colour = Language, group = Language)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and FHC by Language", x = "FHC", 
        y = "Mean NN Task Performance") + 
-  facet_grid(~Dataset)
+  facet_grid(~Dataset)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 all.data %>%
   filter(Task == "SF") %>%
@@ -1290,14 +1326,15 @@ all.data %>%
   ggplot(aes(x = FHC, y = mean_unit, colour = Language, group = Language)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean Unit Task Performance and FHC by Language", x = "FHC", 
        y = "Mean Unit Task Performance") +
-  facet_grid(Productive~Dataset, scale = "free_x")
+  facet_grid(Productive~Dataset, scale = "free_x")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 all.data %>%
   filter(Task == "NN")%>%
@@ -1309,14 +1346,15 @@ all.data %>%
   ggplot(aes(x = FHC, y = mean_nn, colour = Language, group = Language)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   scale_color_brewer(palette = "Dark2")+
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
   theme(legend.position = "bottom")+
   labs(title = "Mean NN Task Performance and FHC by Language", x = "FHC", 
        y = "Mean NN Task Performance") +
-  facet_grid(Productive~Dataset, scale = "free_x")
+  facet_grid(Productive~Dataset, scale = "free_x")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ##Unit performance by highest contiguous NN for each language
@@ -1337,12 +1375,33 @@ all.data %>%
   geom_line() +
   geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
                 width = .1) +
-  theme_bw(base_size = 10) + 
+  theme_bw(base_size = 12) + 
   scale_colour_brewer(palette = "Dark2") +
   theme(legend.position = "bottom") +
   labs(x = "Highest contiguous NN", y = "Mean Unit Task performance", title = "Unit Task performance by Highest Contiguous NN") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(~Dataset, scale = "free_x")
 
+```
+
+##Unit performance by mean NN performance for each language
+```{r}
+all.data %>%
+  filter(Task == "SF" |
+           Task == "NN")%>% filter(!is.na(Productive))%>%
+  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
+  group_by(SID, Task, Dataset, Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))%>%
+  spread(Task, mean)%>%
+  ggplot(aes(x = SF, y = NN, colour = Language, group = Language))+
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme_bw(base_size = 12)+
+  scale_colour_brewer(palette = "Dark2")+
+  facet_grid(~Dataset) +
+  labs(title = "Mean Unit perf. by mean NN perf.", x = "Mean NN performance",
+       y = "Mean Unit performance") +
+  theme(legend.position = "bottom")
 ```
 
 ---
@@ -1352,7 +1411,7 @@ all.data %>%
 
 ###Make model analysis dfs
 Note that there is a lot more variability in highest counts and highest contiguous NN than in categorical variables. I am centering age, and centering and scaling FHC, IHC, and highest contiguous NN (which has the most variability).
-```{r}
+```{r, include = FALSE}
 ##HK##
 sf.hk.within <- all.data%>%
   filter(Task == "SF")%>%
@@ -1903,7 +1962,7 @@ anova(sf.ind.eng.within.model3, sf.ind.eng.within.base, test = 'LRT')
 anova(sf.ind.eng.within.model4, sf.ind.eng.within.base, test = 'LRT')
 ```
 
-##Large model
+##Large model - warning! Convergence issues for largest model
 ```{r}
 sf.ind.eng.within.plus1 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), 
                              family = "binomial", 
@@ -1948,7 +2007,7 @@ mtable.sf.ind.eng.large
 sf.hindi.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
                            data = sf.hindi.within)
 #Productivity
-sf.hindi.within.model1 <- glmer(Correct ~ Productive + age.c + starting_num.c + (1|SID), family = "binomial", 
+sf.hindi.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
                            data = sf.hindi.within)
 #FHC
 sf.hindi.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
@@ -2040,7 +2099,7 @@ mtable.sf.hindi.large
 sf.gujarati.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
                            data = sf.gujarati.within)
 #Productivity
-sf.gujarati.within.model1 <- glmer(Correct ~ Productive + age.c + starting_num.c + (1|SID), family = "binomial", 
+sf.gujarati.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
                            data = sf.gujarati.within)
 #FHC
 sf.gujarati.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
@@ -2769,8 +2828,7 @@ Make model dfs
 We will then compare Model 0a (the Null Model) to each of the models containing measures of productivity (1a, 2a, and 3a) using a likelihood ratio test in testing whether these measures of productivity significantly explain variance in children’s performance. Should effects of Language emerge, we will also test these using a likelihood ratio test comparing models with significant Language effects to one excluding those effects (e.g., Unit.Performance ~ Productivity + IHC + Within/Outside range + Age + WM + (1|subject)). After running the four models above, any predictor that significantly (p &lt;.05) predicted Unit Task Performance will be added into Model 6a, which will be our “Large” model (containing all predictors that significantly predicted Unit Task Performance in the simple models). We will construct model 6a hierarchically. Model comparisons will be performed at each stage by running a likelihood ratio test between reduced and full models, with significant effects retained in the full model (Model 6a). Model selection will be done on the basis of AIC evaluation and significant Chi-square statistic.
 
 ##Make model dfs
-```{r}
-##HK##
+```{r, include = FALSE}
 sf.df.cross <- all.data %>%
   filter(Task == "SF", 
          Language == "Cantonese" |
@@ -2865,10 +2923,10 @@ sf.cross.plus3 <- glmer(Correct ~ highest_contig.c + Productive + fhc.c + count_
                             family = "binomial", data = sf.df.cross)
 anova(sf.cross.plus3, sf.cross.plus2.prod, sf.cross.plus2, sf.cross.plus1, test = 'LRT') 
 
-mtable.sf.cross.large <- mtable('Highest contig. alone' = sf.cross.within.plus1,
-            'Productive + Highest Contig.' = sf.cross.within.plus2,
-            'FHC + Highest Contig.' = sf.cross.within.plus2.prod,
-            'Highest contig. + Prod. + FHC' = sf.cross.within.plus3,
+mtable.sf.cross.large <- mtable('Highest contig. alone' = sf.cross.plus1,
+            'Productive + Highest Contig.' = sf.cross.plus2,
+            'FHC + Highest Contig.' = sf.cross.plus2.prod,
+            'Highest contig. + Prod. + FHC' = sf.cross.plus3,
             summary.stats = c('R-squared','F','p','N'))
 mtable.sf.cross.large
 ```
@@ -2887,32 +2945,41 @@ Cross-Linguistic Models
 
 We will construct Model 7b hierarchically. Model comparisons will be performed at each stage by running a likelihood ratio test between reduced and full models, with significant effects retained in the full model (Model 7b). Model selection will be done on the basis of AIC evaluation and significant Chi-square statistic.
 
-###Model 0 (base)
+##Build the models - warning! Convergence issues!
 NB - this model is currently failing to converge, may need to look at optimizer
 ```{r}
+#base
 wcn.cross.base <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                         family = "binomial", data = wcn.df.cross)
-summary(wcn.cross.base)
-
-
-```
-
-###Model 1 (Productivity): Significant
-```{r}
+#Productivity
 wcn.cross.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                         family = "binomial", data = wcn.df.cross, 
                         control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
-summary(wcn.cross.model1)
+#FHC
+wcn.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
+                            (1|SID), data = wcn.df.cross, family = "binomial")
+
+```
+
+##Cross-linguistic model comparison
+```{r}
+mtable.wcn.cross <- mtable('Base Model' = wcn.cross.base,
+            'Model 1: Productivity' = wcn.cross.model1,
+            'Model 2: FHC' = wcn.cross.model2,
+            summary.stats = c('R-squared','F','p','N'))
+mtable.wcn.cross
+```
+
+##Model comparisons
+###Base v. Productivity
+```{r}
 anova(wcn.cross.model1, wcn.cross.base, test = 'LRT')
 ```
 
-##Model 2 (Final Highest Count): Significant predictor
+###Base v. FHC
 NB this model is currently failing to converge, may need to look at optimizer
 ```{r}
-wcn.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross, family = "binomial")
-summary(wcn.cross.model2)
 anova(wcn.cross.model2, wcn.cross.base, test = 'LRT')
 ```
 
@@ -2925,6 +2992,11 @@ wcn.cross.plus1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c 
 wcn.cross.plus2 <- glmer(Correct ~ Productive + fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
                            (1|SID), family = "binomial", data = wcn.df.cross)
 anova(wcn.cross.plus1, wcn.cross.plus2, test = 'LRT')
+mtable.wcn.cross.large <- mtable('FHC alone' = wcn.cross.plus1,
+            'Productive + FHC.' = wcn.cross.plus2,
+            summary.stats = c('R-squared','F','p','N'))
+mtable.wcn.cross.large
+
 ```
 
 
@@ -2934,7 +3006,207 @@ wcn.nolang.base <- glmer(Correct ~ ihc.c + count_range + age.c + wppsi.c + (1|SI
 wcn.nolang.model1 <- glmer(Correct ~ fhc.c + ihc.c + count_range + age.c + wppsi.c + (1|SID), 
                          data = wcn.df.cross, family = "binomial")
 anova(wcn.nolang.model1, wcn.nolang.base, test = 'LRT') #FHC is still significant, but just barely
+mtable.wcn.cross.large <- mtable('Highest contig. alone' = wcn.cross.plus1,
+            'Productive + Highest Contig.' = sf.cross.plus2,
+            'FHC + Highest Contig.' = sf.cross.plus2.prod,
+            'Highest contig. + Prod. + FHC' = sf.cross.plus3,
+            summary.stats = c('R-squared','F','p','N'))
+mtable.sf.cross.large
+```
 
+---
+
+#Cross-linguistic models (India)
+##Make model dfs
+```{r}
+sf.df.cross.ind <- all.data %>%
+  filter(Task == "SF", 
+         Language == "English - India" |
+           Language == "Hindi" | 
+           Language == "Gujarati")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE))) %>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
+  mutate(Language = factor(Language))
+  
+wcn.df.cross.ind <- all.data %>%
+  filter(Task == "NN",
+         Language == "English - India" |
+           Language == "Hindi" | 
+           Language == "Gujarati")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)),
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE))) %>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
+  mutate(Language = factor(Language))
+```
+
+---
+
+#Unit Task: Cross linguistic models - Warning, Convergence issues! 
+##Build the models
+```{r}
+#base
+sf.cross.ind.base <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c + starting_num.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross.ind)
+#productivity
+sf.cross.ind.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + age.c + wppsi.c + starting_num.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross.ind)
+#fhc
+sf.cross.ind.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + starting_num.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross.ind)
+#highest contig.
+sf.cross.ind.model3 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + age.c + wppsi.c +
+                           starting_num.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross.ind)
+```
+
+##Cross-linguistic model comparison
+```{r}
+mtable.sf.cross <- mtable('Base Model' = sf.cross.ind.base,
+            'Model 1: Productivity' = sf.cross.ind.model1,
+            'Model 2: FHC' = sf.cross.ind.model2,
+            'Model 3: Highest Contig.' = sf.cross.ind.model3,
+            summary.stats = c('R-squared','F','p','N'))
+mtable.sf.cross
+```
+
+##Model Comparisons
+###Base v. productivity
+```{r}
+anova(sf.cross.ind.model1, sf.cross.ind.base, test = 'LRT')
+```
+
+###Base v. FHC
+```{r}
+anova(sf.cross.ind.model2, sf.cross.ind.base, test = 'LRT')
+```
+
+###Base v. Highest contig.
+```{r}
+anova(sf.cross.ind.model3, sf.cross.ind.base, test = 'LRT')
+```
+
+##Large model
+```{r}
+sf.cross.ind.plus1 <- glmer(Correct ~ highest_contig.c + count_range + age.c + wppsi.c + starting_num.c + (1|SID), 
+                             family = "binomial", 
+                           data = sf.df.cross.ind)
+sf.cross.ind.plus2.prod <- glmer(Correct ~ Productive + highest_contig.c + count_range + age.c + wppsi.c + starting_num.c + (1|SID), 
+                            family = "binomial", data = sf.df.cross.ind)
+sf.cross.ind.plus2 <- glmer(Correct ~  fhc.c + highest_contig.c + count_range + age.c + wppsi.c + starting_num.c + (1|SID), 
+                            family = "binomial", data = sf.df.cross.ind)
+sf.cross.ind.plus3 <- glmer(Correct ~ highest_contig.c + Productive + fhc.c + count_range + age.c + wppsi.c + starting_num.c + (1|SID), 
+                            family = "binomial", data = sf.df.cross.ind)
+anova(sf.cross.ind.plus3, sf.cross.ind.plus2.prod, sf.cross.ind.plus2, sf.cross.ind.plus1, test = 'LRT') 
+
+mtable.sf.cross.ind.large <- mtable('Highest contig. alone' = sf.cross.ind.plus1,
+            'Productive + Highest Contig.' = sf.cross.ind.plus2,
+            'FHC + Highest Contig.' = sf.cross.ind.plus2.prod,
+            'Highest contig. + Prod. + FHC' = sf.cross.ind.plus3,
+            summary.stats = c('R-squared','F','p','N'))
+mtable.sf.cross.ind.large
+```
+---
+
+#Cross-linguistic models: NN task, India
+##Build the models - warning! Convergence issues!
+NB - this model is currently failing to converge, may need to look at optimizer
+```{r}
+#base
+wcn.cross.ind.base <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c + starting_num.c +(1|SID), 
+                        family = "binomial", data = wcn.df.cross.ind)
+#Productivity
+wcn.cross.ind.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + age.c + wppsi.c + starting_num.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross.ind, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#FHC
+wcn.cross.ind.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
+                            starting_num.c + (1|SID), data = wcn.df.cross.ind, family = "binomial")
+
+```
+
+##Cross-linguistic model comparison
+```{r}
+mtable.wcn.cross <- mtable('Base Model' = wcn.cross.ind.base,
+            'Model 1: Productivity' = wcn.cross.ind.model1,
+            'Model 2: FHC' = wcn.cross.ind.model2,
+            summary.stats = c('R-squared','F','p','N'))
+mtable.wcn.cross
+```
+
+##Model comparisons
+###Base v. Productivity
+```{r}
+anova(wcn.cross.ind.model1, wcn.cross.ind.base, test = 'LRT')
+```
+
+###Base v. FHC
+NB this model is currently failing to converge, may need to look at optimizer
+```{r}
+anova(wcn.cross.ind.model2, wcn.cross.ind.base, test = 'LRT')
+```
+
+##Large model
+NOTE: Models failing to converge, may need to look at optimizer
+Comparing productivity and FHC
+```{r}
+wcn.cross.ind.plus1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
+                           starting_num.c + (1|SID), family = "binomial", data = wcn.df.cross.ind)
+wcn.cross.ind.plus2 <- glmer(Correct ~ Productive + fhc.c + Language*ihc.c + count_range + age.c + wppsi.c + 
+                           starting_num.c + (1|SID), family = "binomial", data = wcn.df.cross.ind)
+anova(wcn.cross.ind.plus1, wcn.cross.ind.plus2, test = 'LRT')
+mtable.wcn.cross.ind.large <- mtable('FHC alone' = wcn.cross.ind.plus1,
+            'Productive + FHC.' = wcn.cross.ind.plus2,
+            summary.stats = c('R-squared','F','p','N'))
+mtable.wcn.cross.ind.large
+
+```
+
+---
+
+#Cross-linguistic comparison for mean performance on NN task (India)
+```{r}
+nn.ms <- all.data %>%
+  filter(Task == "NN", 
+         Language == "English - India" | 
+           Language == "Gujarati" | 
+           Language == "Hindi")%>%
+  group_by(SID)%>%
+  mutate(mean_nn = mean(Correct, na.rm = TRUE))
+
+lm1 <- lm(mean_nn ~ Language*Age + sum_wppsi, data = nn.ms)
+summary(lm1)
+```
+
+---
+
+#Cross-linguistic comparison for mean performance on Unit task (India)
+```{r}
+sf.ms <- all.data %>%
+  filter(Task == "SF", 
+         Language == "English - India" | 
+           Language == "Gujarati" | 
+           Language == "Hindi")%>%
+  group_by(SID)%>%
+  mutate(mean_sf = mean(Correct, na.rm = TRUE))
+
+lm2 <- lm(mean_sf ~ Language*Age + sum_wppsi, data = sf.ms)
+summary(lm2)
 ```
 
 ---
