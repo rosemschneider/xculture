@@ -4,8 +4,7 @@ author: "Rose M. Schneider"
 date: "8/5/2018"
 output: html_document
 ---
-TO-DO
-- str of data, change silent to NA
+
 #Setup
 ```{r, include = FALSE}
 rm(list = ls())
@@ -429,6 +428,14 @@ all.data %>%
   group_by(Language, Task)%>%
   summarise(n = n())
 
+#Get kids who failed NN for highest contiguous
+failed.nn <- all.data %>%
+  filter(Task == "NN", 
+         Correct == 0, 
+         Trial_number == "Training")
+
+failed.nn.sids <- unique(as.vector(failed.nn$SID))
+
 #exclude practice trials
 all.data %<>%
   filter(Trial_number != "Training")
@@ -592,16 +599,23 @@ all.data <- full_join(all.data, productive, by = "SID")%>%
 #   distinct(SID)
 ```
 
+##TEMPORARY
+Re-remove Slovenians that we are manually removing for now
+```{r}
+all.data %<>%
+filter(SID != "11072018-L",
+           SID != "12072018-I",
+           SID != "19072018-J",
+           SID != "19072018-M",
+           SID != "19072018-P",
+           SID != "Naj16",
+           SID != "Sol07", 
+         SID != "Naj14")
+```
+
 ##Highest Contiguous NN
 Highest Contiguous NN is a measure of productivity. This is the highest number for which a child was correct on the Next Number task, provided that all the previous numbers had also been correct.
 ```{r, warning = FALSE}
-failed.nn <- all.data %>%
-  filter(Task == "NN", 
-         Correct == 0, 
-         Trial_number == "Training")
-
-failed.nn.sids <- unique(as.vector(failed.nn$SID))
-
 #get unique ids
 unique.nn <- all.data %>%
   filter(Task == "NN")%>%
@@ -615,11 +629,11 @@ get_contiguous <- function(){
   contig <- data.frame()
   for (sub in unique.nn) {
     tmp <- all.data %>%
-      mutate(Task_item= as.integer(Task_item))%>%
+      mutate(Task_item= as.integer(as.character(Task_item)))%>%
       filter(Task == "NN",
              SID == sub, 
              Correct == 0)%>%
-      mutate(Task_item = sort(as.integer(Task_item)))
+      mutate(Task_item = sort(as.integer(as.character(Task_item))))
     if (length(tmp$SID) == 0) {
       highest_contig = 271
       sub_contig <- data.frame(sub, highest_contig)
@@ -628,12 +642,12 @@ get_contiguous <- function(){
       highest_contig = 0
       sub_contig <- data.frame(sub, highest_contig)
       contig <- bind_rows(contig, sub_contig)
-    } else if (length(tmp$Task_item) > 0 & min(tmp$Task_item) == 5) {
+    } else if (length(tmp$Task_item) > 0 & min(as.integer(as.character(tmp$Task_item))) == 5) {
       highest_contig = 1
       sub_contig <- data.frame(sub, highest_contig)
       contig <- bind_rows(contig, sub_contig)
     } else {
-      min.nn <- min(tmp$Task_item)
+      min.nn <- min(as.integer(as.character(tmp$Task_item)))
       prev_correct <- nextnums[nextnums < min.nn]
       highest_contig <- max(prev_correct)
     
@@ -651,13 +665,21 @@ highest_contiguous_nn <- get_contiguous()%>%
 #add this to df 
 all.data <- full_join(all.data, highest_contiguous_nn, by = "SID")
 
+# #how many kids don't have a highest contiguous NN? 
+# all.data %>%
+#   filter(is.na(Language))
+#   filter(is.na(highest_contig))%>%
+#   distinct(Language, SID)%>%
+#   group_by(Language)%>%
+#   summarise(n = n())%>%
+#   kable()
 ```
 
 ##Within/outside count range
 Each trial on the Unit or WCN task was determined to be either within or outside a child's unprompted count range (IHC).
 ```{r}
 all.data %<>%
-  mutate(count_range = ifelse((Task == "SF" | Task == "NN") & as.numeric(Task_item) <= IHC, "Within", "Outside"))
+  mutate(count_range = ifelse((Task == "SF" | Task == "NN") & as.numeric(as.character(Task_item)) <= IHC, "Within", "Outside"))
 ```
 
 ---
@@ -675,6 +697,9 @@ all.data %<>%
 
 #Demographics
 ```{r, warning = FALSE}
+all.data %<>%
+  filter(!is.na(Language))
+
 #demos by age group, Language
 all.data %>%
   distinct(SID, Language, Agegroup, Age)%>%
@@ -700,6 +725,7 @@ ggplot(aes(x = Age, fill = Language)) +
   geom_histogram(binwidth = .5, colour = "black") +
   theme_bw() + 
   facet_wrap(~Language) + 
+  theme(panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = c(3.5, 4, 4.5, 5, 5.5, 6, 6.5)) +
   scale_fill_brewer(palette = "Dark2") + 
   guides(fill = FALSE) +
@@ -722,7 +748,10 @@ all.data %<>%
 ```{r}
 all.data %<>%
   mutate(IHC = as.integer(IHC), 
-         FHC = as.integer(FHC))
+         FHC = as.integer(FHC), 
+         delta.hc = FHC-IHC, 
+         prod.gradient = delta.hc/(140-IHC), 
+         prod.gradient = ifelse(IHC == 140 & FHC == 140, 1, as.numeric(prod.gradient)))
 
 all.data %>%
   filter(!is.na(Productive))%>% #filtering out cases with no productivity classification
@@ -736,6 +765,17 @@ all.data %>%
             mean_FHC = round(mean(FHC), 2), 
             sd_FHC = round(sd(FHC), 2), 
             median_FHC = round(median(FHC), 2))%>%
+  kable()
+
+#what about productivity gradient?
+all.data %>%
+  distinct(SID, Age, Productive, Language, prod.gradient, delta.hc)%>%
+  group_by(Language, Productive)%>%
+  summarise(n =n(), 
+            mean_prod.gradient = mean(prod.gradient), 
+            sd_prod.gradient = sd(prod.gradient), 
+            mean_delta.hc = mean(delta.hc), 
+            sd_delta.hc = sd(delta.hc))%>%
   kable()
 ```
 
@@ -794,7 +834,7 @@ initial_final <- all.data %>%
    mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
                             Language == "Slovenian", "HK/SLO/US", "India"))%>%
   filter(!is.na(Productive))%>%
-  distinct(SID, Language, IHC, FHC, Productive, Dataset)%>%
+  distinct(SID, Language, IHC, FHC, Productive, Dataset, prod.gradient, delta.hc)%>%
   mutate(IHC = as.numeric(IHC), 
          FHC = as.numeric(FHC))
 
@@ -836,6 +876,12 @@ ggplot(aes(x = IHC, y = FHC,
   theme(legend.position = "bottom") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+```
+
+#Productivity gradient
+```{r}
+initial_final %>%
+  
 ```
 
 
