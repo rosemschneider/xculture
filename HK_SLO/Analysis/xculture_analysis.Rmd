@@ -35,35 +35,45 @@ slo.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_S
                 Mem_check_1 = Mem_check_1_final, 
                 Mem_check_2 = Mem_check_2_final, 
                 Exclude_trial_reason = Exclude_trial_single_reason)%>%
-  mutate(Exclude_analysis = ifelse(is.na(Exclude_analysis), 0, as.numeric(as.character(Exclude_analysis))))%>%
-  mutate(Exclude_task = ifelse(is.na(Exclude_task), 0, as.numeric(as.character(Exclude_task))))%>%
-  mutate(Trial_number = ifelse(Trial_number == '0', "Training", as.character(Trial_number)), 
-         Task_item = factor(Task_item))%>%
-  mutate(Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)))%>%
-  filter(SID != "CopyPasteMe")%>%
-  mutate(Age = as.numeric(as.character(Age)), 
-         Correct = as.integer(as.character(Correct)))%>%
-  mutate(Mem_check_1 = as.integer(as.character(Mem_check_1)), 
+  mutate(Exclude_analysis = ifelse(is.na(Exclude_analysis), 0, as.numeric(as.character(Exclude_analysis))),
+         Exclude_task = ifelse(is.na(Exclude_task), 0, as.numeric(as.character(Exclude_task))), 
+         Trial_number = ifelse(Trial_number == '0', "Training", as.character(Trial_number)), 
+         Task_item = factor(Task_item), 
+         Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)),
+         Age = as.numeric(as.character(Age)), 
+         Correct = as.integer(as.character(Correct)), 
+         Mem_check_1 = as.integer(as.character(Mem_check_1)), 
          Mem_check_2 = as.integer(as.character(Mem_check_2)))%>%
-  filter(SID != "RT01") #temporary
+  filter(SID != "RT01", 
+         SID != "RT02", 
+         SID != "RT03", 
+         SID != "RT04", 
+         SID != "RT05", 
+         SID != "RT06", 
+         SID != "RT07", 
+         SID != "RT08", 
+         SID != "RT09") #temporary, until double coded
 
 #slo highest count
 slo.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/SLO_HC.csv')%>%
   dplyr::select(-Special_count, -IHC, -FHC)%>%
   dplyr::rename(IHC = IHC_final, 
-                FHC = FHC_final)%>%
-  filter(Exclude != 1)
+                FHC = FHC_final, 
+                Last_successful = Last_Successful)%>%
+  filter(Exclude != 1)%>%
+  mutate(Language = "Slovenian", 
+         Last_successful = as.integer(as.character(Last_successful)))
 ```
 
 ##Cantonese
 ```{r}
 #hk data
-hk.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/HK_data.csv')%>%
+hk.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/HK_Data.csv')%>%
   filter(SID != "CopyPasteMe")%>%
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_1_double, 
                 -Mem_check_2_single, -Mem_check_2_double, -Exclude_trial_single, 
-                -Exclude_trial_double, -X, -X.1, -X.2)%>%
+                -Exclude_trial_double, -Unit_task_repeat_alts)%>%
   dplyr::rename(Response = Response_final, 
                 Correct = Correct_final, 
                 Mem_check_1 = Mem_check_1_final, 
@@ -72,19 +82,18 @@ hk.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SL
   mutate(Age = as.numeric(as.character(Age)), 
          Correct = as.integer(as.character(Correct)), 
          Mem_check_1 = as.integer(as.character(Mem_check_1)), 
-         Mem_check_2 = as.integer(as.character(Mem_check_2)))%>%
-  mutate(Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)))%>%
-  mutate(Exclude_analysis_reason = ifelse(Exclude_analysis_reason == 0, "", as.character(Exclude_analysis_reason)))
+         Mem_check_2 = as.integer(as.character(Mem_check_2)), 
+         Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)),
+         Exclude_analysis_reason = ifelse(Exclude_analysis_reason == 0, "", as.character(Exclude_analysis_reason)))
 
 #hk highest count
 hk.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/HK_HC.csv')%>%
   dplyr::select(-Special_count, -IHC_single, -FHC_single, -hundred.syntax, 
-                -raw.count, -X, -X.1, -X.2, 
-                -X.3, -X.4, -X.5, -X.6, 
-                -X.7, -X.8, -X.9)%>%
+                -raw.count)%>%
   dplyr::rename(IHC = IHC_double, 
                 FHC = FHC_double)%>%
-  filter(Exclude != 1)
+  filter(Exclude != 1)%>%
+  mutate(Language = "Cantonese")
 ```
 
 ##English - US
@@ -93,18 +102,17 @@ us.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SL
   filter(SID != "CopyPasteMe")%>%
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_2_single, 
-         -Mem_check_1_double, -Mem_check_2_double)%>%
+         -Mem_check_1_double, -Mem_check_2_double, -repeated.alts, -Location)%>%
   dplyr::rename(Response = Response_final, 
                 Mem_check_1 = Mem_check_1_final, 
                 Mem_check_2 = Mem_check_2_final)%>%
   mutate(Age = as.numeric(as.character(Age)), 
          Mem_check_1 = as.integer(as.character(Mem_check_1)), 
          Mem_check_2 = as.integer(as.character(Mem_check_2)), 
-         Correct = as.integer(as.character(Correct)))%>%
-  mutate(Exclude_task = ifelse(is.na(Exclude_task), 0, as.character(Exclude_task)), 
-         Exclude_trial = as.integer(as.character(Exclude_trial)))%>%
-  dplyr::select(-X, -X.1)%>%
-  mutate(Exclude_task = as.integer(Exclude_task))
+         Correct = as.integer(as.character(Correct)),
+         Exclude_task = ifelse(is.na(Exclude_task), 0, as.character(Exclude_task)), 
+         Exclude_trial = as.integer(as.character(Exclude_trial)),
+         Exclude_task = as.integer(Exclude_task))
 
 #highest count
 us.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/US_HC.csv')%>%
@@ -116,15 +124,14 @@ us.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/
          Special_Count = as.integer(as.character(Special_Count)), 
          IHC = as.integer(as.character(IHC)), 
          FHC = as.integer(as.character(FHC)))%>%
-  dplyr::select(-Special_Count) %>%
-  mutate(Last_Successful = as.integer(as.character(Last_Successful)))
+  dplyr::select(-Special_Count, -IHC_single, -FHC_single, -Second_coder.notes) %>%
+  mutate(Last_Successful = as.integer(as.character(Last_Successful)), 
+         Language = "English (US)")%>%
+  dplyr::rename(Last_successful = Last_Successful, 
+                After_prompt = After_Prompt)
 ```
 
 ##India data
-TO-DO RMS: There is someone with a "ChangeMe" for language - find out who and fix. Currently they are excluded
-TO-DO RMS: It looks like people have been entering some weird stuff for memory checks - fix this on the actual data sheet, as well as all of the Languages
-TO-DO RMS: There are some notes in the data about exclusions - make sure these are incorporated in the final data set
-TO-DO RMS: Need to deal with all of the help responses
 ```{r}
 india.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/India/Data/India_Data.csv')%>%
   filter(SID != "CopyPasteMe",
@@ -134,37 +141,39 @@ india.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/In
          -Mem_check_1_double, -Mem_check_2_single, -Mem_check_2_double, -Exclude_trial_single,
          -Exclude_trial_double, -Exclude_trial_reason_single,
          -Exclude_trial_double, -Exclude_trial_reason_double)%>%
-  mutate(Response = ifelse(Response == "<NA>", NA, as.character(Response)))%>%
-  dplyr::select(-Unit_task_repeat_alts)%>%
-  mutate(Language = ifelse(Language == "English", "English - India", as.character(Language)))%>%
-  mutate(Task = ifelse(Task == "WCN", "NN", as.character(Task)))%>%
-  mutate(Trial_number = ifelse(Trial_number == "training", "Training", as.character(Trial_number)))
-
-india.full.data %>% filter(Correct == "na")
+  mutate(Response = ifelse(Response == "<NA>", NA, as.character(Response)),
+         Language = ifelse(Language == "English", "English - India", as.character(Language)),
+         Task = ifelse(Task == "WCN", "NN", as.character(Task)),
+         Trial_number = ifelse(Trial_number == "training", "Training", as.character(Trial_number)), 
+         Language = factor(Language))%>%
+  dplyr::select(-Unit_task_repeat_alts)
 ```
 
 ##India HC
 ```{r}
 india.hc <- read.csv("/Users/roseschneider/Documents/Projects/xculture/India/Data/India_HC.csv") %>%
-  # filter(Exclude != "1",
-  #          Exclude != "HELP")%>%
+  filter(Exclude != "1",
+           Exclude != "HELP")%>%
   mutate(Last_successful = as.integer(as.character(Last_successful)))%>%
-  dplyr::select(-Special_count)
+  dplyr::select(-Special_count, -IHC_single, -FHC_single, -Experimenter_missed, 
+                -Coder)%>%
+  dplyr::rename(IHC = IHC_final, 
+                FHC = FHC_final, 
+                Exclude_reason = Exclude.reason)%>%
+  mutate(Exclude = as.integer(as.character(Exclude)))
 
-##TEMPORARY##
-#only keeping the SIDs that are included in Highest Count
-included_SIDs <- as.vector(unique(india.hc$SID))
-
-#check to see if there are any SID mismatches
-check <- india.full.data %>%
-  filter(SID %!in% included_SIDs)%>%
-  distinct(SID)
-
-#filter india.full.data to keep only these kiddos
-india.full.data %<>%
-  filter(SID %in% included_SIDs)
-
-
+# ##TEMPORARY##
+# #only keeping the SIDs that are included in Highest Count
+# included_SIDs <- as.vector(unique(india.hc$SID))
+# 
+# #check to see if there are any SID mismatches
+# check <- india.full.data %>%
+#   filter(SID %!in% included_SIDs)%>%
+#   distinct(SID)
+# 
+# #filter india.full.data to keep only these kiddos
+# india.full.data %<>%
+#   filter(SID %in% included_SIDs)
 
 #Also temporary, we're going to assume that all kids with HELP are to be excluded
 india.full.data %<>%
@@ -173,7 +182,8 @@ india.full.data %<>%
          Exclude_trial = ifelse(Exclude_task == "HELP", 1, as.character(Exclude_trial)), 
          Exclude_analysis = as.integer(Exclude_analysis), 
          Exclude_task = as.integer(Exclude_task), 
-         Exclude_trial = as.integer(Exclude_trial))%>%
+         Exclude_trial = as.integer(Exclude_trial), 
+         Exclude_analysis = as.integer(as.character(Exclude_analysis)))%>%
   mutate(Mem_check_2 = ifelse(Mem_check_2 == "IDK", 0, 
                               ifelse(Mem_check_2 == "18", 0, as.integer(as.character(Mem_check_2)))))
 ```
@@ -186,9 +196,11 @@ all.data <- bind_rows(slo.full.data, hk.full.data, us.full.data, india.full.data
          Agegroup = cut(Age, breaks = c(3.49, 4, 4.5, 5, 5.5, 6, 6.66), 
                         labels = c("3.5-4", "4-4.5", "4.5-5", 
                                    "5-5.5", "5.5-6", "6-6.5")))%>%
-  mutate(Language = factor(Language))
-##highest count
+  mutate(Language = factor(Language), 
+         SID = factor(SID))%>%
+  filter(SID != "")
 
+##now highest count, with caps for IHC and FHC
 slo.hc %<>%
   filter(Exclude != 1)%>%
   mutate(IHC = ifelse(IHC > 140, 140, IHC), 
@@ -202,41 +214,23 @@ hk.hc %<>%
 us.hc %<>%
   filter(Exclude != 1)%>%
   mutate(IHC = ifelse(IHC > 140, 140, IHC), 
-         FHC = ifelse(FHC > 140, 140, FHC))%>%
-  dplyr::rename(Last_successful = Last_Successful)
+         FHC = ifelse(FHC > 140, 140, FHC))
 
 india.hc %<>%
-  filter(Exclude != 1, 
-         Exclude != "HELP", 
-         Language != "")%>%
-  dplyr::select(-IHC_single, -FHC_single)%>%
-  dplyr::rename(IHC = IHC_final, 
-                FHC = FHC_final)%>%
   mutate(IHC = as.integer(as.character(IHC)), 
          FHC = as.integer(as.character(FHC)), 
          IHC = ifelse(IHC > 140, 140, IHC), 
          FHC = ifelse(FHC > 140, 140, FHC))%>%
-  mutate(Language = ifelse(Language == "English", "English - India", as.character(Language)), 
-         Language = ifelse(Language == "English ", "English - India", as.character(Language)), 
-         Language = ifelse(Language == "Hindi ", "Hindi", as.character(Language)), 
-         Language = ifelse(Language == "Gujarati ", "Gujarati", as.character(Language)))%>%
-  mutate(Exclude = as.integer(as.character(Exclude)))%>%
-  mutate(Language = factor(Language))
+  mutate(Language = factor(Language), 
+         Last_successful)
 
 #bind hk and slo hc data
-slo.hc %<>%
-  mutate(Language = "Slovenian")%>%
-  dplyr::rename(Last_successful = Last_Successful)%>%
-  mutate(Last_successful = as.integer(as.character(Last_successful)))
-
-hk.hc %<>%
-  mutate(Language = "Cantonese")
-
-us.hc %<>%
-  mutate(Language = "English")
-
 hc.df <- bind_rows(slo.hc, hk.hc, us.hc, india.hc)%>%
-  mutate(Language = factor(Language))
+  mutate(Language = factor(Language))%>%
+  filter(SID != "")
+
+#get unique SIDs from HC
+unique_hc <- as.vector(unique(hc.df$SID))
 ```
 
 ##Check to make sure everything coded as correct is actually correct
@@ -301,9 +295,146 @@ all.data %<>%
 #mutate SID to factor
 all.data %<>%
   mutate(SID = factor(SID))%>%
-  mutate(Correct = as.integer(as.factor(Correct)))
+  mutate(Correct = as.integer(as.character(Correct)))
+```
+
+---
+#Exclusions
+##Global exclusions
+Children were excluded from the analysis only if a) they did not complete the highest count task, or b) their exclusion was noted by the experimenter. Note that there are currently participants excluded from the Slovenian dataset due to not having enough data from the WPPSI. These children may be added back in, but we're currently in a position to replace them. 
+```{r}
+all.data %>%
+  filter(Exclude_analysis == 1)%>%
+  distinct(SID, Exclude_analysis, Exclude_analysis_reason, Language)%>%
+  group_by(Language, Exclude_analysis_reason)%>%
+  summarise(n = n())%>%
+  kable()
+
+#get exclude kids, exclude from hc
+excluded_all_sids <- as.vector(unique(subset(all.data, Exclude_analysis == 1)$SID))
+
+hc.df %<>%
+  filter(SID %!in% excluded_all_sids)
+
+#exclude from full dataset
+all.data %<>%
+  filter(Exclude_analysis != 1)
+
+#Manual exclusions - these are participants who did not receive the correct number of trials in WPPSI. Manually excluded for now because we're in a position to replace them. 
+
+#slovenian
+all.data %<>%
+filter(SID != "11072018-L",
+           SID != "12072018-I",
+           SID != "19072018-J",
+           SID != "19072018-M",
+           SID != "19072018-P",
+           SID != "Naj16",
+           SID != "Sol07", 
+         SID != "Naj14")
+
+all.data %<>%
+  filter(!is.na(Language))%>%
+  filter(SID != "")
+
+#sanity checks
+unique.sid <- all.data%>%
+  distinct(SID)
+# 
+##check against HC
+unique.hc <- as.vector(unique(hc.df$SID))
+# 
+unique.sid %>%
+  filter(SID %!in% unique.hc)
+```
+
+###Task exclusions
+TO-DO RMS: Automate this in code
+Children were excluded from a given task if they did not complete at least TWO trials of that task (in addition to the training trial). In order to be considered as having completed a trial of the task, a child must at least say "I don't know."  These children were excluded manually.
+```{r}
+all.data %>%
+  filter(Exclude_task == 1)%>%
+  distinct(SID, Language, Exclude_task, Excluded_task, Exclude_task_reason)%>%
+  group_by(Language, Exclude_task_reason)%>%
+  summarise(n = n())%>%
+  kable()
+
+#exclude
+all.data %<>%
+  filter(Exclude_task != 1)
+
+#check to make sure there aren't other kids who snuck in
+check_wppsi <- all.data %>%
+  filter(Task == "WPPSI")%>%
+  filter(Exclude_trial != 1)%>%
+  mutate(Trial_number = factor(Trial_number))%>%
+  filter(Trial_number != "sample item A", 
+         Trial_number != "sample item B", 
+         Trial_number != "Sample item A", 
+         Trial_number != '1', 
+         Trial_number != '2', 
+         Trial_number != '7', 
+        Trial_number != '8')%>%
+  group_by(SID)%>%
+  summarise(n = n())%>%
+  mutate(WPPSI_exc = ifelse(n < 3, 'EXCLUDE', 'KEEP'))%>%
+  filter(WPPSI_exc == 'EXCLUDE')
+
+exclude_wppsi_SIDs <- as.vector(unique(check_wppsi$SID))
+
+#what about for other tasks?
+check_all <- all.data %>%
+  filter(Trial_number != "Training")%>%
+  group_by(SID, Task)%>%
+  summarise(n = n())%>%
+  mutate(GiveN_exc = ifelse(Task == "GiveN" & n < 2, 'EXCLUDE', 'KEEP'), 
+         SF_exc = ifelse(Task == "SF" & n < 2, 'EXCLUDE', 'KEEP'), 
+         NN_exc = ifelse(Task == "NN" & n < 2, 'EXCLUDE', 'KEEP'))%>%
+  filter(GiveN_exc == 'EXCLUDE' |
+           SF_exc == "EXCLUDE" |
+           NN_exc == 'EXCLUDE')
+
+#exclude any kids who missed manual coding
+all.data %<>%
+  mutate(Exclude_task = ifelse(SID %in% exclude_wppsi_SIDs, 1, as.integer(as.character(Exclude_task))))
+```
+
+##Excluded trials
+Trials where a participant gave no response were excluded from analysis.
+```{r}
+all.data %>%
+  filter(Exclude_trial == 1)%>%
+  group_by(Task, Exclude_trial_reason)%>%
+  summarise(n = n())
+
+all.data %<>%
+  filter(Exclude_trial != 1)
+
+#how many trials do we have for each task?
+all.data %>%
+  filter(Task == "SF" | 
+         Task == "NN")%>%
+  group_by(Language, Task, Task_item)%>%
+  summarise(n = n())
+```
+
+##Exclude practice trials for SF and NN
+Practice trials are excluded from analysis. 
+```{r}
+#how many kids failed the practice trials on these tasks?
+all.data %>%
+  filter(Task == "SF" | Task == "NN")%>%
+  filter(Task_item == "1", 
+         Correct == 0)%>%
+  group_by(Language, Task)%>%
+  summarise(n = n())
+
+#exclude practice trials
+all.data %<>%
+  filter(Trial_number != "Training")
 
 ```
+
 ---
 
 #Classifications
@@ -446,7 +577,19 @@ productive <- rbind(productive, c("GV-21-SB", 'Nonproductive', 20, 40))
 
 all.data <- full_join(all.data, productive, by = "SID")%>%
   mutate(IHC = as.integer(IHC), 
-         FHC = as.integer(FHC))
+         FHC = as.integer(FHC))%>%
+  filter(!is.na(Productive))
+
+ 
+# # for sanity checks - trying to make sure we're not leaving people out
+# unique.tmp <- as.vector(unique(tmp$SID))
+# 
+# unique.sid <- all.data %>%
+#   filter(SID %!in% unique.hc)%>%
+#   distinct(SID)
+# 
+# unique.hc <- hc.df %>%
+#   distinct(SID)
 ```
 
 ##Highest Contiguous NN
@@ -518,129 +661,6 @@ all.data %<>%
 ```
 
 ---
-#Exclusions
-##Global exclusions
-Children were excluded from the analysis only if a) they did not complete the highest count task, or b) their exclusion was noted by the experimenter. Note that there are currently participants excluded from the Slovenian dataset due to not having enough data from the WPPSI. These children may be added back in, but we're currently in a position to replace them. 
-```{r}
-all.data %>%
-  filter(Exclude_analysis == 1)%>%
-  distinct(SID, Exclude_analysis, Exclude_analysis_reason, Language)
-
-#exclude
-all.data %<>%
-  filter(Exclude_analysis != 1)
-
-#Manual exclusions - these are participants who did not receive the correct number of trials in WPPSI. Manually excluded for now because we're in a position to replace them. 
-
-#slovenian
-all.data %<>%
-filter(SID != "11072018-L",
-           SID != "12072018-I",
-           SID != "19072018-J",
-           SID != "19072018-M",
-           SID != "19072018-P",
-           SID != "Naj16",
-           SID != "Sol07", 
-         SID != "Naj14")
-
-#US
-all.data %<>%
-  filter(SID != "081318-LH", 
-         SID != "073118-TC", 
-         SID != "072618-DH", 
-         SID != "072518-SH", 
-         SID != '072418-GG', 
-         SID != "072318-W", 
-         SID != "072318-EB",
-         SID != "072318-AT", 
-         SID != "0723118-LM")
-
-all.data %<>%
-  filter(!is.na(Language))
-```
-
-###Task exclusions
-TO-DO RMS: Automate this in code
-Children were excluded from a given task if they did not complete at least TWO trials of that task (in addition to the training trial). In order to be considered as having completed a trial of the task, a child must at least say "I don't know."  These children were excluded manually.
-```{r}
-all.data %>%
-  filter(Exclude_task == 1)%>%
-  distinct(SID, Language, Exclude_task, Excluded_task, Exclude_task_reason)
-
-#check to make sure there aren't other kids who snuck in
-check_wppsi <- all.data %>%
-  filter(Task == "WPPSI")%>%
-  filter(Exclude_trial != 1)%>%
-  mutate(Trial_number = factor(Trial_number))%>%
-  filter(Trial_number != "sample item A", 
-         Trial_number != "sample item B", 
-         Trial_number != "Sample item A", 
-         Trial_number != '1', 
-         Trial_number != '2', 
-         Trial_number != '7', 
-        Trial_number != '8')%>%
-  group_by(SID)%>%
-  summarise(n = n())%>%
-  mutate(WPPSI_exc = ifelse(n < 3, 'EXCLUDE', 'KEEP'))%>%
-  filter(WPPSI_exc == 'EXCLUDE')
-
-exclude_wppsi_SIDs <- as.vector(unique(check_wppsi$SID))
-
-#this is currently 0, need to update so exclusions can be run on this
-check_all <- all.data %>%
-  filter(Trial_number != "Training")%>%
-  group_by(SID, Task)%>%
-  summarise(n = n())%>%
-  mutate(GiveN_exc = ifelse(Task == "GiveN" & n < 2, 'EXCLUDE', 'KEEP'), 
-         SF_exc = ifelse(Task == "SF" & n < 2, 'EXCLUDE', 'KEEP'), 
-         NN_exc = ifelse(Task == "NN" & n < 2, 'EXCLUDE', 'KEEP'))%>%
-  filter(GiveN_exc == 'EXCLUDE' |
-           SF_exc == "EXCLUDE" |
-           NN_exc == 'EXCLUDE')
-
-all.data %<>%
-  mutate(Exclude_task = ifelse(SID %in% exclude_wppsi_SIDs, 1, as.integer(as.character(Exclude_task))))
-
-
-#exclude
-all.data %<>%
-  filter(Exclude_task != 1)
-```
-
-##Excluded trials
-Trials where a participant gave no response were excluded from analysis.
-```{r}
-all.data %>%
-  filter(Exclude_trial == 1)%>%
-  group_by(Task, Exclude_trial_reason)%>%
-  summarise(n = n())
-
-all.data %<>%
-  filter(Exclude_trial != 1)
-
-#how many trials do we have for each task?
-all.data %>%
-  filter(Task == "SF" | 
-         Task == "NN")%>%
-  group_by(Language, Task, Task_item)%>%
-  summarise(n = n())
-```
-
-##Exclude practice trials for SF and NN
-Practice trials are excluded from analysis. 
-```{r}
-#how many kids failed the practice trials on these tasks?
-all.data %>%
-  filter(Task == "SF" | Task == "NN")%>%
-  filter(Task_item == 1, 
-         Correct == 0)%>%
-  group_by(Task)%>%
-  summarise(n = n())
-
-#exclude practice trials
-all.data %<>%
-  filter(Trial_number != "Training")
-```
 
 ##Memory checks - NAs to 1
 Some participants have NAs rather than 1 for their first memory check. Also, if first mem check is a 0, and second is NA, change that second one to 1.
