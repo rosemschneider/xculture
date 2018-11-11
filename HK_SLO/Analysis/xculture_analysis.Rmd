@@ -442,6 +442,48 @@ all.data %<>%
 
 ```
 
+##Track exclusions
+```{r, warnings = FALSE}
+slo.ex <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/SLO_Exclusions.csv')
+hk.ex <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/HK_Exclusions.csv')%>%
+  mutate(HC = factor(HC))
+us.ex <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/US_Exclusions.csv')%>%
+  mutate(Age = as.numeric(as.character(Age)))
+india.ex <- read.csv('/Users/roseschneider/Documents/Projects/xculture/India/Data/India_Exclusions.csv')%>%
+  mutate(Age = as.numeric(as.character(Age)))
+
+exclusions.all <- bind_rows(slo.ex, hk.ex, us.ex, india.ex)%>%
+  mutate(Dataset = ifelse(Language == "Cantonese" | Language == "Slovenian" |
+                            Language == "English - US", "HK/SLO/US", "India"))%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English - US", "Hindi", 
+                                                "Gujarati", "English - India")))
+
+#total number of kids by dataset
+x <- exclusions.all %>%
+  group_by(Language, Dataset)%>%
+  summarise(n = n())%>%
+  group_by(Language)%>%
+  mutate(total.n.lang = sum(n)) %>%
+  group_by(Dataset)%>%
+  mutate(total.n.dataset = sum(n))
+
+##total included
+tot.incl <- exclusions.all %>%
+  filter(Exclude_analysis == "0")%>%
+  group_by(Language, Dataset)%>%
+  summarise(n = n())%>%
+  group_by(Dataset)%>%
+  mutate(total.n = sum(n))
+
+#total exclusions
+y <- exclusions.all %>%
+  filter(Exclude_analysis != "0")%>%
+  group_by(Dataset, Exclude_analysis_reason)%>%
+  summarise(n = n())%>%
+  group_by(Dataset)%>%
+  mutate(total.ex = sum(n))
+```
+
 ---
 
 #Classifications
@@ -720,6 +762,16 @@ all.data %>%
             Mean_age = mean(Age, na.rm = TRUE), 
             SD_age = sd(Age, na.rm = TRUE))%>%
   kable()
+
+#sex
+all.data %>%
+  distinct(SID, Language, Sex)%>%
+  group_by(Language, Sex)%>%
+  summarise(n = n())%>%
+  group_by(Language)%>%
+  mutate(total.n = sum(n))%>%
+  kable()
+
   
 #histogram of age
 all.data %>%
@@ -780,6 +832,75 @@ all.data %>%
             mean_delta.hc = mean(delta.hc), 
             sd_delta.hc = sd(delta.hc))%>%
   kable()
+
+#mean ihc/fhc by language
+all.data %>%
+  distinct(SID, Age, Language, IHC, FHC)%>%
+  group_by(Language)%>%
+  summarise(mean_IHC = mean(IHC), 
+           sd_IHC = sd(IHC), 
+           mean_FHC = mean(FHC), 
+           sd_FHC = sd(FHC))
+
+#how many prompts do productive and nonproductive counters need? and what kind of errors do they make?
+#bind productive and hc.df 
+productive %<>% 
+  dplyr::select(SID, Productive)
+
+error.freq <- full_join(hc.df, productive, by = "SID")%>%
+  filter(!is.na(Last_successful))%>%
+  mutate(Error_type = ifelse(Last_successful %% 10 == 9, "Decade end", 
+                             ifelse(Last_successful %% 10 == 0, "Decade beginning", "Mid decade")))
+
+#mean number of prompts by Language, productivity
+mean_prompts <- error.freq %>%
+  group_by(SID, Language, Productive)%>%
+  summarise(n = n())%>%
+  group_by(Language, Productive)%>%
+  summarise(mean_prompts = mean(n), 
+            sd_prompts = sd(n))
+
+#frequency of error types
+error.freq %>% 
+  filter(!is.na(Error_type))%>%
+  mutate(Dataset = ifelse(Language == "English" | 
+                            Language == "Hindi" | 
+                            Language == "Gujarati", "India", "HK/SLO"))%>%
+  filter(Dataset == "HK/SLO")%>%
+  mutate(Language = ifelse(Language == "English (US)", "English", as.character(Language)))%>%
+  group_by(Language, Productive, Error_type)%>%
+  summarise(n = n()) %>%
+  ggplot(aes(x = Error_type, y = n, fill = Productive)) + 
+  geom_bar(stat = "identity") +
+  theme_bw(base_size = 13) + 
+  facet_grid(~Language) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(), 
+        legend.position = "bottom") +
+  scale_fill_manual(values = productivity.pal) + 
+  labs(x = "Error type", y = "Number of errors")
+
+error.freq %>% 
+  filter(!is.na(Error_type))%>%
+  mutate(Dataset = ifelse(Language == "English" | 
+                            Language == "Hindi" | 
+                            Language == "Gujarati", "India", "HK/SLO"))%>%
+  filter(Dataset == "India")%>%
+  mutate(Language = ifelse(Language == "English (US)", "English", as.character(Language)))%>%
+  group_by(Language, Productive, Error_type)%>%
+  summarise(n = n()) %>%
+  ggplot(aes(x = Error_type, y = n, fill = Productive)) + 
+  geom_bar(stat = "identity") +
+  theme_bw(base_size = 13) + 
+  facet_grid(~Language) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(), 
+        legend.position = "bottom") +
+  scale_fill_manual(values = productivity.pal) + 
+  labs(x = "Error type", y = "Number of errors")
+
 ```
 
 ---
