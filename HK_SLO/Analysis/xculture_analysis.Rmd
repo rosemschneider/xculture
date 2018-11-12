@@ -197,7 +197,10 @@ all.data <- bind_rows(slo.full.data, hk.full.data, us.full.data, india.full.data
                                    "5-5.5", "5.5-6", "6-6.5")))%>%
   mutate(Language = factor(Language), 
          SID = factor(SID))%>%
-  filter(SID != "")
+  filter(SID != "")%>%
+  mutate(Dataset = ifelse(Language == "English" |
+                            Language == "Cantonese" |
+                            Language == "Slovenian", "HK/SLO/US", "India"))
 
 ##now highest count, with caps for IHC and FHC
 slo.hc %<>%
@@ -801,6 +804,8 @@ all.data %<>%
 
 ###Productivity descriptives
 ```{r}
+productivity.pal <- c("#666666","#00b8e6")
+
 all.data %<>%
   mutate(IHC = as.integer(IHC), 
          FHC = as.integer(FHC), 
@@ -849,28 +854,46 @@ productive %<>%
 
 error.freq <- full_join(hc.df, productive, by = "SID")%>%
   filter(!is.na(Last_successful))%>%
-  mutate(Error_type = ifelse(Last_successful %% 10 == 9, "Decade end", 
-                             ifelse(Last_successful %% 10 == 0, "Decade beginning", "Mid decade")))
+  mutate(Error_type = ifelse((Language == "Cantonese" | 
+                                Language == "Slovenian" |
+                                Language == "English" |
+                                Language == "English (US)") & Last_successful %% 10 == 9 , "Decade end", 
+                             ifelse(Last_successful %% 10 == 0, "Decade beginning",
+                                    ifelse(Last_successful %% 10 == 8 & (Language == "Hindi" | Language == "Gujarati"), "Hindi/Gujarati pre-decade transition", "Mid-decade"))))
 
 #mean number of prompts by Language, productivity
-mean_prompts <- error.freq %>%
-  group_by(SID, Language, Productive)%>%
+mean_prompts.type <- error.freq %>%
+  group_by(Language, Error_type, Productive)%>%
   summarise(n = n())%>%
   group_by(Language, Productive)%>%
-  summarise(mean_prompts = mean(n), 
-            sd_prompts = sd(n))
+  mutate(total.n = sum(n), 
+            prop = n/total.n)
+
+mean_prompts.type.prod <- error.freq %>%
+  group_by(Language, Error_type, Productive)%>%
+  filter(Productive == "Productive")%>%
+  summarise(n = n())%>%
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+            prop = n/total.n)
+
+mean_prompts.type.nonprod <- error.freq %>%
+  group_by(Language, Error_type, Productive)%>%
+  filter(Productive == "Nonproductive")%>%
+  summarise(n = n())%>%
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+            prop = n/total.n)
 
 #frequency of error types
-error.freq %>% 
+#exp. 1
+mean_prompts.type %>%
   filter(!is.na(Error_type))%>%
   mutate(Dataset = ifelse(Language == "English" | 
                             Language == "Hindi" | 
                             Language == "Gujarati", "India", "HK/SLO"))%>%
   filter(Dataset == "HK/SLO")%>%
-  mutate(Language = ifelse(Language == "English (US)", "English", as.character(Language)))%>%
-  group_by(Language, Productive, Error_type)%>%
-  summarise(n = n()) %>%
-  ggplot(aes(x = Error_type, y = n, fill = Productive)) + 
+  ggplot(aes(x = Error_type, y = prop, fill = Productive)) + 
   geom_bar(stat = "identity") +
   theme_bw(base_size = 13) + 
   facet_grid(~Language) +
@@ -879,37 +902,35 @@ error.freq %>%
         panel.grid.major = element_blank(), 
         legend.position = "bottom") +
   scale_fill_manual(values = productivity.pal) + 
-  labs(x = "Error type", y = "Number of errors")
+  labs(x = "Error type", y = "Proportion of errors")
 
-error.freq %>% 
+#exp. 2
+mean_prompts.type %>% 
   filter(!is.na(Error_type))%>%
   mutate(Dataset = ifelse(Language == "English" | 
                             Language == "Hindi" | 
                             Language == "Gujarati", "India", "HK/SLO"))%>%
   filter(Dataset == "India")%>%
-  mutate(Language = ifelse(Language == "English (US)", "English", as.character(Language)))%>%
-  group_by(Language, Productive, Error_type)%>%
-  summarise(n = n()) %>%
-  ggplot(aes(x = Error_type, y = n, fill = Productive)) + 
+  ggplot(aes(x = Error_type, y = prop, fill = Productive)) + 
   geom_bar(stat = "identity") +
   theme_bw(base_size = 13) + 
-  facet_grid(~Language) +
+  facet_grid(~Language, scale = "free_x") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
         panel.grid.minor = element_blank(),
         panel.grid.major = element_blank(), 
         legend.position = "bottom") +
   scale_fill_manual(values = productivity.pal) + 
-  labs(x = "Error type", y = "Number of errors")
-
+  labs(x = "Error type", y = "Proportion of errors")
 ```
+
 
 ---
 
 #Task visualizations
 ##Highest count
 ###Histogram Initial and Final Highest Count
+
 ```{r}
-productivity.pal <- c("#666666","#00b8e6")
 
 unique.hc.data <- all.data %>%
   mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
@@ -952,11 +973,10 @@ ggplot(aes(x=highest_count, fill=Productive)) +
 
 ```
 
+
 ###Scatterplot of IHC and FHC
 ```{r}
 initial_final <- all.data %>%
-   mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
   filter(!is.na(Productive))%>%
   distinct(SID, Language, IHC, FHC, Productive, Dataset, prod.gradient, delta.hc)%>%
   mutate(IHC = as.numeric(IHC), 
@@ -1004,70 +1024,145 @@ ggplot(aes(x = IHC, y = FHC,
 
 #Productivity gradient - to-do
 ```{r}
-initial_final %>%
-  filter(Dataset != "India")%>%
-  ggplot(aes(x = reorder(LadlabID, hc, FUN=min), y = hc)) + 
-  facet_grid(rows = vars(Productivity)) +
-  geom_line(data=hc.dev.prod[!is.na(hc.dev.prod$hc),]) + 
-  geom_point(aes(shape = `Highest Count Coding`, colour = `Highest Count Coding`), 
-             size = 2, stroke = 1.5) +
-  scale_color_brewer(palette="Dark2") +
-  scale_shape_manual(values = c(4,5,20)) +
-  ylim(0, 100) +
-  labs(title="A. Distance, Productive Decade Counters",
-       x = "Each line = individual participant",
+hc.dev.data <- all.data %>%
+  dplyr::select(SID, Language, Age, Dataset, Productive, prod.gradient, IHC, FHC) %>%
+  gather(hcprogression, hc, IHC:FHC)%>%
+  mutate(hcprogression = factor(hcprogression, levels = c("IHC", "FHC"))) %>%
+  dplyr::rename(`Highest Count Coding` = hcprogression)
+
+hc.dev.data %>%
+  filter(Dataset == "India")%>%
+  filter(Productive == "Nonproductive")%>%
+ggplot(aes(x = reorder(SID, hc, FUN=min), y = hc, colour = prod.gradient)) + 
+  facet_grid(~Language, scale = "free_x") +
+  geom_point(aes(shape = `Highest Count Coding`), 
+             size = 1.2, stroke = 1.2) +
+  geom_line() + 
+  # scale_color_brewer(palette="Dark2") +
+  scale_shape_manual(values = c(5, 20)) +
+  scale_y_continuous(breaks = seq(0, 140, 10)) +
+  labs(x = "Each line = individual participant",
        y="Highest Count") +
-  theme_bw(base_size = 13) + 
+  theme_bw() + 
   theme(legend.position="bottom", 
         axis.text.x = element_text(angle = 270, hjust = 1)) + 
   theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-ggsave('graphs/distance-prod-sorted.png')
+        axis.ticks.x=element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank()) +
+  scale_colour_gradient(low = "#666666",
+                        high = "#00b8e6") +
+  labs(shape = "Highest Count Type", colour = "Productivity Gradient")
+  
   
 ```
 
 
-#Distance line graph - to do
-```{r, include = FALSE}
-#HK/SLO/US
-unique.hc.data %>%
-  filter(Dataset == "HK/SLO/US", 
-         Productive == "Productive")%>%
-ggplot(aes(x = SID, y = highest_count)) + 
-  facet_grid(rows = vars(Productive)) +
-  geom_line() + 
-  geom_point(aes(shape = IHC_FHC, colour = IHC_FHC), 
-             size = 2, stroke = 1.5) +
-  scale_color_brewer(palette="Paired", direction = 1) +
-  scale_shape_manual(values = c(4,5,20)) +
-  labs(title="Distance between initial and final highest counts",
-       x = "Each line = individual kids",
-       y="Highest Count by Count Type") +
-  theme_bw(base_size = 7) + 
-  theme(legend.position="bottom", 
-        axis.text.x = element_text(angle = 90, hjust = 1)) +
-  facet_wrap(~Language, scales = "free_x")
 
-#India
-unique.hc.data %>%
-  filter(Dataset == "India", 
-         Productive == "Productive")%>%
-ggplot(aes(x = SID, y = highest_count)) + 
-  facet_grid(rows = vars(Productive)) +
-  geom_line() + 
-  geom_point(aes(shape = IHC_FHC, colour = IHC_FHC), 
-             size = 2, stroke = 1.5) +
-  scale_color_brewer(palette="Paired", direction = 1) +
-  scale_shape_manual(values = c(4,5,20)) +
-  labs(title="Distance between initial and final highest counts",
-       x = "Each line = individual kids",
-       y="Highest Count by Count Type") +
-  theme_bw(base_size = 7) + 
-  theme(legend.position="bottom", 
-        axis.text.x = element_text(angle = 90, hjust = 1)) +
-  facet_wrap(~Language, scales = "free_x")
+#Gaussian mixture modeling
+##Test for multiple modes, quantify each mode
+First, get density of IHC in each language
+```{r}
+initial_final %>%
+  dplyr::select(IHC, Language)%>%
+  mutate(Dataset = ifelse(Language == "Cantonese" |
+                            Language == "Slovenian" |
+                            Language == "English", "HK/SLO/US", "India"))%>%
+  ggplot(aes(x = IHC, colour= Language)) + geom_density(adjust = .3) + 
+  scale_x_continuous(breaks = seq(0, 140, 10)) +
+  facet_grid(~Dataset) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_colour_brewer(palette = "Dark2")
 ```
 
+##Get number of clusters (modes) for each language, mean and variance of each cluster
+```{r}
+library(mclust)
+#Cantonese
+cant.df <- initial_final %>%
+  filter(Language == "Cantonese")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(cant.df)
+plot(BIC)
+
+summary(BIC)
+mod.cant <- Mclust(cant.df, x = BIC)
+summary(mod.cant, parameters = TRUE)
+
+plot(mod.cant, what = "classification")
+
+#Slovenian
+slo.df <- initial_final %>%
+  filter(Language == "Slovenian")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(slo.df)
+plot(BIC)
+
+summary(BIC)
+mod.slo <- Mclust(slo.df, x = BIC)
+summary(mod.slo, parameters = TRUE)
+
+plot(mod.slo, what = "classification")
+
+#English
+us.df <- initial_final %>%
+  filter(Language == "English")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(us.df)
+plot(BIC)
+
+summary(BIC)
+mod.us <- Mclust(us.df, x = BIC)
+summary(mod.us, parameters = TRUE)
+
+plot(mod.us, what = "classification")
+
+#Hindi
+hindi.df <- initial_final %>%
+  filter(Language == "Hindi")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(hindi.df)
+plot(BIC)
+
+summary(BIC)
+mod.hindi <- Mclust(hindi.df, x = BIC)
+summary(mod.hindi, parameters = TRUE)
+
+plot(mod.hindi, what = "classification")
+
+#Gujarati
+gujarati.df <- initial_final %>%
+  filter(Language == "Gujarati")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(gujarati.df)
+plot(BIC)
+
+summary(BIC)
+mod.gujarati <- Mclust(gujarati.df, x = BIC)
+summary(mod.gujarati, parameters = TRUE)
+
+plot(mod.gujarati, what = "classification")
+
+#Indian English
+ind.eng.df <- initial_final %>%
+  filter(Language == "English - India")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(ind.eng.df)
+plot(BIC)
+
+summary(BIC)
+mod.ind.eng <- Mclust(ind.eng.df, x = BIC)
+summary(mod.ind.eng, parameters = TRUE)
+
+plot(mod.ind.eng, what = "classification")
+```
 
 
 
