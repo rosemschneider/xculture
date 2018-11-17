@@ -967,17 +967,79 @@ mean_prompts.type %>%
   labs(x = "Error type", y = "Proportion of errors")
 ```
 
-#Where are errors happening?
+#Where are errors happening? - in progress, how can we visualize these?
+#IDEA - frequency by decade, frequency within decade
 ```{r}
-error.freq %>%
-  filter(Language == "English")%>%
-  group_by(Language, Productive, Last_successful)%>%
-  summarise(n = n())%>%
-  ggplot(aes(x = Last_successful, y = n, fill = Productive)) +
-  geom_bar(stat = "identity") + 
-  theme_bw() +
-  facet_grid(~Language) +
-  scale_x_continuous(breaks = seq(0, 140, 10))
+error.freq.decade <- error.freq %>%
+  mutate(error.decade = ifelse(Last_successful < 10, 0, 
+                               ifelse(Last_successful >= 10 & Last_successful < 20, 10, 
+                                      ifelse(Last_successful >= 20 & Last_successful < 30, 20, 
+                                             ifelse(Last_successful >= 30 & Last_successful < 40, 30, 
+                                                    ifelse(Last_successful >=40 & Last_successful < 50, 40, 
+                                                           ifelse(Last_successful >= 50 & Last_successful < 60, 50, 
+                                                                  ifelse(Last_successful >= 60 & Last_successful < 70, 60, 
+                                                                         ifelse(Last_successful >= 70 & Last_successful < 80, 70, 
+                                                                                ifelse(Last_successful >= 80 & Last_successful < 90, 80, 
+                                                                                       ifelse(Last_successful >= 90 & Last_successful < 100, 90, 
+                                                                                              ifelse(Last_successful >= 100 & Last_successful < 110, 100, 
+                                                                                                     ifelse(Last_successful >= 110 & Last_successful < 120, 110, 
+                                                                                                            ifelse(Last_successful >= 120 & Last_successful < 130, 120,130)))))))))))))) %>%
+  mutate(error.base = (error.decade - Last_successful) * -1)
+
+error.freq.decade %>%
+  filter(Language == "Cantonese" | 
+           Language == "English (US)" |
+           Language == "Slovenian")%>%
+  mutate(Language = factor(Language, levels = c("English (US)", "Slovenian", "Cantonese")), 
+         Productive = factor(Productive, levels = c("Productive", "Nonproductive"))) %>%
+  mutate(error.decade = factor(error.decade, levels = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 
+                                                        90, 100, 110, 120, 130)),
+         error.base = factor(error.base))%>%
+  mutate(Lang.prod = paste0(as.character(Language), " ", as.character(Productive), collapse = NULL))%>%
+  group_by(Language, Productive, error.decade)%>%
+  summarise(n = n())%>% 
+  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+  ggplot(aes(x = error.decade, y = Language)) +
+  geom_tile(aes(fill = n)) +
+  geom_text(aes(label = as.character(n)), 
+            size = 3.5) +
+  coord_equal() +
+  scale_fill_gradient2(low = "white", high = "red", "") + 
+  theme_bw(base_size = 13) + 
+  labs(x = "Decade of error") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  facet_grid(rows = vars(Productive))
+
+error.freq.decade %>%
+  filter(Language == "Hindi" | 
+           Language == "English" |
+           Language == "Gujarati")%>%
+  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English")), 
+         Productive = factor(Productive, levels = c("Productive", "Nonproductive"))) %>%
+  mutate(error.decade = factor(error.decade, levels = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 
+                                                        90, 100, 110, 120, 130)),
+         error.base = factor(error.base))%>%
+  mutate(Lang.prod = paste0(as.character(Language), " ", as.character(Productive), collapse = NULL))%>%
+  group_by(Language, Productive, error.decade)%>%
+  summarise(n = n())%>% 
+  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+  ggplot(aes(x = error.decade, y = Language)) +
+  geom_tile(aes(fill = n)) +
+  geom_text(aes(label = as.character(n)), 
+            size = 3.5) +
+  coord_equal() +
+  scale_fill_gradient2(low = "white", high = "red", "") + 
+  theme_bw(base_size = 13) + 
+  labs(x = "Decade of error") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  facet_grid(rows = vars(Productive))
+
 ```
 
 
