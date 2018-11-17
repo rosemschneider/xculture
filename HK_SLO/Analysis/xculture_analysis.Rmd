@@ -487,6 +487,18 @@ y <- exclusions.all %>%
   mutate(total.ex = sum(n))
 ```
 
+#Sanity check - does anyone have crazy low number of trials?
+```{r}
+#total number of possible trials = 4 + 12 + 12 + 3 = 31
+all.data %>%
+  group_by(SID)%>%
+  summarise(n = n())%>%
+  mutate(prop = n/31)%>%
+  filter(prop < .8)
+##Decision - Indian English, excluding kids who do not have NN.
+
+```
+
 ---
 
 #Classifications
@@ -535,7 +547,8 @@ hc.df %<>%
          SID != "SR-8-MP", 
          SID != "CH-MV-14", 
          SID != 'GV-21-SB', 
-         SID != 'RT09')#excluding these kids because they break my productivity code
+         SID != 'RT09', 
+         SID != 'SK-M-4-GJ')#excluding these kids because they break my productivity code
 
 hc <- hc.df %>% # replace with your local path
   dplyr::select(SID, Last_successful, IHC, FHC, Language) %>%
@@ -615,6 +628,7 @@ productive <- class_prod(unique_SIDs)%>%
 #CH-MV-14, IHC = 48, FHC = 68, Nonproductive
 #GV-21-SB, IHC = 20, FHC = 40, nonproductive
 #RT09, IHC = 20, FHC = 43, Nonproductive
+#SK-M-4-GJ, IHC = 20, FHC = 44, Nonproductive
 
 hc %<>%
   dplyr::select(-Last_successful)
@@ -629,6 +643,7 @@ productive <- rbind(productive, c('SR-8-MP', 'Nonproductive', 19, 39))
 productive <- rbind(productive, c('CH-MV-14', 'Nonproductive', 48, 68))
 productive <- rbind(productive, c("GV-21-SB", 'Nonproductive', 20, 40))
 productive <- rbind(productive, c('RT09', 'Nonproductive', 20, 43))
+productive <- rbind(productive, c('SK-M-4-GJ', 'Nonproductive', 20, 44))
 
 all.data <- full_join(all.data, productive, by = "SID")%>%
   mutate(IHC = as.integer(IHC), 
@@ -802,6 +817,35 @@ all.data %<>%
   filter(!is.na(Language))
 ```
 
+#Simple log regression, prod. by Language
+```{r}
+class.data <- all.data %>%
+  filter(Language == "English" |
+           Language == "Cantonese" | 
+           Language == "Slovenian")%>%
+  distinct(SID, Productive, Language)%>%
+  mutate(Productive = factor(Productive))
+  
+
+prod.lang <- glm(Productive ~ Language, family = "binomial", data = class.data)
+summary(prod.lang)
+
+#english v. slovenian
+class.data <- all.data %>%
+  filter(Language == "English" |
+           Language == "Cantonese" | 
+           Language == "Slovenian")%>%
+  distinct(SID, Productive, Language)%>%
+  mutate(Productive = factor(Productive), 
+         Language = factor(Language, levels = c("Slovenian", "Cantonese", "English")))
+  
+
+prod.lang <- glm(Productive ~ Language, family = "binomial", data = class.data)
+summary(prod.lang)
+
+##Need to repeat for Hindi/Gujarati
+```
+
 ###Productivity descriptives
 ```{r}
 productivity.pal <- c("#666666","#00b8e6")
@@ -921,6 +965,19 @@ mean_prompts.type %>%
         legend.position = "bottom") +
   scale_fill_manual(values = productivity.pal) + 
   labs(x = "Error type", y = "Proportion of errors")
+```
+
+#Where are errors happening?
+```{r}
+error.freq %>%
+  filter(Language == "English")%>%
+  group_by(Language, Productive, Last_successful)%>%
+  summarise(n = n())%>%
+  ggplot(aes(x = Last_successful, y = n, fill = Productive)) +
+  geom_bar(stat = "identity") + 
+  theme_bw() +
+  facet_grid(~Language) +
+  scale_x_continuous(breaks = seq(0, 140, 10))
 ```
 
 
@@ -1164,6 +1221,128 @@ summary(mod.ind.eng, parameters = TRUE)
 plot(mod.ind.eng, what = "classification")
 ```
 
+##Test for multiple modes, quantify each mode - FHC
+First, get density of FHC in each language
+```{r}
+initial_final %>%
+  dplyr::select(FHC, Language)%>%
+  mutate(Dataset = ifelse(Language == "Cantonese" |
+                            Language == "Slovenian" |
+                            Language == "English", "HK/SLO/US", "India"))%>%
+  ggplot(aes(x = FHC, colour= Language)) + geom_density(adjust = .3) + 
+  scale_x_continuous(breaks = seq(0, 140, 10)) +
+  facet_grid(~Dataset) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_colour_brewer(palette = "Dark2")
+```
+
+##Get number of clusters (modes) for each language, mean and variance of each cluster
+```{r}
+library(mclust)
+#Cantonese
+cant.df <- initial_final %>%
+  filter(Language == "Cantonese")%>%
+  dplyr::select(FHC)
+
+BIC <- mclustBIC(cant.df)
+plot(BIC)
+
+summary(BIC)
+mod.cant <- Mclust(cant.df, x = BIC)
+summary(mod.cant, parameters = TRUE)
+
+plot(mod.cant, what = "classification")
+
+#Slovenian
+slo.df <- initial_final %>%
+  filter(Language == "Slovenian")%>%
+  dplyr::select(FHC)
+
+BIC <- mclustBIC(slo.df)
+plot(BIC)
+
+summary(BIC)
+mod.slo <- Mclust(slo.df, x = BIC)
+summary(mod.slo, parameters = TRUE)
+
+plot(mod.slo, what = "classification")
+
+#English
+us.df <- initial_final %>%
+  filter(Language == "English")%>%
+  dplyr::select(FHC)
+
+BIC <- mclustBIC(us.df)
+plot(BIC)
+
+summary(BIC)
+mod.us <- Mclust(us.df, x = BIC)
+summary(mod.us, parameters = TRUE)
+
+plot(mod.us, what = "classification")
+
+#Hindi
+hindi.df <- initial_final %>%
+  filter(Language == "Hindi")%>%
+  dplyr::select(FHC)
+
+BIC <- mclustBIC(hindi.df)
+plot(BIC)
+
+summary(BIC)
+mod.hindi <- Mclust(hindi.df, x = BIC)
+summary(mod.hindi, parameters = TRUE)
+
+plot(mod.hindi, what = "classification")
+
+#Gujarati
+gujarati.df <- initial_final %>%
+  filter(Language == "Gujarati")%>%
+  dplyr::select(FHC)
+
+BIC <- mclustBIC(gujarati.df)
+plot(BIC)
+
+summary(BIC)
+mod.gujarati <- Mclust(gujarati.df, x = BIC)
+summary(mod.gujarati, parameters = TRUE)
+
+plot(mod.gujarati, what = "classification")
+
+#Indian English
+ind.eng.df <- initial_final %>%
+  filter(Language == "English - India")%>%
+  dplyr::select(FHC)
+
+BIC <- mclustBIC(ind.eng.df)
+plot(BIC)
+
+summary(BIC)
+mod.ind.eng <- Mclust(ind.eng.df, x = BIC)
+summary(mod.ind.eng, parameters = TRUE)
+
+plot(mod.ind.eng, what = "classification")
+```
+
+#Identifying clusters from IHC-FHC by language
+```{r}
+cant.clust <- initial_final %>%
+  filter(Language == "Cantonese")%>%
+  dplyr::select(IHC, FHC)
+
+BIC <- mclustBIC(cant.clust)
+plot(BIC)
+
+summary(BIC)
+mod.cant.clust <- Mclust(cant.clust, x = BIC)
+summary(mod.cant.clust, parameters = TRUE)
+
+plot(mod.cant.clust, what = "classification")
+my.data <- mod.cant.clust
+cant.clus <- mod.cant.clust$data
+cant.clus$CLUST <- mod.cant.clust$classification
+```
 
 
 ---
@@ -1235,8 +1414,7 @@ all.data %>%
 ```{r}
 all.data %>%
   filter(Task == "SF")%>%
- mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
+  filter(Dataset == "HK/SLO/US") %>%
   group_by(SID, Language, Dataset, Productive)%>%
   summarise(mean = mean(as.numeric(as.character(Correct)), na.rm=TRUE),
             sd = sd(as.numeric(as.character(Correct)), na.rm=TRUE)) %>%
@@ -1260,14 +1438,13 @@ all.data %>%
   xlab('') + 
   theme_bw(base_size = 13) + 
   theme(legend.position = "bottom") +
-  ggtitle("Overall mean correct on Unit Task") +
+  # ggtitle("Overall mean correct on Unit Task") +
   theme(text = element_text(size = 12), 
         panel.grid.minor = element_blank(), 
         panel.grid.major = element_blank()) +
   ylim(0, 1.0) +
   scale_fill_brewer(palette = "Dark2", guide = "none") +
   scale_colour_manual(values = productivity.pal) +
-  facet_grid(~Dataset, scale = "free_x") + 
   guides(size = "none")
 ```
 
@@ -1308,9 +1485,8 @@ all.data %>%
 ```{r}
 all.data %>%
   filter(!is.na(Productive))%>%
-  mutate(Dataset = ifelse(Language == "English" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  filter(Task == "SF")%>%
+  filter(Task == "SF", 
+         Dataset == "HK/SLO/US")%>%
   group_by(SID, Productive, Language, Dataset)%>%
   summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
             sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
@@ -1328,10 +1504,10 @@ all.data %>%
                position = position_dodge(width=0.90), width = 0.2)+
   ylab("Mean correct") + 
   xlab('') + 
-  facet_grid(Productive~Dataset, scale = "free_x")+
+  facet_grid(~Productive, scale = "free_x")+
   theme_bw(base_size = 13) + 
   theme(legend.position = "bottom") +
-  ggtitle("Performance on Unit Task by language, productivity") +
+  # ggtitle("Performance on Unit Task by language, productivity") +
   theme(text = element_text(size = 12), 
         panel.grid.minor = element_blank(), 
         panel.grid.major = element_blank()) +
@@ -1449,7 +1625,7 @@ all.data %>%
   facet_grid(Dataset~Productive) +
   scale_colour_brewer(palette = "Dark2") +
   theme(legend.position = "bottom") +
-  labs(x = "Number queried", y = "Mean performance", title = "Mean Unit Task performance by language and Productivity") +
+  labs(x = "Number queried", y = "Mean performance") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 all.data %>%
@@ -2199,7 +2375,8 @@ sf.hk.within <- all.data%>%
          fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Task_item = as.integer(as.character(Task_item)))
   
 wcn.hk.within <- all.data%>%
   filter(Task == "NN")%>%
@@ -2212,7 +2389,8 @@ wcn.hk.within <- all.data%>%
          fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)),
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Task_item = as.integer(as.character(Task_item)))
 
 ##SLO##
 sf.slo.within <- all.data%>%
@@ -2226,7 +2404,8 @@ sf.slo.within <- all.data%>%
          fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Task_item = as.integer(as.character(Task_item)))%>%
   filter(!is.na(highest_contig.c))
 
 wcn.slo.within <- all.data%>%
@@ -2240,7 +2419,8 @@ wcn.slo.within <- all.data%>%
          fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Task_item = as.integer(as.character(Task_item)))%>%
   filter(!is.na(highest_contig.c))
 
 ##US
@@ -2255,7 +2435,8 @@ sf.us.within <- all.data%>%
          fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Task_item = as.integer(as.character(Task_item)))%>%
   filter(!is.na(highest_contig.c))
 
 wcn.us.within <- all.data%>%
@@ -2269,7 +2450,8 @@ wcn.us.within <- all.data%>%
          fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
          ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
          highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)))%>%
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Task_item = as.integer(as.character(Task_item)))%>%
   filter(!is.na(highest_contig.c))
 
 ##English - India
@@ -2382,22 +2564,26 @@ Build the models
 ##Build the models
 ```{r}
 #base
-sf.hk.within.base <- glmer(Correct ~ count_range + age.c + (1|SID), family = "binomial", 
+sf.hk.within.base <- glmer(Correct ~ count_range + age.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.hk.within)
 #Productivity
-sf.hk.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID), family = "binomial", 
+sf.hk.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.hk.within)
 #FHC
-sf.hk.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
+sf.hk.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.hk.within)
 #IHC
-sf.hk.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID), 
+sf.hk.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID) + (1|Task_item), 
                              family = "binomial", 
                            data = sf.hk.within)
 #Highest contig.
-sf.hk.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
+sf.hk.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID) + (1|Task_item), 
                              family = "binomial", 
                            data = sf.hk.within)
+
+##Exploratory - productivity gradient
+sf.hk.within.model.pg <- glmer(Correct ~ prod.gradient + count_range + age.c + (1|SID) + (1|Task_item), 
+                               family = "binomial", data = sf.hk.within)
 ```
 
 ##Hong Kong: Unit task models
@@ -2407,7 +2593,8 @@ mtable.sf.hk <- mtable('Base Model' = sf.hk.within.base,
             'Model 2: FHC' = sf.hk.within.model2,
             'Model 3: IHC' = sf.hk.within.model3,
             'Model 4: Highest Contig.' = sf.hk.within.model4,
-            summary.stats = c('R-squared','F','p','N'))
+            'Model 5: Prod. Gradient' = sf.hk.within.model.pg,
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.hk
 ```
 
@@ -2498,22 +2685,26 @@ anova(sf.hk.within.ihc.plus1, sf.hk.within.ihc, test = 'LRT')
 ##Build the models
 ```{r}
 #base
-sf.slo.within.base <- glmer(Correct ~ count_range + age.c + (1|SID), family = "binomial", 
+sf.slo.within.base <- glmer(Correct ~ count_range + age.c + (1|SID)+ (1|Task_item), family = "binomial", 
                            data = sf.slo.within)
 #productivity
-sf.slo.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID), family = "binomial", 
+sf.slo.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID)+ (1|Task_item), family = "binomial", 
                            data = sf.slo.within)
 #FHC
-sf.slo.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
+sf.slo.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID)+ (1|Task_item), family = "binomial", 
                            data = sf.slo.within)
 #IHC
-sf.slo.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID), 
+sf.slo.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID)+ (1|Task_item), 
                              family = "binomial", 
                            data = sf.slo.within)
 #highest contiguous NN
-sf.slo.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
+sf.slo.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID)+ (1|Task_item), 
                              family = "binomial", 
                            data = sf.slo.within) 
+
+#exploratory - productivity gradient
+sf.slo.within.model.pg <- glmer(Correct ~ prod.gradient + count_range + age.c + (1|SID) + (1|Task_item), 
+                                family = "binomial", data = sf.slo.within)
 ```
 
 ##SLO: Unit task models
@@ -2523,7 +2714,8 @@ mtable.sf.slo <- mtable('Base Model' = sf.slo.within.base,
             'Model 2: FHC' = sf.slo.within.model2,
             'Model 3: IHC' = sf.slo.within.model3,
             'Model 4: Highest Contig.' = sf.slo.within.model4,
-            summary.stats = c('R-squared','F','p','N'))
+            'Model 5: Prod. Gradient' = sf.slo.within.model.pg,
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.slo
 ```
 
