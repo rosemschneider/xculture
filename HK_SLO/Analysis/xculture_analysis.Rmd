@@ -984,7 +984,8 @@ error.freq.decade <- error.freq %>%
                                                                                               ifelse(Last_successful >= 100 & Last_successful < 110, 100, 
                                                                                                      ifelse(Last_successful >= 110 & Last_successful < 120, 110, 
                                                                                                             ifelse(Last_successful >= 120 & Last_successful < 130, 120,130)))))))))))))) %>%
-  mutate(error.base = (error.decade - Last_successful) * -1)
+  mutate(error.base = (error.decade - Last_successful) * -1, 
+         error.base = ifelse(Last_successful == 140, 0, as.numeric(error.base)))
 
 error.freq.decade %>%
   filter(Language == "Cantonese" | 
@@ -998,13 +999,16 @@ error.freq.decade %>%
   mutate(Lang.prod = paste0(as.character(Language), " ", as.character(Productive), collapse = NULL))%>%
   group_by(Language, Productive, error.decade)%>%
   summarise(n = n())%>% 
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)%>%
   mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
   ggplot(aes(x = error.decade, y = Language)) +
-  geom_tile(aes(fill = n)) +
-  geom_text(aes(label = as.character(n)), 
+  geom_tile(aes(fill = round(prop, 2))) +
+  geom_text(aes(label = as.character(round(prop, 2))), 
             size = 3.5) +
   coord_equal() +
-  scale_fill_gradient2(low = "white", high = "red", "") + 
+  scale_fill_gradient2(low = "white", high = "red", "Proportion") + 
   theme_bw(base_size = 13) + 
   labs(x = "Decade of error") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
@@ -1025,13 +1029,15 @@ error.freq.decade %>%
   mutate(Lang.prod = paste0(as.character(Language), " ", as.character(Productive), collapse = NULL))%>%
   group_by(Language, Productive, error.decade)%>%
   summarise(n = n())%>% 
-  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)%>%
   ggplot(aes(x = error.decade, y = Language)) +
-  geom_tile(aes(fill = n)) +
-  geom_text(aes(label = as.character(n)), 
+  geom_tile(aes(fill = round(prop, 2))) +
+  geom_text(aes(label = as.character(round(prop, 2))), 
             size = 3.5) +
   coord_equal() +
-  scale_fill_gradient2(low = "white", high = "red", "") + 
+  scale_fill_gradient2(low = "white", high = "red", "Proportion") + 
   theme_bw(base_size = 13) + 
   labs(x = "Decade of error") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
@@ -1039,6 +1045,66 @@ error.freq.decade %>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
   facet_grid(rows = vars(Productive))
+
+###woooo now let's do it for units
+error.freq.decade %>%
+  filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
+  filter(Language == "Cantonese" | 
+           Language == "English (US)" |
+           Language == "Slovenian")%>%
+  mutate(Language = factor(Language, levels = c("English (US)", "Slovenian", "Cantonese")), 
+         Productive = factor(Productive, levels = c("Productive", "Nonproductive"))) %>%
+  mutate(error.base = factor(error.base))%>%
+  mutate(Lang.prod = paste0(as.character(Language), " ", as.character(Productive), collapse = NULL))%>%
+  group_by(Language, Productive, error.base)%>%
+  summarise(n = n())%>% 
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)%>%
+  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+  ggplot(aes(x = error.base, y = Language)) +
+  geom_tile(aes(fill = round(prop, 2))) +
+  geom_text(aes(label = as.character(round(prop, 2))), 
+            size = 3.5) +
+  coord_equal() +
+  scale_fill_gradient2(low = "white", high = "red", "Proportion") + 
+  theme_bw(base_size = 13) + 
+  labs(x = "Unit of error") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  facet_grid(rows = vars(Productive))
+
+error.freq.decade %>%
+  filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
+  filter(Language == "Hindi" | 
+           Language == "English" |
+           Language == "Gujarati")%>%
+  mutate(Language = factor(Language, levels = c("English", "Gujarati", "Hindi")), 
+         Productive = factor(Productive, levels = c("Productive", "Nonproductive"))) %>%
+  mutate(error.base = factor(error.base))%>%
+  mutate(Lang.prod = paste0(as.character(Language), " ", as.character(Productive), collapse = NULL))%>%
+  group_by(Language, Productive, error.base)%>%
+  summarise(n = n())%>% 
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)%>%
+  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+  ggplot(aes(x = error.base, y = Language)) +
+  geom_tile(aes(fill = round(prop, 2))) +
+  geom_text(aes(label = as.character(round(prop, 2))), 
+            size = 3.5) +
+  coord_equal() +
+  scale_fill_gradient2(low = "white", high = "red", "Proportion") + 
+  theme_bw(base_size = 13) + 
+  labs(x = "Unit of error") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  facet_grid(rows = vars(Productive))
+
 
 ```
 
