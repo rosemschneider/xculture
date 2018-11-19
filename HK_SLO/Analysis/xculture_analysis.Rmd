@@ -4,6 +4,10 @@ author: "Rose M. Schneider"
 date: "8/5/2018"
 output: html_document
 ---
+##To-dos:
+Make sure ANOVAs are in the right order
+Unit/NN by Prod*count range interaction
+
 
 #Setup
 ```{r, include = FALSE}
@@ -745,6 +749,14 @@ all.data %<>%
   mutate(count_range = ifelse((Task == "SF" | Task == "NN") & as.numeric(as.character(Task_item)) <= IHC, "Within", "Outside"))
 ```
 
+##Productivity gradient
+```{r}
+all.data %<>%
+  mutate(delta.hc = FHC-IHC, 
+         prod.gradient = delta.hc/(140-IHC), 
+         prod.gradient = ifelse(IHC == 140, 1, as.numeric(prod.gradient)))
+```
+
 ---
 
 ##Memory checks - NAs to 1
@@ -843,7 +855,18 @@ class.data <- all.data %>%
 prod.lang <- glm(Productive ~ Language, family = "binomial", data = class.data)
 summary(prod.lang)
 
-##Need to repeat for Hindi/Gujarati
+##English v. Hindi/Gujarati
+class.data <- all.data %>%
+  filter(Language == "English" |
+           Language == "Hindi" | 
+           Language == "Gujarati")%>%
+  distinct(SID, Productive, Language)%>%
+  mutate(Productive = factor(Productive), 
+         Language = factor(Language, levels = c("English", "Hindi", "Gujarati")))
+  
+
+prod.lang <- glm(Productive ~ Language, family = "binomial", data = class.data)
+summary(prod.lang)
 ```
 
 ###Productivity descriptives
@@ -1104,10 +1127,19 @@ error.freq.decade %>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
   facet_grid(rows = vars(Productive))
-
-
 ```
 
+##How many errors on average by language?
+```{r}
+error.freq %>%
+  filter(Last_successful != 140)%>%
+  group_by(SID, Language, Productive)%>%
+  summarise(n = n())%>%
+  group_by(Language, Productive)%>%
+  summarise(mean_prompts = mean(n, na.rm = TRUE),
+            sd_prompts = sd(n, na.rm = TRUE))%>%
+  kable()
+```
 
 ---
 
@@ -1454,6 +1486,7 @@ plot(mod.ind.eng, what = "classification")
 ```
 
 #Identifying clusters from IHC-FHC by language
+#TO-DO: need to pull out clusters, and identify SIDs within each cluster - not hard, just a bit of a data format issue
 ```{r}
 cant.clust <- initial_final %>%
   filter(Language == "Cantonese")%>%
@@ -1540,6 +1573,9 @@ all.data %>%
 
 ###With individual prod. points
 ```{r}
+india.pal <- c("#E7298A","#66A61E","#E6AB02", "#D95F02")
+
+#HK/SLO/US
 all.data %>%
   filter(Task == "SF")%>%
   filter(Dataset == "HK/SLO/US") %>%
@@ -1572,6 +1608,49 @@ all.data %>%
         panel.grid.major = element_blank()) +
   ylim(0, 1.0) +
   scale_fill_brewer(palette = "Dark2", guide = "none") +
+  scale_colour_manual(values = productivity.pal) +
+  guides(size = "none")
+
+#India
+all.data %>%
+  filter(Task == "SF")%>%
+  filter(Language == "English" |
+           Language == "Hindi" |
+           Language == "Gujarati" |
+           Language == "English - India") %>%
+  mutate(Language = ifelse(Language == "English - India", "English (India)",
+                           ifelse(Language == "English", "English (US)", as.character(Language))),
+    Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))%>%
+  group_by(SID, Language, Dataset, Productive)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct)), na.rm=TRUE),
+            sd = sd(as.numeric(as.character(Correct)), na.rm=TRUE)) %>%
+  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", alpha = .5, colour = "black", 
+               show.legend = FALSE) +
+  geom_violin(alpha = .1, 
+              show.legend = FALSE)  + 
+  geom_point(aes(x = Language, y = mean, colour = Productive),
+               position=position_jitter(width=0.15,height=0.02),
+               size=2,
+             alpha = .9,
+               show.legend=TRUE, 
+             inherit.aes = FALSE) +
+  guides(shape = "none") + 
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2, 
+               show.legend = FALSE)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw(base_size = 13) + 
+  theme(legend.position = "bottom") +
+  # ggtitle("Overall mean correct on Unit Task") +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank(), 
+        legend.title = element_blank()) +
+  ylim(0, 1.0) +
+  scale_fill_manual(values = india.pal, guide = "none") +
   scale_colour_manual(values = productivity.pal) +
   guides(size = "none")
 ```
@@ -1641,6 +1720,47 @@ all.data %>%
         panel.grid.major = element_blank()) +
   ylim(0, 1.0) +
   scale_fill_brewer(palette = "Dark2", guide = "none") +
+  scale_colour_manual(values = productivity.pal) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#India
+all.data %>%
+  filter(!is.na(Productive))%>%
+  filter(Task == "SF",
+           Language == "English" |
+           Language == "Hindi" |
+           Language == "Gujarati" |
+           Language == "English - India") %>%
+  mutate(Language = ifelse(Language == "English - India", "English (India)",
+                           ifelse(Language == "English", "English (US)", as.character(Language))),
+    Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))%>%
+  group_by(SID, Productive, Language, Dataset)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
+            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
+  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", alpha = .5, colour = "black") +
+  geom_violin(alpha = .1) +
+  geom_point(aes(x = Language, y = mean, colour = Productive),
+               position=position_jitter(width=0.15,height=0.02),
+               size=1.5,
+             alpha = .9,
+               show.legend=TRUE, 
+             inherit.aes = FALSE) +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2)+
+  ylab("Mean correct") + 
+  xlab('') + 
+  facet_grid(~Productive, scale = "free_x")+
+  theme_bw(base_size = 13) + 
+  theme(legend.position = "bottom") +
+  # ggtitle("Performance on Unit Task by language, productivity") +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank(), 
+        legend.title = element_blank()) +
+  ylim(0, 1.0) +
+  scale_fill_manual(values = india.pal, guide = "none") +
   scale_colour_manual(values = productivity.pal) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
@@ -1727,6 +1847,50 @@ ggplot(aes(x=count_range, y=mean, fill = Language)) +
         panel.grid.major = element_blank(), 
         legend.position = "bottom") +
   facet_grid(Dataset~Productive) 
+
+#India
+all.data %>%
+  filter(Task == "SF",
+           Language == "English" |
+           Language == "Hindi" |
+           Language == "Gujarati" |
+           Language == "English - India") %>%
+  mutate(Language = ifelse(Language == "English - India", "English (India)",
+                           ifelse(Language == "English", "English (US)", as.character(Language))),
+    Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))%>%
+  group_by(SID, count_range, Language, Productive)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct)), na.rm=TRUE),
+            sd = sd(as.numeric(as.character(Correct)), na.rm=TRUE)) %>%
+ggplot(aes(x=count_range, y=mean, fill = Language)) +
+  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+                      geom="bar", alpha = .5, colour = "black", 
+               show.legend = FALSE) +
+  geom_violin(alpha = .1, 
+              show.legend = FALSE)  + 
+  geom_point(position=position_jitterdodge(jitter.width = .3, 
+                                           jitter.height = .1, 
+                                           dodge.width = .9),
+             aes(colour = Productive, group=Language), 
+             size=1.5,
+             alpha = .9,
+               show.legend=TRUE) +
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2, 
+               show.legend = FALSE) +
+  ylab("Mean correct") + 
+  xlab('') + 
+  theme_bw(base_size = 10) + 
+  theme(legend.position = "bottom") +
+  theme(text = element_text(size = 10)) +
+  ylim(0, 1.0) +
+  scale_fill_manual(values = india.pal, guide = "none") + 
+  scale_colour_manual(values = productivity.pal) +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank(), 
+        legend.position = "bottom", 
+        legend.title = element_blank()) +
+  facet_grid(~Productive) 
 ```
 
 ###Item performance by productivity, Unit Task - need to remap colors
@@ -2930,22 +3094,27 @@ anova(sf.slo.within.highest_contig.plus1, sf.slo.within.highest_contig, test = '
 ##Build the models
 ```{r}
 #base
-sf.us.within.base <- glmer(Correct ~ count_range + age.c + (1|SID), family = "binomial", 
+sf.us.within.base <- glmer(Correct ~ count_range + age.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.us.within)
 #productivity
-sf.us.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID), family = "binomial", 
+sf.us.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + (1|SID)+ (1|Task_item), family = "binomial", 
                            data = sf.us.within)
 #FHC
-sf.us.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID), family = "binomial", 
+sf.us.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID)+ (1|Task_item), family = "binomial", 
                            data = sf.us.within)
 #IHC
-sf.us.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID), 
+sf.us.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID)+ (1|Task_item), 
                              family = "binomial", 
-                           data = sf.us.within)
+                           data = sf.us.within, control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
 #Highest contiguous
-sf.us.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
+sf.us.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID)+ (1|Task_item), 
                              family = "binomial", 
                            data = sf.us.within) 
+#Exploratory, Prod. gradient
+sf.us.within.model.gain <- glmer(Correct ~ prod.gradient + count_range + age.c + (1|SID) + (1|Task_item), 
+                             family = "binomial", 
+                           data = sf.us.within) #ns
 ```
 
 ##English (US): Unit task models
@@ -2955,47 +3124,64 @@ mtable.sf.us <- mtable('Base Model' = sf.us.within.base,
             'Model 2: FHC' = sf.us.within.model2,
             'Model 3: IHC' = sf.us.within.model3,
             'Model 4: Highest Contig.' = sf.us.within.model4,
-            summary.stats = c('R-squared','F','p','N'))
+            'Exp. model: Prod. gradient' = sf.us.within.model.gain,
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.us
 ```
 
 ##Model comparisons
 ###Base v. Productivity
 ```{r}
-anova(sf.us.within.model1, sf.us.within.base, test = 'LRT')
+anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')
 ```
 
 ###Base v. FHC
 ```{r}
-anova(sf.us.within.model2, sf.us.within.base, test = 'LRT')
+anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')
 ```
 
 ###Base v. IHC
 ```{r}
-anova(sf.us.within.model3, sf.us.within.base, test = 'LRT')
+anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')
 ````
 
 ###Base v. Highest Contig.
 ```{r}
-anova(sf.us.within.model4, sf.us.within.base, test = 'LRT')
+anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')
+```
+
+###Post-hoc: Prod.gradient
+```{r}
+anova(sf.us.within.base, sf.us.within.model.gain, test = 'LRT') #marginal
 ```
 
 ##Large model
+Base = IHC (AIC = 1473.8)
 ```{r}
-sf.us.within.plus1 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID), 
+sf.us.within.plus1 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID) + (1|Task_item), 
+                             data = sf.us.within, family = "binomial", 
+                            control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+sf.us.within.plus2.fhc <- glmer(Correct ~ fhc.c + ihc.c + count_range + age.c + (1|SID) + (1|Task_item), 
                              data = sf.us.within, family = "binomial")
-sf.us.within.plus2.fhc <- glmer(Correct ~ fhc.c + highest_contig.c + count_range + age.c + (1|SID), 
+sf.us.within.plus2.highest.contig <- glmer(Correct ~ highest_contig.c + ihc.c + count_range + age.c + (1|SID) + (1|Task_item), 
+                             data = sf.us.within, family = "binomial", 
+                             control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+sf.us.within.plus2.gain <- glmer(Correct ~ prod.gradient + ihc.c + count_range + age.c + (1|SID) + (1|Task_item), 
+                             data = sf.us.within, family = "binomial", 
+                             control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+sf.us.within.plus3 <- glmer(Correct ~ highest_contig.c + fhc.c + ihc.c + count_range + age.c + (1|SID) + (1|Task_item), 
                              data = sf.us.within, family = "binomial")
-sf.us.within.plus2.ihc <- glmer(Correct ~ ihc.c + highest_contig.c + count_range + age.c + (1|SID), 
-                             data = sf.us.within, family = "binomial")
-sf.us.within.plus3 <- glmer(Correct ~ ihc.c + fhc.c + highest_contig.c + count_range + age.c + (1|SID), 
-                             data = sf.us.within, family = "binomial")
-anova(sf.us.within.plus3, sf.us.within.plus2.fhc, sf.us.within.plus2.ihc, sf.us.within.plus1, test = 'LRT') 
-mtable.sf.us.large <- mtable('Highest Contig' = sf.us.within.plus1,
-            'Highest Contig + FHC' = sf.us.within.plus2.fhc,
-            'Highest Contig + IHC' = sf.us.within.plus2.ihc,
+anova(sf.us.within.plus1, sf.us.within.plus2.fhc, sf.us.within.plus2.highest.contig, sf.us.within.plus2.gain,
+      sf.us.within.plus3, test = 'LRT') 
+mtable.sf.us.large <- mtable('IHC' = sf.us.within.plus1,
+            'FHC + IHC' = sf.us.within.plus2.fhc,
+            'Highest Contig + IHC' = sf.us.within.plus2.highest.contig,
+            'Prod. gradient + IHC' = sf.us.within.model.gain,
             'Highest Contig + FHC + IHC' = sf.us.within.plus3,
-            summary.stats = c('R-squared','F','p','N'))
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.us.large
 ```
 
@@ -3008,20 +3194,24 @@ mtable.sf.us.large
 ##Build the models
 ```{r}
 #base
-sf.ind.eng.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+sf.ind.eng.within.base <- glmer(Correct ~ count_range + age.c + starting_num.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.ind.eng.within)
 #productivity
-sf.ind.eng.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+sf.ind.eng.within.model1 <- glmer(Correct ~ Productive + count_range + age.c + starting_num.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.ind.eng.within)
 #FHC
-sf.ind.eng.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+sf.ind.eng.within.model2 <- glmer(Correct ~ fhc.c + count_range + age.c + starting_num.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.ind.eng.within)
 #IHC
-sf.ind.eng.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+sf.ind.eng.within.model3 <- glmer(Correct ~ ihc.c + count_range + age.c + starting_num.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.ind.eng.within)
 #Highest contiguous
-sf.ind.eng.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + starting_num.c + (1|SID), family = "binomial", 
+sf.ind.eng.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + age.c + starting_num.c + (1|SID) + (1|Task_item), family = "binomial", 
                            data = sf.ind.eng.within)
+
+#exploratory - prod. gradient
+sf.ind.eng.within.model.gain <- glmer(Correct ~ prod.gradient + count_range + age.c + starting_num.c + (1|SID) + (1|Task_item), family = "binomial", 
+                           data = sf.ind.eng.within) #sig
 ```
 
 
@@ -3032,7 +3222,8 @@ mtable.sf.ind.eng <- mtable('Base Model' = sf.ind.eng.within.base,
             'Model 2: FHC' = sf.ind.eng.within.model2,
             'Model 3: IHC' = sf.ind.eng.within.model3,
             'Model 4: Highest Contig.' = sf.ind.eng.within.model4,
-            summary.stats = c('R-squared','F','p','N'))
+            'Exp: Prod. Gradient' = sf.ind.eng.within.model.gain,
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.ind.eng
 ```
 
@@ -3055,6 +3246,11 @@ anova(sf.ind.eng.within.model3, sf.ind.eng.within.base, test = 'LRT')
 ###Base v. Highest Contiguous NN
 ```{r}
 anova(sf.ind.eng.within.model4, sf.ind.eng.within.base, test = 'LRT')
+```
+
+###Exploratory: Base v. Prod.gradient
+```{r}
+anova(sf.ind.eng.within.base, )
 ```
 
 ##Large model - warning! Convergence issues for largest model
