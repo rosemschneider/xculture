@@ -5,9 +5,6 @@ date: "8/5/2018"
 output: html_document
 ---
 ##To-dos:
-Make sure ANOVAs are in the right order
-Unit/NN by Prod*count range interaction
-
 
 #Setup
 ```{r, include = FALSE}
@@ -33,45 +30,40 @@ slo.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_S
   filter(SID != "CopyPasteMe")%>%
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_1_double, 
-                -Mem_check_2_single, -Mem_check_2_double, - X, - X.1)%>%
+                -Mem_check_2_single, -Mem_check_2_double, - X, - X.1, -DOB, -DOT, 
+                -Notes_single_coding, -Notes_double, -Location)%>% #remove single & double coding, keep final
   dplyr::rename(Response = Response_final, 
                 Mem_check_1 = Mem_check_1_final, 
                 Mem_check_2 = Mem_check_2_final, 
-                Exclude_trial_reason = Exclude_trial_single_reason)%>%
-  mutate(Exclude_task = ifelse(is.na(Exclude_task), 0, as.numeric(as.character(Exclude_task))), 
-         Trial_number = ifelse(Trial_number == '0', "Training", as.character(Trial_number)), 
+                Exclude_trial_reason = Exclude_trial_single_reason)%>% #rename final coding
+  mutate(Exclude_analysis = ifelse(is.na(Exclude_analysis), 0 , as.integer(as.character(Exclude_analysis))),
+         Exclude_task = ifelse(is.na(Exclude_task), 0 , as.integer(as.character(Exclude_analysis))),
          Task_item = factor(Task_item), 
          Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)),
-         Age = as.numeric(as.character(Age)), 
-         Correct = as.integer(as.character(Correct)), 
+         Age = as.numeric(as.character(Age)),  
          Mem_check_1 = as.integer(as.character(Mem_check_1)), 
          Mem_check_2 = as.integer(as.character(Mem_check_2)))
-  # filter(SID != "05112018-ZA", 
-  #        SID != "RT02", 
-  #        SID != "RT03", 
-  #        SID != "RT04", 
-  #        SID != "RT05", 
-  #        SID != "RT06", 
-  #        SID != "RT07", 
-  #        SID != "RT08", 
-  #        SID != "RT09") #temporary, until double coded
 
 #slo highest count
 slo.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/SLO_HC.csv')%>%
-  dplyr::select(-Special_count, -IHC, -FHC)%>%
+  dplyr::select(-Special_count, -IHC_single, -FHC_single)%>%
   dplyr::rename(IHC = IHC_final, 
                 FHC = FHC_final, 
                 Last_successful = Last_Successful)%>%
-  filter(Exclude != 1)%>%
+  filter(Exclude != 1)%>% #some kids have extra prompts, or had errors listed that were actually self corrections
   mutate(Language = "Slovenian", 
          Last_successful = as.integer(as.character(Last_successful)))
 
-#sanity check for hc
-slo.hc %>%
+#sanity check for hc - does everyone have just one IHC and one FHC?
+sanity.slo.hc <- slo.hc %>%
   distinct(SID, IHC, FHC)%>%
   group_by(SID)%>%
   summarise(n = n())%>%
   filter(n != 1)
+
+if (length(sanity.slo.hc$SID) > 0) {
+  print("ERROR: Mistake in IHC or FHC - more than one per participant")
+} 
 ```
 
 ##Cantonese
@@ -82,14 +74,14 @@ hk.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SL
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_1_double, 
                 -Mem_check_2_single, -Mem_check_2_double, -Exclude_trial_single, 
-                -Exclude_trial_double, -Unit_task_repeat_alts)%>%
+                -Exclude_trial_double, -Unit_task_repeat_alts, -Notes_single, -Notes_double, -Location)%>%#remove single & double coding, keep final
   dplyr::rename(Response = Response_final, 
                 Correct = Correct_final, 
                 Mem_check_1 = Mem_check_1_final, 
                 Mem_check_2 = Mem_check_2_final,
-                Exclude_trial = Exclude_trial_final)%>%
-  mutate(Age = as.numeric(as.character(Age)), 
-         Correct = as.integer(as.character(Correct)), 
+                Exclude_trial = Exclude_trial_final)%>% 
+  mutate(Correct = as.integer(as.character(Correct)),
+         Age = as.numeric(as.character(Age)),  
          Mem_check_1 = as.integer(as.character(Mem_check_1)), 
          Mem_check_2 = as.integer(as.character(Mem_check_2)), 
          Response = ifelse(Task == "WPPSI", as.character(Correct), as.character(Response)),
@@ -101,15 +93,19 @@ hk.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/
                 -raw.count)%>%
   dplyr::rename(IHC = IHC_double, 
                 FHC = FHC_double)%>%
-  filter(Exclude != 1)%>%
+  filter(Exclude != 1)%>% #some kids have extra prompts, or had errors listed that were actually self corrections
   mutate(Language = "Cantonese")
 
 #sanity check for hc
-hk.hc %>%
+sanity.hk.hc <- hk.hc %>%
   distinct(SID, IHC, FHC)%>%
   group_by(SID)%>%
   summarise(n = n())%>%
   filter(n != 1)
+
+if (length(sanity.hk.hc$SID) > 0) {
+  print("ERROR: Mistake in IHC or FHC - more than one per participant")
+}
 ```
 
 ##English - US
@@ -118,7 +114,7 @@ us.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SL
   filter(SID != "CopyPasteMe")%>%
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_2_single, 
-         -Mem_check_1_double, -Mem_check_2_double, -repeated.alts, -Location)%>%
+         -Mem_check_1_double, -Mem_check_2_double, -repeated.alts, -Location, -DOB, -DOT)%>%
   dplyr::rename(Response = Response_final, 
                 Mem_check_1 = Mem_check_1_final, 
                 Mem_check_2 = Mem_check_2_final)%>%
@@ -147,11 +143,15 @@ us.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/
                 After_prompt = After_Prompt)
 
 #sanity check for hc
-us.hc %>%
+sanity.us.hc <- us.hc %>%
   distinct(SID, IHC, FHC)%>%
   group_by(SID)%>%
   summarise(n = n())%>%
   filter(n != 1)
+
+if (length(sanity.us.hc$SID) > 0) {
+  print("ERROR: Mistake in IHC or FHC - more than one per participant")
+}
 ```
 
 ##India data
@@ -163,36 +163,39 @@ india.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/In
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, 
          -Mem_check_1_double, -Mem_check_2_single, -Mem_check_2_double, -Exclude_trial_single,
          -Exclude_trial_double, -Exclude_trial_reason_single,
-         -Exclude_trial_double, -Exclude_trial_reason_double)%>%
+         -Exclude_trial_double, -Exclude_trial_reason_double, - Unit_task_repeat_alts, 
+         -Notes_single, -Notes_double, -Location)%>%
   mutate(Response = ifelse(Response == "<NA>", NA, as.character(Response)),
          Language = ifelse(Language == "English", "English (India)", as.character(Language)),
          Task = ifelse(Task == "WCN", "NN", as.character(Task)),
          Trial_number = ifelse(Trial_number == "training", "Training", as.character(Trial_number)), 
-         Language = factor(Language))%>%
-  dplyr::select(-Unit_task_repeat_alts)
+         Language = factor(Language))
 
 #hc
 india.hc <- read.csv("/Users/roseschneider/Documents/Projects/xculture/India/Data/India_HC.csv") %>%
-  filter(Exclude != "1",
-           Exclude != "HELP")%>%
+  filter(Exclude != 1)%>%
   mutate(Last_successful = as.integer(as.character(Last_successful)))%>%
   dplyr::select(-Special_count, -IHC_single, -FHC_single, -Experimenter_missed, 
                 -Coder)%>%
   dplyr::rename(IHC = IHC_final, 
                 FHC = FHC_final, 
-                Exclude_reason = Exclude.reason)%>%
-  mutate(Exclude = as.integer(as.character(Exclude)))
+                Exclude_reason = Exclude.reason)
 
 #sanity check for hc
-india.hc %>%
+sanity.india.hc <- india.hc %>%
   distinct(SID, IHC, FHC)%>%
   group_by(SID)%>%
   summarise(n = n())%>%
   filter(n != 1)
+
+if (length(sanity.india.hc$SID) > 0) {
+  print("ERROR: Mistake in IHC or FHC - more than one per participant")
+}
 ```
 
 ##Bind together
 ```{r, warning = FALSE}
+#suppress warning because factors are being coerced to characters when binding dfs
 #regular data
 all.data <- bind_rows(slo.full.data, hk.full.data, us.full.data, india.full.data)%>%
   mutate(Age = round(Age, 2), 
@@ -232,7 +235,9 @@ india.hc %<>%
 
 #bind hk and slo hc data
 hc.df <- bind_rows(slo.hc, hk.hc, us.hc, india.hc)%>%
-  mutate(Language = factor(Language))%>%
+  dplyr::select(-Note, -Notes, -PB.on.11.13.18)%>%
+  mutate(Language = factor(Language), 
+         SID = factor(SID))%>%
   filter(SID != "")
 
 #get unique SIDs from HC
@@ -240,69 +245,74 @@ unique_hc <- as.vector(unique(hc.df$SID))
 ```
 
 ##Check to make sure everything coded as correct is actually correct
-Don't need to run this anymore!!
-```{r, eval = FALSE}
-check.coding <- function(df) {
-  tmp <- mutate(df, id = rownames(df))
-  # tmp <- DF_slofulldata#slo.full.data
-  
-  #given
-  given.check <- tmp %>%
-    filter(Task == "GiveN")%>%
-    mutate(Response = as.integer(as.character(Response)), 
-           Task_item = as.integer(as.character(Task_item)))%>%
-    mutate(Correct.check = ifelse(Response == Task_item, 1, 0))%>%
-    mutate(Task_item = factor(Task_item), 
-           Response = as.character(Response), 
-           Correct.check = as.character(Correct.check))
-  
-  #sf, nn
-  sf.nn.check <- tmp %>%
-    filter(Task == "SF" | 
-           Task == "NN")%>%
-    mutate(Response = ifelse(Response == "IDK", -1000, as.character(Response)))%>%
-    mutate(Response = as.integer(as.character(Response)), 
-           Task_item = as.integer(as.character(Task_item)))%>%
-    mutate(Correct.check = ifelse(Response == Task_item + 1, 1, 0))%>%
-    dplyr::select(SID, Task, Task_item, Correct, Correct.check, Response, id)%>%
-    mutate(Task_item = factor(Task_item), 
-           Response = as.character(Response), 
-           Correct.check = as.character(Correct.check))
-  
-  #wppsi
-  wppsi.check <- tmp %>%
-    filter(Task == "WPPSI")%>%
-    mutate(Correct.check = as.character(Response))
-  
-  #tmp.all <- bind_rows(given.check, sf.nn.check, wppsi.check)
-  tmp.all <- bind_rows(given.check, sf.nn.check, wppsi.check)%>%
-    dplyr::select(id, Correct.check)
-  #z <- slo.full.data
-  #y <- right_join(slo.full.data, tmp.all, by = "SID")
-  data.checked <- full_join(tmp, tmp.all, by = "id")%>%
-    dplyr::select(-id)
-  
-  return(data.checked)
-  
-}
+```{r}
+# check.coding <- function(df) {
+#   tmp <- mutate(df, id = rownames(df))
+#   # tmp <- DF_slofulldata#slo.full.data
+#   
+#   #given
+#   given.check <- tmp %>%
+#     filter(Task == "GiveN")%>%
+#     mutate(Response = as.integer(as.character(Response)), 
+#            Task_item = as.integer(as.character(Task_item)))%>%
+#     mutate(Correct.check = ifelse(Response == Task_item, 1, 0))%>%
+#     mutate(Task_item = factor(Task_item), 
+#            Response = as.character(Response), 
+#            Correct.check = as.character(Correct.check))
+#   
+#   #sf, nn
+#   sf.nn.check <- tmp %>%
+#     filter(Task == "SF" | 
+#            Task == "NN")%>%
+#     mutate(Response = ifelse(Response == "IDK", -1000, as.character(Response)))%>%
+#     mutate(Response = as.integer(as.character(Response)), 
+#            Task_item = as.integer(as.character(Task_item)))%>%
+#     mutate(Correct.check = ifelse(Response == Task_item + 1, 1, 0))%>%
+#     dplyr::select(SID, Task, Task_item, Correct, Correct.check, Response, id)%>%
+#     mutate(Task_item = factor(Task_item), 
+#            Response = as.character(Response), 
+#            Correct.check = as.character(Correct.check))
+#   
+#   #wppsi
+#   wppsi.check <- tmp %>%
+#     filter(Task == "WPPSI")%>%
+#     mutate(Correct.check = as.character(Response))
+#   
+#   
+#   tmp.all <- bind_rows(given.check, sf.nn.check, wppsi.check)%>%
+#     dplyr::select(id, Correct.check)
+#   
+#   data.checked <- full_join(tmp, tmp.all, by = "id")%>%
+#     dplyr::select(-id)
+#   
+#   return(data.checked)
+#   
+# }
+# 
+# #add check to full data
+# all.data <- check.coding(all.data)
+# 
+# #check to make sure this worked
+# check <- all.data %>%
+#   filter(Correct != Correct.check)%>%
+#   dplyr::select(SID, Task, Task_item, Response, Correct, Correct.check)
+# 
+# if (length(check$SID) > 0) {
+#   print("ERROR: Check correct coding")
+# }
+```
 
-#add check to full data
-all.data <- check.coding(all.data)
-
-#check to make sure this worked
-check <- all.data %>%
-  filter(Correct != Correct.check)%>%
-  dplyr::select(SID, Task, Task_item, Response, Correct, Correct.check)
-
-#replace correct with correct check
-all.data %<>%
-  dplyr::select(-Correct)%>%
-  dplyr::rename(Correct = Correct.check)
-
-#mutate SID to factor
-all.data %<>%
-  mutate(SID = factor(SID))%>%
-  mutate(Correct = as.integer(as.character(Correct)))
+###If no errors, proceed with below
+```{r}
+# #replace correct with correct check
+# all.data %<>%
+#   dplyr::select(-Correct)%>%
+#   dplyr::rename(Correct = Correct.check)
+# 
+# #mutate SID to factor
+# all.data %<>%
+#   mutate(SID = factor(SID))%>%
+#   mutate(Correct = as.integer(as.character(Correct)))
 ```
 
 ---
@@ -334,6 +344,7 @@ all.data %>%
   kable()
 
 
+#How many kids are excluded per dataset, and for what reason? Saved to variables because tables are big and confusing
 #HK/SLO/US
 total.exc.hk <- all.data %>%
   filter(Exclude_analysis == 1, 
@@ -383,13 +394,14 @@ total.exc.india.lang <- all.data %>%
   group_by(Language)%>%
   mutate(Total_exc = sum(n))
 
+###Make sure we have the same SIDs in all.data and hc.df
 #get exclude kids, exclude from hc
 excluded_all_sids <- as.vector(unique(subset(all.data, Exclude_analysis == 1)$SID))
 
 hc.df %<>%
   filter(SID %!in% excluded_all_sids)
 
-#exclude from full dataset
+#exclude exclude_analysis from full dataset
 all.data %<>%
   filter(Exclude_analysis != 1)
 
@@ -399,6 +411,7 @@ all.data %<>%
   filter(SID != "")
 
 ####sanity check#####
+#Do we have the same number of participants in all.data and hc.df?
 unique.sid <- all.data%>%
   distinct(SID)
 # 
@@ -411,10 +424,14 @@ if (length(unique.sid$SID) == length(unique.hc)) {
 } else {
   print("ERROR: Differing numbers")
 }
+
+##only need to run this if lengths differ - this will tell you which SIDs are not included in hc.df that are in all.data. Change order of dfs if depending on which one is larger.
+unique.hc.sids <- hc.df %>%
+  distinct(SID)%>%
+  filter(SID %!in% unique.sid$SID)
 ```
 
 ###Task exclusions
-TO-DO RMS: Automate this in code
 Children were excluded from a given task if they did not complete at least TWO trials of that task (in addition to the training trial). In order to be considered as having completed a trial of the task, a child must at least say "I don't know."  These children were excluded manually.
 ```{r}
 #what tasks have children excluded in each dataset
@@ -437,7 +454,7 @@ task.excl.india <- all.data %>%
   group_by(Language, Excluded_task)%>%
   summarise(n = n())
 
-#exclude
+#exclude kids from data
 all.data %<>%
   filter(Exclude_task != 1)
 
@@ -460,6 +477,12 @@ check_wppsi <- all.data %>%
 
 exclude_wppsi_SIDs <- as.vector(unique(check_wppsi$SID))
 
+if (length(check_wppsi$SID != 0)) {
+  print("ERROR: Participant doesn't have enough trials in WPPSI")
+} else {
+  print("All participants have enough WPPSI trials")
+}
+
 #what about for other tasks?
 check_all <- all.data %>%
   filter(Trial_number != "Training")%>%
@@ -472,6 +495,12 @@ check_all <- all.data %>%
            SF_exc == "EXCLUDE" |
            NN_exc == 'EXCLUDE')
 
+if (length(check_all$SID != 0)) {
+  print("ERROR: Participant doesn't have enough trials in task")
+} else {
+  print("All participants have enough task trials")
+}
+
 #exclude any kids who missed manual coding
 all.data %<>%
   mutate(Exclude_task = ifelse(SID %in% exclude_wppsi_SIDs, 1, as.integer(as.character(Exclude_task))))
@@ -480,6 +509,7 @@ all.data %<>%
 ##Excluded trials
 Trials where a participant gave no response were excluded from analysis.
 ```{r}
+#How many trials are excluded from each task
 all.data %>%
   filter(Exclude_trial == 1)%>%
   group_by(Task, Exclude_trial_reason)%>%
@@ -529,7 +559,7 @@ all.data %>%
   summarise(n = n())%>%
   mutate(prop = n/31)%>%
   filter(prop < .8)
-##Decision - Indian English, excluding kids who do not have NN.
+##Decision - Indian English, excluding kids who do not have NN, keeping kids with low number of trials due to low SF
 
 ```
 
@@ -573,7 +603,7 @@ all.data <- full_join(all.data, wppsi.sid, by = "SID")
 
 ##Productivity
 Children are classified as productive if they are able to count at least 2 decades higher than an error without making more than 3 errors along the way, OR if they are able to count to 140 without making an error.
-```{r, warning = FALSE}
+```{r}
 hc.df %<>%
   mutate(Last_successful = ifelse(Last_successful == "Is quiet", "IDK", Last_successful))%>%
   filter(Exclude != 1)%>%
@@ -584,12 +614,12 @@ hc.df %<>%
          SID != 'RT09', 
          SID != 'SK-M-4-GJ')#excluding these kids because they break my productivity code
 
-hc <- hc.df %>% # replace with your local path
+hc <- hc.df %>% 
   dplyr::select(SID, Last_successful, IHC, FHC, Language) %>%
   mutate_at(c('Last_successful','IHC','FHC'),
             function(col) as.integer(str_replace_all(col,'\\D',''))) %>% # some of these included '?', so i remove any char thats not a digit
   mutate(Last_successful = ifelse(is.na(Last_successful), 140, Last_successful))%>%
-  filter(!is.na(IHC))
+  mutate(SID = as.character(SID))
 
 # 
 # function for determining productivity
@@ -600,17 +630,17 @@ is.productive = function(subject){
   # - after making first error, counts >= 20 higher, with no more than 3 errors on way
   if(subject$IHC[1] >= 140){
     # if they get to 120 on first try, = productive
-    return(TRUE)
+    return("Productive")
   } else if(subject$FHC[1] == 140 & nrow(subject) < 4) {
-    return(TRUE)
+    return("Productive")
   } else if(subject$FHC[1] < 140 & nrow(subject) == 1 
             & subject$FHC[1] == subject$IHC[1]) {
-    return(FALSE)
+    return("Nonproductive")
   } else if((subject$FHC[1] - subject$IHC[1]) >= 20){
     # if their final is >= 20 larger than their intial...
     if(nrow(subject) < 4){
       # and they've made 3 or fewer total errors, = productive
-      return(TRUE)
+      return("Productive")
     } 
     else {
       for(i in 1:nrow(subject)){ # start at row 2
@@ -625,16 +655,16 @@ is.productive = function(subject){
           prev = subject$Last_successful[j] # update last count
           if(runLength >= 20 & numErrors < 4){
             # if at any point the productivity conditions are met...
-            return(TRUE) # = productive
+            return("Productive") # = productive
           }
         }
       }
       # productivity conditions were never met (because we got to this point) so...
-      return(FALSE) # != productive
+      return("Nonproductive") # != productive
     }
   } else {
     # highest is not >= 20 greater than initial
-    return(FALSE)
+    return("Nonproductive")
   }
 }
 # 
@@ -647,15 +677,19 @@ class_prod <- function(vector) {
     prod.class <- data.frame(i, is.productive(subset(hc, SID == i)))
     # print(i) # for debugging
     names(prod.class) <- c("SID", "productive")
+    prod.class %<>%
+      mutate(SID = as.character(SID), 
+             productive = as.character(productive))
+    
     temp_data <- bind_rows(temp_data, prod.class)
   }
+  temp_data %<>%
+    mutate(productive = as.character(productive))
   return(temp_data)
 }
 # 
 
-productive <- class_prod(unique_SIDs)%>%
-  dplyr::rename(check_prod = productive)%>%
-  mutate(check_prod = ifelse(check_prod == TRUE, "Productive", "Nonproductive"))
+productive <- class_prod(unique_SIDs)
 
 #manually add child who broke productivity code: CH-VC-1, IHC 20, FHC 56, nonproductive, 
 #SR-8-MP, IHC = 19, FHC = 39, Nonproductive
@@ -668,8 +702,8 @@ hc %<>%
   dplyr::select(-Last_successful)
 
 productive <- full_join(productive, hc, by = "SID")%>%
-  distinct(SID, IHC, FHC, check_prod)%>%
-  dplyr::rename(Productive = check_prod)
+  distinct(SID, IHC, FHC, productive)%>%
+  dplyr::rename(Productive = productive)
 
 #manually add back in kids who break the code
 productive <- rbind(productive, c('CH-VC-1', 'Nonproductive', 20, 56))
@@ -680,7 +714,7 @@ productive <- rbind(productive, c('RT09', 'Nonproductive', 20, 43))
 productive <- rbind(productive, c('SK-M-4-GJ', 'Nonproductive', 20, 44))
 
 all.data <- full_join(all.data, productive, by = "SID")%>%
-  mutate(IHC = as.integer(IHC), 
+  dplyr::mutate(IHC = as.integer(IHC), 
          FHC = as.integer(FHC))%>%
   filter(!is.na(Productive))
 
@@ -706,10 +740,11 @@ all.data <- full_join(all.data, productive, by = "SID")%>%
 
 ##Highest Contiguous NN
 Highest Contiguous NN is a measure of productivity. This is the highest number for which a child was correct on the Next Number task, provided that all the previous numbers had also been correct.
-```{r, warning = FALSE}
+```{r}
 #get unique ids
 unique.nn <- all.data %>%
   filter(Task == "NN")%>%
+  droplevels() %>%
   distinct(SID)
 
 unique.nn <- as.vector(unique.nn$SID)
@@ -720,33 +755,47 @@ get_contiguous <- function(){
   contig <- data.frame()
   for (sub in unique.nn) {
     tmp <- all.data %>%
-      mutate(Task_item= as.integer(as.character(Task_item)))%>%
-      filter(Task == "NN",
+      filter(Task == "NN", 
              SID == sub, 
              Correct == 0)%>%
+      mutate(Task_item = as.integer(as.character(Task_item)))%>%
       mutate(Task_item = sort(as.integer(as.character(Task_item))))
     if (length(tmp$SID) == 0) {
       highest_contig = 271
       sub_contig <- data.frame(sub, highest_contig)
+       sub_contig %<>%
+        mutate(sub = as.character(sub),
+                highest_contig = as.character(highest_contig))
       contig <- bind_rows(contig, sub_contig)
     } else if (sub %in% failed.nn.sids) {
       highest_contig = 0
       sub_contig <- data.frame(sub, highest_contig)
+      sub_contig %<>%
+        mutate(sub = as.character(sub),
+                highest_contig = as.character(highest_contig))
       contig <- bind_rows(contig, sub_contig)
     } else if (length(tmp$Task_item) > 0 & min(as.integer(as.character(tmp$Task_item))) == 5) {
       highest_contig = 1
       sub_contig <- data.frame(sub, highest_contig)
+       sub_contig %<>%
+        mutate(sub = as.character(sub),
+                highest_contig = as.character(highest_contig))
       contig <- bind_rows(contig, sub_contig)
     } else {
       min.nn <- min(as.integer(as.character(tmp$Task_item)))
       prev_correct <- nextnums[nextnums < min.nn]
-      highest_contig <- max(prev_correct)
+      highest_contig <- as.character(max(prev_correct))
     
       sub_contig <- data.frame(sub,
                              highest_contig)
+      sub_contig %<>%
+        mutate(sub = as.character(sub),
+                highest_contig = as.character(highest_contig))
       contig <- bind_rows(contig, sub_contig)
     }
   }
+  contig %<>%
+    mutate(highest_contig = as.character(highest_contig))
   return(contig)
 }
 
@@ -755,6 +804,9 @@ highest_contiguous_nn <- get_contiguous()%>%
 
 #add this to df 
 all.data <- full_join(all.data, highest_contiguous_nn, by = "SID")
+
+all.data %<>%
+  mutate(highest_contig = as.integer(highest_contig))
 
 # #how many kids don't have a highest contiguous NN? 
 # all.data %>%
@@ -820,7 +872,9 @@ all.data %>%
   summarise(n = n(), 
             Mean_age = round(mean(Age, na.rm = TRUE), 2), 
             SD_age = round(sd(Age, na.rm = TRUE), 2))%>%
-  kable()
+  group_by(Language)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)
 
 #demos by Language
 all.data %>%
@@ -858,20 +912,18 @@ ggplot(aes(x = Age, fill = Language)) +
   labs(y = "Count", title = "Number of children in age bin by language")
 ```
 
-##Productivity by language
+##KL by language
 ```{r}
 all.data %>%
-  distinct(SID, Language, Productive)%>%
-  group_by(Language, Productive)%>%
-  summarise(n = n())%>%
-  kable()
-
-all.data %<>% 
-  filter(!is.na(Language))
+  distinct(SID, Language, Age, Productive, Knower.level)%>%
+  group_by(Language, Knower.level)%>%
+  summarise(n = n())
 ```
 
 #Simple log regression, prod. by Language
 ```{r}
+##HK/SLO/US
+#Cantonese v. English & Slovenian
 class.data <- all.data %>%
   filter(Language == "English (US)" |
            Language == "Cantonese" | 
@@ -896,7 +948,9 @@ class.data <- all.data %>%
 prod.lang <- glm(Productive ~ Language, family = "binomial", data = class.data)
 summary(prod.lang)
 
+##INDIA
 ##English v. Hindi/Gujarati
+##Indian english
 class.data <- all.data %>%
   filter(Language == "English (India)" |
            Language == "Hindi" | 
@@ -906,23 +960,28 @@ class.data <- all.data %>%
          Language = factor(Language, levels = c("English (India)", "Hindi", "Gujarati")))
   
 
-prod.lang <- glm(Productive ~ Language, family = "binomial", data = class.data)
-summary(prod.lang)
+prod.lang.ind.eng <- glm(Productive ~ Language, family = "binomial", data = class.data)
+summary(prod.lang.ind.eng)
+
+##US English
+class.data <- all.data %>%
+  filter(Language == "English (US)" |
+           Language == "Hindi" | 
+           Language == "Gujarati")%>%
+  distinct(SID, Productive, Language)%>%
+  mutate(Productive = factor(Productive), 
+         Language = factor(Language, levels = c("English (US)", "Hindi", "Gujarati")))
+  
+
+prod.lang.us.eng <- glm(Productive ~ Language, family = "binomial", data = class.data)
+summary(prod.lang.us.eng)
 ```
 
 ###Productivity descriptives
 ```{r}
 productivity.pal <- c("#666666","#00b8e6")
 
-all.data %<>%
-  mutate(IHC = as.integer(IHC), 
-         FHC = as.integer(FHC), 
-         delta.hc = FHC-IHC, 
-         prod.gradient = delta.hc/(140-IHC), 
-         prod.gradient = ifelse(IHC == 140 & FHC == 140, 1, as.numeric(prod.gradient)))
-
 all.data %>%
-  filter(!is.na(Productive))%>% #filtering out cases with no productivity classification
   filter(!is.na(Language))%>%
   distinct(SID, Age, Productive, Language, IHC, FHC)%>%
   group_by(Language, Productive)%>%
@@ -946,7 +1005,7 @@ all.data %>%
             sd_delta.hc = sd(delta.hc))%>%
   kable()
 
-#mean ihc/fhc by language
+#overall mean ihc/fhc by language
 all.data %>%
   distinct(SID, Age, Language, IHC, FHC)%>%
   group_by(Language)%>%
@@ -977,6 +1036,7 @@ mean_prompts.type <- error.freq %>%
   mutate(total.n = sum(n), 
             prop = n/total.n)
 
+#all productive errors grouped together
 mean_prompts.type.prod <- error.freq %>%
   group_by(Language, Error_type, Productive)%>%
   filter(Productive == "Productive")%>%
@@ -985,6 +1045,7 @@ mean_prompts.type.prod <- error.freq %>%
   mutate(total.n = sum(n), 
             prop = n/total.n)
 
+#all nonproductive errors grouped together
 mean_prompts.type.nonprod <- error.freq %>%
   group_by(Language, Error_type, Productive)%>%
   filter(Productive == "Nonproductive")%>%
@@ -993,41 +1054,6 @@ mean_prompts.type.nonprod <- error.freq %>%
   mutate(total.n = sum(n), 
             prop = n/total.n)
 
-#frequency of error types
-#exp. 1
-# mean_prompts.type %>%
-#   filter(!is.na(Error_type), 
-#          Language == "English (US)" |
-#            Language == "Cantonese" | 
-#            Language == "Slovenian")%>%
-#   ggplot(aes(x = Error_type, y = prop, fill = Productive)) + 
-#   geom_bar(stat = "identity") +
-#   theme_bw(base_size = 13) + 
-#   facet_grid(~Language) +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-#         panel.grid.minor = element_blank(),
-#         panel.grid.major = element_blank(), 
-#         legend.position = "bottom") +
-#   scale_fill_manual(values = productivity.pal) + 
-#   labs(x = "Error type", y = "Proportion of errors")
-# 
-# #exp. 2
-# mean_prompts.type %>% 
-#   filter(!is.na(Error_type))%>%
-#   filter(Language == "English (US)" |
-#            Language == "English (India)" |
-#            Language == "Hindi" |
-#            Language == "Gujarati")%>%
-#   ggplot(aes(x = Error_type, y = prop, fill = Productive)) + 
-#   geom_bar(stat = "identity") +
-#   theme_bw(base_size = 13) + 
-#   facet_grid(~Language, scale = "free_x") +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-#         panel.grid.minor = element_blank(),
-#         panel.grid.major = element_blank(), 
-#         legend.position = "bottom") +
-#   scale_fill_manual(values = productivity.pal) + 
-#   labs(x = "Error type", y = "Proportion of errors")
 ```
 
 #Where are errors happening? - in progress, how can we visualize these?
@@ -1050,6 +1076,9 @@ error.freq.decade <- error.freq %>%
   mutate(error.base = (error.decade - Last_successful) * -1, 
          error.base = ifelse(Last_successful == 140, 0, as.numeric(error.base)))
 
+
+##Error by decade
+##HK/SLO/US
 error.freq.decade %>%
   filter(Language == "Cantonese" | 
            Language == "English (US)" |
@@ -1080,6 +1109,7 @@ error.freq.decade %>%
         panel.grid.minor = element_blank()) +
   facet_grid(rows = vars(Productive))
 
+##INDIA
 error.freq.decade %>%
   filter(Language == "Hindi" | 
            Language == "English (India)" |
@@ -1110,7 +1140,8 @@ error.freq.decade %>%
         panel.grid.minor = element_blank()) +
   facet_grid(rows = vars(Productive))
 
-###woooo now let's do it for units
+###Error by unit
+##HK/SLO/US
 error.freq.decade %>%
   filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
   filter(Language == "Cantonese" | 
@@ -1140,6 +1171,7 @@ error.freq.decade %>%
         panel.grid.minor = element_blank()) +
   facet_grid(rows = vars(Productive))
 
+##India
 error.freq.decade %>%
   filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
   filter(Language == "Hindi" | 
@@ -1183,16 +1215,6 @@ error.freq %>%
   kable()
 ```
 
-#Prod gain and IHC by language
-```{r}
-all.data %>%
-  distinct(SID, Language, IHC, FHC, Productive, prod.gradient)%>%
-  ggplot(aes(x = IHC, y = prod.gradient, colour = Productive)) +
-  geom_point() + 
-  theme_bw() +
-  facet_wrap(~Language, ncol = 2)
-```
-
 ##Scatterplot of Unit and prod.gain
 ```{r}
 all.data %>%
@@ -1204,7 +1226,6 @@ all.data %>%
   geom_smooth(method = "lm") +
   theme_bw() +
   facet_wrap(~Language, ncol = 2)
-  
 ```
 
 #HCNN by each language
@@ -1252,11 +1273,12 @@ all.data %>%
 
 
 #lm predicting hcnn from language for nonproductive counters
-#india
+#HK/SLO/US
 hcnn.hk <- all.data %>%
   filter(Language == "English (US)" |
            Language == "Cantonese" |
            Language == "Slovenian")%>%
+  mutate(Language = factor(Language, levels = c("English (US)", "Cantonese", "Slovenian")))%>%
   distinct(SID, highest_contig, Language, Age, sum_wppsi, Productive)%>%
   filter(!is.na(highest_contig), 
          Productive == "Nonproductive")%>%
@@ -1268,6 +1290,19 @@ summary(hcnn.nonprod.hk)
 #india
 hcnn.ind <- all.data %>%
   filter(Language == "English (US)" |
+           Language == "Hindi" |
+           Language == "Gujarati")%>%
+  distinct(SID, highest_contig, Language, Age, sum_wppsi, Productive)%>%
+  filter(!is.na(highest_contig), 
+         Productive == "Nonproductive")%>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))
+
+hcnn.nonprod.india <- lm(highest_contig ~ Language + Age + wppsi.c, data = hcnn.ind)
+summary(hcnn.nonprod.india)
+
+#india
+hcnn.ind <- all.data %>%
+  filter(Language == "English (India)" |
            Language == "Hindi" |
            Language == "Gujarati")%>%
   distinct(SID, highest_contig, Language, Age, sum_wppsi, Productive)%>%
@@ -1310,6 +1345,7 @@ unique.hc.data %>%
   filter(Language == "English (US)" |
            Language == "Cantonese" |
            Language == "Slovenian")%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))%>%
 ggplot(aes(x=highest_count, fill=Productive)) + 
   geom_histogram(binwidth = 10, colour = "black") +
   theme_bw(base_size = 10)+
@@ -1379,6 +1415,7 @@ initial_final %>%
   filter(Language == "English (US)" |
            Language == "Cantonese" |
            Language == "Slovenian")%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))%>%
 ggplot(aes(x = IHC, y = FHC, 
                           color = Productive)) +
   geom_point(size = 1) + geom_jitter(width = .1) +
@@ -1530,110 +1567,6 @@ summary(mod.ind.eng, parameters = TRUE)
 plot(mod.ind.eng, what = "classification")
 ```
 
-##Test for multiple modes, quantify each mode - FHC
-First, get density of FHC in each language
-```{r}
-initial_final %>%
-  dplyr::select(FHC, Language)%>%
-  mutate(Dataset = ifelse(Language == "Cantonese" |
-                            Language == "Slovenian" |
-                            Language == "English (US)", "HK/SLO/US", "India"))%>%
-  ggplot(aes(x = FHC, colour= Language)) + geom_density(adjust = .3) + 
-  scale_x_continuous(breaks = seq(0, 140, 10)) +
-  facet_grid(~Dataset) +
-  theme_bw() +
-  theme(legend.position = "bottom") +
-  scale_colour_brewer(palette = "Dark2")
-```
-
-##Get number of clusters (modes) for each language, mean and variance of each cluster
-```{r}
-library(mclust)
-#Cantonese
-cant.df <- initial_final %>%
-  filter(Language == "Cantonese")%>%
-  dplyr::select(FHC)
-
-BIC <- mclustBIC(cant.df)
-plot(BIC)
-
-summary(BIC)
-mod.cant <- Mclust(cant.df, x = BIC)
-summary(mod.cant, parameters = TRUE)
-
-plot(mod.cant, what = "classification")
-
-#Slovenian
-slo.df <- initial_final %>%
-  filter(Language == "Slovenian")%>%
-  dplyr::select(FHC)
-
-BIC <- mclustBIC(slo.df)
-plot(BIC)
-
-summary(BIC)
-mod.slo <- Mclust(slo.df, x = BIC)
-summary(mod.slo, parameters = TRUE)
-
-plot(mod.slo, what = "classification")
-
-#English
-us.df <- initial_final %>%
-  filter(Language == "English (US)")%>%
-  dplyr::select(FHC)
-
-BIC <- mclustBIC(us.df)
-plot(BIC)
-
-summary(BIC)
-mod.us <- Mclust(us.df, x = BIC)
-summary(mod.us, parameters = TRUE)
-
-plot(mod.us, what = "classification")
-
-#Hindi
-hindi.df <- initial_final %>%
-  filter(Language == "Hindi")%>%
-  dplyr::select(FHC)
-
-BIC <- mclustBIC(hindi.df)
-plot(BIC)
-
-summary(BIC)
-mod.hindi <- Mclust(hindi.df, x = BIC)
-summary(mod.hindi, parameters = TRUE)
-
-plot(mod.hindi, what = "classification")
-
-#Gujarati
-gujarati.df <- initial_final %>%
-  filter(Language == "Gujarati")%>%
-  dplyr::select(FHC)
-
-BIC <- mclustBIC(gujarati.df)
-plot(BIC)
-
-summary(BIC)
-mod.gujarati <- Mclust(gujarati.df, x = BIC)
-summary(mod.gujarati, parameters = TRUE)
-
-plot(mod.gujarati, what = "classification")
-
-#Indian English
-ind.eng.df <- initial_final %>%
-  filter(Language == "English (India)")%>%
-  dplyr::select(FHC)
-
-BIC <- mclustBIC(ind.eng.df)
-plot(BIC)
-
-summary(BIC)
-mod.ind.eng <- Mclust(ind.eng.df, x = BIC)
-summary(mod.ind.eng, parameters = TRUE)
-
-plot(mod.ind.eng, what = "classification")
-```
-
 #Identifying clusters from IHC-FHC by language, predicting Unit from cluster membership
 ```{r}
 #make a function to identify cluster membership
@@ -1717,9 +1650,10 @@ sf.mem.num.ms <- sf.df %>%
 
 ggplot(subset(sf.mem.num.ms), aes(x = Task_item, y = n, fill = mem_check_status)) + 
   geom_bar(stat = "identity") + 
-  facet_grid(Productive~Language) +
+  facet_grid(~Language) +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "bottom")
   labs(x = "Number queried", y = "Number of trials", title = "Memory checks by number in Unit Task")
 ```
 
@@ -1839,41 +1773,9 @@ all.data %>%
   guides(size = "none")
 ```
 
-###Performance by language, productivity
-```{r}
-all.data %>%
-  filter(!is.na(Productive))%>%
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  filter(Task == "SF")%>%
-  group_by(SID, Productive, Language, Dataset)%>%
-  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
-            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
-  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
-  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
-                      geom="bar", alpha = .5, colour = "black") +
-  stat_summary(fun.data = mean_se, geom="errorbar", 
-               position = position_dodge(width=0.90), width = 0.2)+
-  ylab("Mean correct") + 
-  xlab('') + 
-  facet_grid(Productive~Dataset, scale = "free_x")+
-  theme_bw() + 
-  theme(legend.position = "none") +
-  ggtitle("Performance on Unit Task by language, productivity") +
-  theme(text = element_text(size = 12)) +
-  ylim(0, 1.0) +
-  geom_violin(alpha = .1) + 
-  scale_fill_brewer(palette = "Dark2") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        panel.grid.minor = element_blank(), 
-        panel.grid.major = element_blank())
-
-
-
-```
-
 ####With individual prod points
 ```{r}
+##HK/SLO/US
 all.data %>%
   filter(!is.na(Productive))%>%
   filter(Task == "SF", 
@@ -1908,7 +1810,7 @@ all.data %>%
   scale_colour_manual(values = productivity.pal) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-#India
+##India
 all.data %>%
   filter(!is.na(Productive))%>%
   filter(Task == "SF",
@@ -2074,8 +1976,9 @@ ggplot(aes(x=count_range, y=mean, fill = Language)) +
   facet_grid(~Productive) 
 ```
 
-###Item performance by productivity, Unit Task - need to remap colors
+###Item performance by productivity, Unit Task 
 ```{r}
+##Hk/SLO/US
 all.data %>%
   filter(!is.na(Productive))%>%
    mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
@@ -2102,6 +2005,7 @@ all.data %>%
   labs(x = "Number queried", y = "Mean performance") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+##INDIA
 all.data %>%
   filter(!is.na(Productive))%>%
   filter(Task == "SF", 
@@ -2125,7 +2029,8 @@ all.data %>%
   theme_bw(base_size = 13) + 
   facet_grid(~Productive) +
   scale_colour_manual(values = india.pal) +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "bottom", 
+        legend.title = element_blank()) +
   labs(x = "Number queried", y = "Mean performance") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
@@ -2314,65 +2219,6 @@ all.data %>%
   
 ```
 
-####Without prod. points
-```{r}
-all.data %>%
-  filter(!is.na(Productive))%>%
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  filter(Task == "NN")%>%
-  group_by(SID, Productive, Language, Dataset)%>%
-  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
-            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
-  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
-  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
-                      geom="bar", alpha = .5, colour = "black") +
-  stat_summary(fun.data = mean_se, geom="errorbar", 
-               position = position_dodge(width=0.90), width = 0.2)+
-  ylab("Mean correct") + 
-  xlab('') + 
-  facet_grid(Productive~Dataset, scale = "free_x")+
-  theme_bw(base_size = 13) + 
-  theme(legend.position = "none") +
-  ggtitle("Performance on NN Task by language, productivity") +
-  theme(text = element_text(size = 12), 
-        panel.grid.minor = element_blank(), 
-        panel.grid.major = element_blank()) +
-  ylim(0, 1.0) +
-  geom_violin(alpha = .1) + 
-  scale_fill_brewer(palette = "Dark2") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-###Performance by count range
-```{r}
-count_range_pal <- brewer.pal(n = 9, "Spectral")[8:9]
-
-all.data %>%
-  filter(!is.na(Productive))%>%
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  filter(Task == "NN")%>%
-  group_by(SID, count_range, Language, Dataset, Productive)%>%
-  summarise(mean = mean(as.numeric(as.character(Correct), na.rm=TRUE)),
-            sd = sd(as.numeric(as.character(Correct), na.rm=TRUE))) %>%
-  ggplot(aes(x = count_range, y = mean, fill=Language)) +
-  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
-                      geom="bar", colour = "black") +
-  stat_summary(fun.data = mean_se, geom="errorbar", 
-               position = position_dodge(width=0.90), width = 0.2)+
-  ylab("Mean correct") + 
-  xlab('') + 
-  theme_bw() + 
-  ggtitle("Performance on NN Task by language, within/outside IHC") +
-  theme(text = element_text(size = 12),
-        panel.grid.minor = element_blank(), 
-        panel.grid.major = element_blank(), 
-        legend.position = "bottom") +
-  ylim(0, 1.0) +
-  scale_fill_brewer(palette = "Dark2") +
-facet_grid(Productive~Dataset)
-```
 
 ####With prod. points, split by productivity
 ```{r}
@@ -2417,10 +2263,14 @@ ggplot(aes(x=count_range, y=mean, fill = Language)) +
   facet_grid(~Productive) 
 
 #India
+#HK/SLO/US
 all.data %>%
-  filter(Task == "NN")%>%
- mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
+  filter(Task == "NN", 
+         Language == "English (US)" | 
+           Language == "English (India)" |
+           Language == "Hindi" | 
+           Language == "Gujarati")%>%
+  mutate(count_range = factor(count_range, levels = c("Within", "Outside")))%>%
   group_by(SID, count_range, Language, Productive, Dataset)%>%
   summarise(mean = mean(as.numeric(as.character(Correct)), na.rm=TRUE),
             sd = sd(as.numeric(as.character(Correct)), na.rm=TRUE)) %>%
@@ -2443,60 +2293,21 @@ ggplot(aes(x=count_range, y=mean, fill = Language)) +
   xlab('') + 
   theme_bw(base_size = 10) + 
   theme(legend.position = "bottom") +
-  ggtitle("Performance on NN Task by language, within/outside IHC") +
   theme(text = element_text(size = 10)) +
   ylim(0, 1.0) +
-  scale_fill_brewer(palette = "Dark2", guide = "none") + 
+  scale_fill_manual(values = india.pal) + 
   scale_colour_manual(values = productivity.pal) +
   theme(text = element_text(size = 12), 
         panel.grid.minor = element_blank(), 
         panel.grid.major = element_blank(), 
-        legend.position = "bottom") +
-  facet_grid(Dataset~Productive) 
-```
-
-####With prod points, all together
-```{r}
-all.data %>%
-  filter(Task == "NN")%>%
- mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  group_by(SID, count_range, Language, Productive, Dataset)%>%
-  summarise(mean = mean(as.numeric(as.character(Correct)), na.rm=TRUE),
-            sd = sd(as.numeric(as.character(Correct)), na.rm=TRUE)) %>%
-ggplot(aes(x=count_range, y=mean, fill = Language)) +
-  stat_summary(fun.y = mean, position = position_dodge(width = .95), 
-                      geom="bar", alpha = .5, colour = "black", 
-               show.legend = FALSE) +
-  geom_violin(alpha = .1, 
-              show.legend = FALSE)  + 
-  geom_point(position=position_jitterdodge(jitter.width = .3, 
-                                           jitter.height = .1, 
-                                           dodge.width = .9),
-             aes(colour = Productive, group=Language), 
-             size=1.5,
-               show.legend=TRUE) +
-  stat_summary(fun.data = mean_se, geom="errorbar", 
-               position = position_dodge(width=0.90), width = 0.2, 
-               show.legend = FALSE) +
-  ylab("Mean correct") + 
-  xlab('') + 
-  theme_bw(base_size = 10) + 
-  theme(legend.position = "bottom") +
-  ggtitle("Performance on NN Task by language, within/outside IHC") +
-  theme(text = element_text(size = 10)) +
-  ylim(0, 1.0) +
-  scale_fill_brewer(palette = "Dark2", guide = "none") + 
-  scale_colour_manual(values = productivity.pal) +
-  theme(text = element_text(size = 12), 
-        panel.grid.minor = element_blank(), 
-        panel.grid.major = element_blank(), 
-        legend.position = "bottom") +
-  facet_grid(~Dataset) 
+        legend.position = "bottom", 
+        legend.title = element_blank()) +
+  facet_grid(~Productive) 
 ```
 
 ###By item, productivity
 ```{r}
+##HK/SLO/US
 all.data %>%
   filter(!is.na(Productive))%>%
   mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
@@ -2523,6 +2334,7 @@ all.data %>%
   labs(x = "Number queried", y = "Mean performance") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+##INDIA
 all.data %>%
   filter(!is.na(Productive))%>%
   filter(Task == "NN", 
@@ -2872,10 +2684,11 @@ all.data %>%
 ##Unit performance by highest contiguous NN for each language
 ```{r}
 all.data %>%
+  filter(Language == "English (US)" | 
+           Language == "Cantonese" | 
+           Language == "Slovenian") %>%
   filter(!is.na(Productive))%>%
   filter(!is.na(highest_contig))%>% #filter out kids who do not have NN
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
   filter(Task == "SF")%>%
   mutate(highest_contig = factor(highest_contig))%>%
   group_by(highest_contig, Language, Dataset)%>%
@@ -2888,11 +2701,39 @@ all.data %>%
   geom_line() +
   geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
                 width = .1) +
-  theme_bw(base_size = 12) + 
+  theme_bw(base_size = 10) + 
   scale_colour_brewer(palette = "Dark2") +
-  theme(legend.position = "bottom") +
-  labs(x = "Highest contiguous NN", y = "Mean Unit Task performance", title = "Unit Task performance by Highest Contiguous NN") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_grid(~Dataset, scale = "free_x")
+  theme(legend.position = "bottom", 
+        legend.title = element_blank()) +
+  labs(x = "Highest contiguous NN", y = "Mean Unit Task performance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+all.data %>%
+  filter(Language == "English (US)" |
+           Language == "English (India)" |
+           Language == "Hindi" | 
+           Language == "Gujarati") %>%
+  filter(!is.na(Productive))%>%
+  filter(!is.na(highest_contig))%>% #filter out kids who do not have NN
+  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))%>%
+  filter(Task == "SF")%>%
+  mutate(highest_contig = factor(highest_contig))%>%
+  group_by(highest_contig, Language, Dataset)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE), 
+            n = n(), 
+            sd = sd(Correct, na.rm = TRUE), 
+            se = sd/sqrt(n)) %>%
+  ggplot(aes(x = highest_contig, y = mean, colour = Language, group= Language)) +
+  geom_point(size = 2) + 
+  geom_line() +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
+                width = .1) +
+  theme_bw(base_size = 10) + 
+  scale_colour_manual(values = india.pal) +
+  theme(legend.position = "bottom", 
+        legend.title = element_blank()) +
+  labs(x = "Highest contiguous NN", y = "Mean Unit Task performance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
@@ -3171,22 +3012,22 @@ mtable.sf.hk
 ```
 
 ##Model comparisons
-###Base v. productivity - NS, Chisq(1) = 0.064. p = .80
+###Base v. productivity - NS, Chisq(1) = 0.05. p = .82
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT') #ns
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 11.78, p = 0.0006, AIC = 1614.6
+###Base v. FHC - Sig, Chisq(1) = 11.65, p = 0.0006, AIC = 1614.6
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 39.16, p < .0001, AIC = 1587.2
+###Base v. IHC - Sig, Chisq(1) = 38.91, p < .0001, AIC = 1589.3
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model3, test = 'LRT')
 ```
 
-###Base v. Highest Contiguous NN - Sig, Chisq(1) = 14.337, p = .0002, AIC = 1612.1
+###Base v. Highest Contiguous NN - Sig, Chisq(1) = 11.8251, p = .0002, AIC = 1616.3
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model4, test = 'LRT')
 ```
@@ -3310,13 +3151,13 @@ mtable.sf.slo
 ```
 
 ##Model Comparisons
-###Base v. Productivity - sig, Chis(1) = 9.242, p = .002
+###Base v. Productivity - sig, Chis(1) = 11.71, p = .0006, AIC = 1385.7
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')
 ```
 
  
-###Base v. FHC - Sig, Chisq(1) = 11.679, p = .0006, AIC = 1317.5
+###Base v. FHC - Sig, Chisq(1) = 15.19, p< .0001, AIC = 1317.5
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')
 ```
@@ -3436,17 +3277,17 @@ mtable.sf.us
 anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 18.17, p < .0001, AIC = 1491.8
+###Base v. FHC - Sig, Chisq(1) = 18.68, p < .0001, AIC = 1498.8
 ```{r}
 anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 49.01, p < .0001, AIC = 1461
+###Base v. IHC - Sig, Chisq(1) = 49.80, p < .0001, AIC = 1467.7
 ```{r}
 anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')
 ````
 
-###Base v. Highest Contig. - Sig, Chisq(1) = 35.49, p < .0001, AIC = 1474.5
+###Base v. Highest Contig. - Sig, Chisq(1) = 34.88, p < .0001, AIC = 1482.6
 ```{r}
 anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')
 ```
@@ -3573,22 +3414,22 @@ mtable.sf.ind.eng
 ```
 
 ##Model comparisons
-###Base v. productivity - marginal (p = .09)
+###Base v. productivity - p = .04
 ```{r}
 anova(sf.ind.eng.within.base, sf.ind.eng.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - significant, Chisq(1) = 9.66, p = .002, AIC = 760.1
+###Base v. FHC - significant, Chisq(1) = 12.316, p = .0004, AIC = 783.7
 ```{r}
 anova(sf.ind.eng.within.base, sf.ind.eng.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 6.87, p = .008, AIC = 762.89
+###Base v. IHC - Sig, Chisq(1) = 7.512, p = .006, AIC = 788.49
 ```{r}
 anova(sf.ind.eng.within.base, sf.ind.eng.within.model3, test = 'LRT')
 ```
 
-###Base v. Highest Contiguous NN - sig, Chisq(1) = 5, p = .03, AIC = 764.8
+###Base v. Highest Contiguous NN - sig, Chisq(1) = 5.11, p = .02, AIC = 778.9
 ```{r}
 anova(sf.ind.eng.within.base, sf.ind.eng.within.model4, test = 'LRT')
 ```
@@ -3605,19 +3446,26 @@ anova(sf.ind.eng.within.base, sf.ind.eng.within.model.nn, test = 'LRT')
 #FHC
 sf.ind.eng.within.plus1 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + age.c + (1|SID), 
                              family = "binomial", 
-                           data = sf.ind.eng.within)
+                           data = sf.ind.eng.within, 
+                           control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
 
 #HCNN + FHC
 sf.ind.eng.within.plus2.hc <- glmer(Correct ~ highest_contig.c + fhc.c + count_range + starting_num.c + age.c + starting_num.c + (1|SID), 
-                            family = "binomial", data = sf.ind.eng.within)
+                            family = "binomial", data = sf.ind.eng.within, 
+                            control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
 
 #IHC + FHC
 sf.ind.eng.within.plus2.ihc <- glmer(Correct ~ ihc.c + fhc.c + count_range + starting_num.c + age.c  +(1|SID), 
-                            family = "binomial", data = sf.ind.eng.within)
+                            family = "binomial", data = sf.ind.eng.within,control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
 
 #HCNN + IHC + FHC
 sf.ind.eng.within.plus3 <- glmer(Correct ~ highest_contig.c + ihc.c + fhc.c + count_range + age.c + starting_num.c + (1|SID), 
-                            family = "binomial", data = sf.ind.eng.within)
+                            family = "binomial", data = sf.ind.eng.within, 
+                            control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
 
 
 #comparison of 3, minus ihc
@@ -3685,7 +3533,7 @@ mtable.sf.hindi
 ```
 
 ##Model comparisons
-###Base v. Productivity - marginal, Chisq(1) = 3.33, p = .07, AIC = 1316.1
+###Base v. Productivity - marginal
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model1, test = 'LRT')
 ```
@@ -3850,7 +3698,7 @@ Using the Productive/Non-Productive categorical classification outlined above, w
 between both groups on the Unit task using t-tests. We may do this by considering average performance
 (averaring the 0’s and 1’s on each task for each participant); should doing so provide greater precision, we may also compare Highest Contiguous Number.
 
-###HK: Marginally significant difference between groups (*p* = .05)
+###HK: Marginally significant difference between groups (*p* = .06)
 ```{r}
 #with mean performance
 sf.hk.mean.ms <- all.data %>%
@@ -4046,17 +3894,17 @@ mtable.wcn.hk
 ```
 
 ##Model comparisons
-###Base v. Productivity - NS, p = .42
+###Base v. Productivity - NS, p = .36
 ```{r}
 anova(wcn.hk.within.base, wcn.hk.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 31.08, p < .0001, AIC = 1133.1
+###Base v. FHC - Sig, Chisq(1) = 34.75, p < .0001, AIC = 1172.8
 ````{r}
 anova(wcn.hk.within.base, wcn.hk.within.model2, test = 'LRT')
 ````
 
-###Base v. IHC = Sig, Chisq(1) = 66.20, p < .0001, AIC = 1098
+###Base v. IHC = Sig, Chisq(1) = 69.17, p < .0001, AIC = 1138.4
 ```{r}
 anova(wcn.hk.within.base, wcn.hk.within.model3, test = 'LRT')
 ```
@@ -4131,22 +3979,22 @@ mtable.wcn.slo
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 25.05, p < .0001, AIC = 791.81
+###Base v. Productivity - Sig, Chisq(1) = 26.13, p < .0001, AIC = 839.57
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 43.104, p < .0001, AIC = 773.76
+###Base v. FHC - Sig, Chisq(1) = 46.24, p < .0001, AIC = 819.5
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 14 p = .0002, AIC = 802.86
+###Base v. IHC - Sig, Chisq(1) = 16.07 p < .0001, AIC = 849.6
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model3, test = 'LRT')
 ```
 
-###Productivity gradient
+###Productivity gradient - Sig, Chisq(1) = 27.24, p < .0001, AIC = 838.46
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model.gain, test = 'LRT')
 ```
@@ -4227,12 +4075,12 @@ mtable.wcn.us
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 15.492, p < .0001, AIC = 1025.6
+###Base v. Productivity - Sig, Chisq(1) = 14.8, p = .0001, AIC = 1043.2
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 45.03, p < .0001, AIC = 996.02
+###Base v. FHC - Sig, Chisq(1) = 44.1, p < .0001, AIC = 1013.9
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model2, test = 'LRT')
 ```
@@ -4332,12 +4180,12 @@ mtable.ind.eng
 anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 21.07, p < .0001, AIC = 669.74
+###Base v. FHC - Sig, Chisq(1) = 21.48, p < .0001, AIC = 681.26
 ```{r}
 anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 19.32, p < .0001, AIC = 671.49
+###Base v. IHC - Sig, Chisq(1) = 19.32, p < .0001, AIC = 683.06
 ```{r}
 anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model3, test = 'LRT')
 ```
@@ -4407,17 +4255,17 @@ mtable.hindi
 ```
 
 ##Model comparisons
-###Base v. Productivity - sig, Chisq(1) = 4.30, p = .04, AIC = 835.31
+###Base v. Productivity - sig, Chisq(1) = 4.64, p = .03, AIC = 859.39
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - sig, Chisq(1) = 27.06, p < .0001, AIC = 812.54
+###Base v. FHC - sig, Chisq(1) = 27.76, p < .0001, AIC = 830.27
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 33.542, p < .0001, AIC = 806.07
+###Base v. IHC - Sig, Chisq(1) = 33.88, p < .0001, AIC = 824.15
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model3, test = 'LRT')
 ```
@@ -4499,17 +4347,17 @@ mtable.gujarati
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 9.67, p = .002, AIC = 775.42
+###Base v. Productivity - Sig, Chisq(1) = 10.2, p = .002, AIC = 788.92
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 35.62, p < .0001, AIC  749.46
+###Base v. FHC - Sig, Chisq(1) = 36.43, p < .0001, AIC  762.64
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC = Sig, Chisq(1) = 32.94, p < .0001, AIC = 752.15
+###Base v. IHC = Sig, Chisq(1) = 33.46, p < .0001, AIC = 765.61
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model3, test = 'LRT')
 ```
@@ -4569,7 +4417,7 @@ between both groups on the Next Number task using t-tests. We may do this by con
 ###HK: Significant difference between productive and nonproductive counters (*p* = .002)
 ```{r}
 #with mean performance
-wcn.hk.mean.ms <- wcn.hk.within %>%
+wcn.hk.mean.ms <- all.data %>%
   filter(Language == "Cantonese", 
          Task == "NN")%>%
   group_by(SID, Productive)%>%
@@ -4822,7 +4670,7 @@ mtable.sf.cross
 ```
 
 ##Model Comparisons
-###Base v. productivity - NS, p = .26
+###Base v. productivity - NS, p = .18
 ```{r}
 anova(sf.cross.base, sf.cross.model1, test = 'LRT')
 ```
@@ -4832,7 +4680,7 @@ anova(sf.cross.base, sf.cross.model1, test = 'LRT')
 anova(sf.cross.base, sf.cross.model2, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 27.051, p < .0001, AIC = 4276.3
+###Base v. Highest contig. - Sig, Chisq(1) = 25.824, p < .0001, AIC = 4321.3
 ```{r}
 anova(sf.cross.base, sf.cross.model3, test = 'LRT')
 ```
@@ -4954,7 +4802,7 @@ mtable.sf.cross.india
 ```
 
 ##Model Comparisons
-###Base v. productivity - NS, p = .82
+###Base v. productivity - NS, p = .87
 ```{r}
 anova(sf.cross.base.india, sf.cross.model1.india, test = 'LRT')
 ```
@@ -4964,7 +4812,7 @@ anova(sf.cross.base.india, sf.cross.model1.india, test = 'LRT')
 anova(sf.cross.base.india, sf.cross.model2.india, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 13.13, p = .0003, AIC = 3901.1
+###Base v. Highest contig. - Sig, Chisq(1) = 12.49, p = .0004, AIC = 3948.2
 ```{r}
 anova(sf.cross.base.india, sf.cross.model3.india, test = 'LRT')
 ```
@@ -5008,6 +4856,22 @@ sf.nolang.model1 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_ra
                          control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
 anova(sf.nolang.base, sf.nolang.model1, test = 'LRT') 
+```
+
+#Lang*prod interaction followup
+```{r}
+tmp <- sf.df.cross.india %>%
+  mutate(Language = factor(Language, levels = c("Gujarati", "English (US)", "Hindi")))
+
+sf.india.lang.noint <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                         data = tmp, family = "binomial", 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+sf.india.lang.int <- glmer(Correct ~ highest_contig.c*Language + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                         data = tmp, family = "binomial", 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+anova(sf.india.lang.noint, sf.india.lang.int, test = 'LRT') 
 ```
 
 #Cross-linguistic comparison of mean performance on unit task 
@@ -5067,17 +4931,17 @@ mtable.wcn.cross.india
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 10.02, p = .002, AIC = 2506.9
+###Base v. Productivity - Sig, Chisq(1) = 10.1, p = .001, AIC = 2555.4
 ```{r}
 anova(wcn.cross.base.india, wcn.cross.model1.india, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 23.135, p < .0001, AIC = 2493.8
+###Base v. FHC - Sig, Chisq(1) = 22.994, p < .0001, AIC = 2542.5
 ```{r}
 anova(wcn.cross.base.india, wcn.cross.model2.india, test = 'LRT')
 ```
 
-###Base v. Prod. gradient - Sig, Chisq(1) = 16.272, p < .0001, AIC = 2500.7
+###Base v. Prod. gradient - Sig, Chisq(1) = 16.23, p < .0001, AIC = 2549.3
 ```{r}
 anova(wcn.cross.base.india, wcn.cross.model.gain, test = 'LRT')
 ```
@@ -5202,12 +5066,12 @@ mtable.wcn.cross
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 16.553, p < .0001, AIC = 2856.8
+###Base v. Productivity - Sig, Chisq(1) = 17.02, p < .0001, AIC = 2856.8
 ```{r}
 anova(wcn.cross.base, wcn.cross.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 37.87, p < .0001, AIC = 2835.5
+###Base v. FHC - Sig, Chisq(1) = 39.89, p < .0001, AIC = 2925.1
 ```{r}
 anova(wcn.cross.base, wcn.cross.model2, test = 'LRT')
 ```
@@ -5261,6 +5125,22 @@ wcn.nolang.model1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + star
 anova(wcn.nolang.base, wcn.nolang.model1, test = 'LRT') 
 ```
 
+#Lang*prod interaction because we found significant effects for FHC in SLO and English, but not Cantonese
+```{r}
+wcn.prod.int <- glmer(Correct ~ Language*fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                         data = wcn.df.cross, family = "binomial", 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+wcn.prod.noint <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                         data = wcn.df.cross, family = "binomial", 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+anova(wcn.prod.noint, wcn.prod.int, test = 'LRT') 
+
+summary(wcn.prod.int)
+
+```
+
 
 ---
 #Followup with Indian English for NN
@@ -5306,7 +5186,7 @@ mtable.wcn.cross.india.follow
 anova(wcn.cross.base.india.follow, wcn.cross.model1.india.follow, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 8.13, p = .004, AIC = 2107.6
+###Base v. FHC - Sig, Chisq(1) = 8.58, p = .003, AIC = 2145.4
 ```{r}
 anova(wcn.cross.base.india.follow, wcn.cross.model2.india.follow, test = 'LRT')
 ```
@@ -5348,7 +5228,7 @@ summary(lm1)
 
 ---
 
-#Cross-linguistic comparison for mean performance on Unit task (India)
+#Cross-linguistic comparison for mean performance on Unit task (US)
 ```{r}
 sf.ms <- all.data %>%
   filter(Task == "SF", 
