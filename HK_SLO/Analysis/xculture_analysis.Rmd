@@ -2843,7 +2843,7 @@ mtable.sf.hk
 anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT') #ns
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 11.65, p = 0.0006, AIC = 1614.6
+###Base v. FHC - Sig, Chisq(1) = 11.65, p = 0.0006, AIC = 1616.5
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model2, test = 'LRT')
 ```
@@ -2858,12 +2858,21 @@ anova(sf.hk.within.base, sf.hk.within.model3, test = 'LRT')
 anova(sf.hk.within.base, sf.hk.within.model4, test = 'LRT')
 ```
 
-#Exploratory - productivity gain - Marginal, Chisq(1) = 3.87, p = .05, AIC = 1622.5; Cluster
+#Exploratory - productivity gain - Marginal
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model.pg, test = 'LRT')
-anova(sf.hk.within.base, sf.hk.within.model.clust, test = 'LRT')
-anova(sf.hk.within.base, sf.hk.within.model.nn, test = 'LRT')
+# anova(sf.hk.within.base, sf.hk.within.model.clust, test = 'LRT')
+# anova(sf.hk.within.base, sf.hk.within.model.nn, test = 'LRT')
 ```
+
+###Ranking of predictors from individual models 
+1.  IHC - AIC = 1589.3
+2.  HCNN - AIC = 1616.3
+3.  FHC - AIC = 1616.5
+4.  Productivity - NS
+
+####Exploratory
+1. Productivity gradient - AIC = 1624.3
 
 ##Large model
 We have three significant predictors of performance on the Unit task (FHC, IHC, and Highest Contiguous NN). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task.
@@ -2899,26 +2908,17 @@ mtable.sf.hk.large <- mtable('IHC alone' = sf.hk.within.plus1,
             'Highest Contig. + FHC + IHC' = sf.hk.within.plus3,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.hk.large
+```
 
-#Explore - mean NN v. IHC
-sf.hk.within.plus1 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), 
-                             family = "binomial", 
-                           data = sf.hk.within)
-
-sf.hk.within.plus.nn <- glmer(Correct ~ mean.nn + ihc.c + count_range + starting_num.c + age.c + (1|SID), 
-                             family = "binomial", 
-                           data = sf.hk.within)
-
-anova(sf.hk.within.plus1, sf.hk.within.plus.nn, test = 'LRT')
-
-summary(sf.hk.within.plus1)
-summary(sf.hk.within.plus.nn)
-
+####Exploratory - productivity gradient
+Productivity gradient does not significantly add to the model
+```{r}
+#Explore 
 ##What about productivity gradient?
 sf.hk.within.plus.gain <- glmer(Correct ~ prod.gradient + ihc.c + count_range + starting_num.c + age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.hk.within)
-anova(sf.hk.within.plus1, sf.hk.within.plus.gain, test = 'LRT')
+anova(sf.hk.within.plus1, sf.hk.within.plus.gain, test = 'LRT') # productivity gradient does not significantly explain add'l variance
 ```
 
 
@@ -2926,6 +2926,73 @@ anova(sf.hk.within.plus1, sf.hk.within.plus.gain, test = 'LRT')
 ```{r}
 summary(sf.hk.within.plus1)
 ```
+
+##Visualization of models
+```{r}
+#Get all the parameters in one model, then add column for parameter so we can graph all the individual models at once
+#productivity
+prod.model <- summary(sf.hk.within.model1)
+AIC.prod.hk <- as.numeric(prod.model$AICtab[1])
+chi.sq.prod.hk <- anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT')
+prod.model.df <- data.frame(coef(prod.model)[,0:4])
+prod.model.df <- add_rownames(prod.model.df, "Parameter")
+prod.model.df %<>%
+  mutate(Model = "Productivity")%>%
+  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)))
+
+#FHC
+fhc.model <- summary(sf.hk.within.model2)
+AIC.fhc.hk <- as.numeric(fhc.model$AICtab[1])
+fhc.model.df <- data.frame(coef(fhc.model)[,0:4])
+fhc.model.df <- add_rownames(fhc.model.df, "Parameter")
+fhc.model.df %<>%
+  mutate(Model = "FHC")%>%
+  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)))
+
+#IHC
+ihc.model <- summary(sf.hk.within.model3)
+AIC.ihc.hk <- as.numeric(ihc.model$AICtab[1])
+ihc.model.df <- data.frame(coef(ihc.model)[,0:4])
+ihc.model.df <- add_rownames(ihc.model.df, "Parameter")
+ihc.model.df %<>%
+  mutate(Model = "IHC")%>%
+  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)))
+
+#HCNN
+hcnn.model <- summary(sf.hk.within.model4)
+AIC.hcnn.hk <- as.numeric(hcnn.model$AICtab[1])
+hcnn.model.df <- data.frame(coef(hcnn.model)[,0:4])
+hcnn.model.df <- add_rownames(hcnn.model.df, "Parameter")
+hcnn.model.df %<>%
+  mutate(Model = "HCNN")%>%
+  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)))
+
+#join togther 
+all.models.hk.unit <- bind_rows(prod.model.df, fhc.model.df, ihc.model.df, hcnn.model.df) 
+
+all.models.hk.unit %<>%
+  filter(Parameter != "(Intercept)")%>%
+  mutate(Parameter = ifelse(Parameter == "starting_num.c", "Item magnitude", 
+                            ifelse(Parameter == "count_rangeWithin", "Within IHC", 
+                                   ifelse(Parameter == "Prod. Predictor", "Productivity predictor", "Age"))))%>%
+  mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "Productivity predictor")))%>%
+  mutate(colors = ifelse((Parameter == "Age" | Parameter == "Item magnitude" | Parameter == "Within IHC"), as.character(Parameter), 
+                         as.character(Model)))
+
+all.models.hk.unit %>%
+ggplot(aes(x = Parameter, y = Estimate)) +
+  facet_wrap(~Model, ncol = 4)+
+  geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
+                      ymax = Estimate + 1.96 * Std..Error,
+                      colour = Parameter)) +
+  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+  theme_bw(base_size = 13) +
+  coord_flip() +
+  scale_colour_brewer(palette = "Dark2", guide = "none") 
+  xlab("") +
+  scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
+```
+
 
 ---
 
