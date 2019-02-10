@@ -2387,45 +2387,45 @@ all.data %>%
   facet_grid(~Dataset)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-all.data %>%
-  filter(Task == "SF") %>%
-  filter(!is.na(Productive))%>%
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  group_by(SID, IHC, Language, Productive, Dataset)%>%
-  summarise(mean_unit = mean(Correct, na.rm = TRUE))%>%
-  ggplot(aes(x = IHC, y = mean_unit, colour = Language, group = Language)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 12) +
-  scale_color_brewer(palette = "Dark2")+
-  scale_x_continuous(breaks = seq(0, 140, 10)) + 
-  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
-  theme(legend.position = "bottom")+
-  labs(title = "Mean Unit Task Performance and IHC by Language", x = "IHC", 
-       y = "Mean Unit Task Performance")+
-  facet_grid(Productive~Dataset, scale = "free_x")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-all.data %>%
-  filter(Task == "NN")%>%
-  filter(!is.na(Productive))%>%
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  group_by(SID, IHC, Language, Productive, Dataset)%>%
-  summarise(mean_nn = mean(Correct, na.rm = TRUE))%>%
-  ggplot(aes(x = IHC, y = mean_nn, colour = Language, group = Language)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 12) +
-  scale_color_brewer(palette = "Dark2")+
-  scale_x_continuous(breaks = seq(0, 140, 10)) + 
-  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
-  theme(legend.position = "bottom")+
-  labs(title = "Mean NN Task Performance and IHC by Language", x = "IHC", 
-       y = "Mean NN Task Performance") + 
-  facet_grid(Productive~Dataset, scale = "free_x")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# all.data %>%
+#   filter(Task == "SF") %>%
+#   filter(!is.na(Productive))%>%
+#   mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
+#                             Language == "Slovenian", "HK/SLO/US", "India"))%>%
+#   group_by(SID, IHC, Language, Productive, Dataset)%>%
+#   summarise(mean_unit = mean(Correct, na.rm = TRUE))%>%
+#   ggplot(aes(x = IHC, y = mean_unit, colour = Language, group = Language)) +
+#   geom_point() + 
+#   geom_smooth(method = "lm", se = FALSE) +
+#   theme_bw(base_size = 12) +
+#   scale_color_brewer(palette = "Dark2")+
+#   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+#   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
+#   theme(legend.position = "bottom")+
+#   labs(title = "Mean Unit Task Performance and IHC by Language", x = "IHC", 
+#        y = "Mean Unit Task Performance")+
+#   facet_grid(Productive~Dataset, scale = "free_x")+
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# 
+# all.data %>%
+#   filter(Task == "NN")%>%
+#   filter(!is.na(Productive))%>%
+#   mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
+#                             Language == "Slovenian", "HK/SLO/US", "India"))%>%
+#   group_by(SID, IHC, Language, Productive, Dataset)%>%
+#   summarise(mean_nn = mean(Correct, na.rm = TRUE))%>%
+#   ggplot(aes(x = IHC, y = mean_nn, colour = Language, group = Language)) +
+#   geom_point() + 
+#   geom_smooth(method = "lm", se = FALSE) +
+#   theme_bw(base_size = 12) +
+#   scale_color_brewer(palette = "Dark2")+
+#   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+#   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
+#   theme(legend.position = "bottom")+
+#   labs(title = "Mean NN Task Performance and IHC by Language", x = "IHC", 
+#        y = "Mean NN Task Performance") + 
+#   facet_grid(Productive~Dataset, scale = "free_x")+
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
@@ -2471,45 +2471,45 @@ all.data %>%
   facet_grid(~Dataset)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-all.data %>%
-  filter(Task == "SF") %>%
-  filter(!is.na(Productive))%>%
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  group_by(SID, FHC, Language, Productive, Dataset)%>%
-  summarise(mean_unit = mean(Correct, na.rm = TRUE))%>%
-  ggplot(aes(x = FHC, y = mean_unit, colour = Language, group = Language)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 12) +
-  scale_color_brewer(palette = "Dark2")+
-  scale_x_continuous(breaks = seq(0, 140, 10)) + 
-  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
-  theme(legend.position = "bottom")+
-  labs(title = "Mean Unit Task Performance and FHC by Language", x = "FHC", 
-       y = "Mean Unit Task Performance") +
-  facet_grid(Productive~Dataset, scale = "free_x")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-all.data %>%
-  filter(Task == "NN")%>%
-  filter(!is.na(Productive))%>%
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  group_by(SID, FHC, Language, Productive, Dataset)%>%
-  summarise(mean_nn = mean(Correct, na.rm = TRUE))%>%
-  ggplot(aes(x = FHC, y = mean_nn, colour = Language, group = Language)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) +
-  theme_bw(base_size = 12) +
-  scale_color_brewer(palette = "Dark2")+
-  scale_x_continuous(breaks = seq(0, 140, 10)) + 
-  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
-  theme(legend.position = "bottom")+
-  labs(title = "Mean NN Task Performance and FHC by Language", x = "FHC", 
-       y = "Mean NN Task Performance") +
-  facet_grid(Productive~Dataset, scale = "free_x")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# all.data %>%
+#   filter(Task == "SF") %>%
+#   filter(!is.na(Productive))%>%
+#   mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
+#                             Language == "Slovenian", "HK/SLO/US", "India"))%>%
+#   group_by(SID, FHC, Language, Productive, Dataset)%>%
+#   summarise(mean_unit = mean(Correct, na.rm = TRUE))%>%
+#   ggplot(aes(x = FHC, y = mean_unit, colour = Language, group = Language)) +
+#   geom_point() + 
+#   geom_smooth(method = "lm", se = FALSE) +
+#   theme_bw(base_size = 12) +
+#   scale_color_brewer(palette = "Dark2")+
+#   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+#   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
+#   theme(legend.position = "bottom")+
+#   labs(title = "Mean Unit Task Performance and FHC by Language", x = "FHC", 
+#        y = "Mean Unit Task Performance") +
+#   facet_grid(Productive~Dataset, scale = "free_x")+
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# 
+# all.data %>%
+#   filter(Task == "NN")%>%
+#   filter(!is.na(Productive))%>%
+#   mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
+#                             Language == "Slovenian", "HK/SLO/US", "India"))%>%
+#   group_by(SID, FHC, Language, Productive, Dataset)%>%
+#   summarise(mean_nn = mean(Correct, na.rm = TRUE))%>%
+#   ggplot(aes(x = FHC, y = mean_nn, colour = Language, group = Language)) +
+#   geom_point() + 
+#   geom_smooth(method = "lm", se = FALSE) +
+#   theme_bw(base_size = 12) +
+#   scale_color_brewer(palette = "Dark2")+
+#   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+#   coord_cartesian(ylim = seq(0,1, .2), expand = TRUE) +
+#   theme(legend.position = "bottom")+
+#   labs(title = "Mean NN Task Performance and FHC by Language", x = "FHC", 
+#        y = "Mean NN Task Performance") +
+#   facet_grid(Productive~Dataset, scale = "free_x")+
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ##Unit performance by highest contiguous NN for each language
@@ -2806,9 +2806,9 @@ sf.hk.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + starting
 sf.hk.within.model.pg <- glmer(Correct ~ prod.gradient + count_range + starting_num.c + age.c + (1|SID), 
                                family = "binomial", data = sf.hk.within)
 
-#exp - cluster
-sf.hk.within.model.clust <- glmer(Correct ~ CLUST + count_range + starting_num.c + age.c + (1|SID), 
-                               family = "binomial", data = sf.hk.within)
+# #exp - cluster
+# sf.hk.within.model.clust <- glmer(Correct ~ CLUST + count_range + starting_num.c + age.c + (1|SID), 
+#                                family = "binomial", data = sf.hk.within)
 
 # #post-hoc - mean nn
 # sf.hk.within.model.nn <- glmer(Correct ~ mean.nn + count_range + starting_num.c + age.c + (1|SID), 
@@ -2823,7 +2823,6 @@ mtable.sf.hk <- mtable('Base Model' = sf.hk.within.base,
             'Model 3: IHC' = sf.hk.within.model3,
             'Model 4: Highest Contig.' = sf.hk.within.model4,
             'EXP: Prod. Gradient' = sf.hk.within.model.pg,
-            'EXP: Cluster' = sf.hk.within.model.clust,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.hk
 ```
@@ -2919,35 +2918,35 @@ summary(sf.hk.within.plus1)
 
 # library(dotwhisker)
 #visualizing regressions
-full.model.unit.hk <- summary(sf.hk.within.plus1)
-
-AIC <- as.numeric(full.model.unit.hk$AICtab[1])
-
-full.model.df.unit.hk <- data.frame(coef(full.model.unit.hk)[,0:4])
-full.model.df.unit.hk <- add_rownames(full.model.df.unit.hk, "Parameter")
-
-full.model.df.unit.hk %<>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "IHC",
-                                   ifelse(Parameter == "count_rangeWithin", "Within IHC",
-                                          ifelse(Parameter == "age.c", "Age", 
-                                                 ifelse(Parameter == "starting_num.c", "Item magnitude", "Intercept"))))) %>%
-  filter(Parameter != "Intercept")%>%
-  mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "IHC")))
-
-full.model.df.unit.hk %>%
-ggplot(aes(x = Parameter, y = Estimate)) +
-  geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
-                      ymax = Estimate + 1.96 * Std..Error,
-                      colour = Parameter)) +
-  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
-  theme_bw(base_size = 12) +
-  theme(axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10), 
-        legend.position = "none") +
-  coord_flip() +
-  langcog::scale_color_solarized() +
-  xlab("") +
-  scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
+# full.model.unit.hk <- summary(sf.hk.within.plus1)
+# 
+# AIC <- as.numeric(full.model.unit.hk$AICtab[1])
+# 
+# full.model.df.unit.hk <- data.frame(coef(full.model.unit.hk)[,0:4])
+# full.model.df.unit.hk <- add_rownames(full.model.df.unit.hk, "Parameter")
+# 
+# full.model.df.unit.hk %<>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "IHC",
+#                                    ifelse(Parameter == "count_rangeWithin", "Within IHC",
+#                                           ifelse(Parameter == "age.c", "Age", 
+#                                                  ifelse(Parameter == "starting_num.c", "Item magnitude", "Intercept"))))) %>%
+#   filter(Parameter != "Intercept")%>%
+#   mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "IHC")))
+# 
+# full.model.df.unit.hk %>%
+# ggplot(aes(x = Parameter, y = Estimate)) +
+#   geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
+#                       ymax = Estimate + 1.96 * Std..Error,
+#                       colour = Parameter)) +
+#   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+#   theme_bw(base_size = 12) +
+#   theme(axis.text = element_text(size = 10),
+#         axis.title = element_text(size = 10), 
+#         legend.position = "none") +
+#   coord_flip() +
+#   langcog::scale_color_solarized() +
+#   xlab("") +
+#   scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
 ```
 
 
@@ -2979,9 +2978,9 @@ sf.slo.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + startin
 sf.slo.within.model.pg <- glmer(Correct ~ prod.gradient + count_range + starting_num.c + age.c + (1|SID), 
                                 family = "binomial", data = sf.slo.within)
 
-#exp - cluster
-sf.slo.within.model.clust <- glmer(Correct ~ CLUST + count_range + starting_num.c + age.c + (1|SID), 
-                                family = "binomial", data = sf.slo.within)
+# #exp - cluster
+# sf.slo.within.model.clust <- glmer(Correct ~ CLUST + count_range + starting_num.c + age.c + (1|SID), 
+#                                 family = "binomial", data = sf.slo.within)
 
 # #post-hoc - mean nn
 # sf.slo.within.model.nn <- glmer(Correct ~ mean.nn + count_range + starting_num.c + age.c + (1|SID), 
@@ -2996,7 +2995,6 @@ mtable.sf.slo <- mtable('Base Model' = sf.slo.within.base,
             'Model 3: IHC' = sf.slo.within.model3,
             'Model 4: Highest Contig.' = sf.slo.within.model4,
             'EXP: Prod. Gradient' = sf.slo.within.model.pg,
-            'EXP: Cluster' = sf.slo.within.model.clust,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.slo
 ```
@@ -3088,35 +3086,35 @@ summary(sf.slo.within.plus1)
 ```{r}
 summary(sf.slo.within.plus1)
 
-full.model.unit.slo <- summary(sf.slo.within.plus1)
-
-AIC <- as.numeric(full.model.unit.slo$AICtab[1])
-
-full.model.df.unit.slo <- data.frame(coef(full.model.unit.slo)[,0:4])
-full.model.df.unit.slo <- add_rownames(full.model.df.unit.slo, "Parameter")
-
-full.model.df.unit.slo %<>%
-  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "HCNN",
-                                   ifelse(Parameter == "count_rangeWithin", "Within IHC",
-                                          ifelse(Parameter == "age.c", "Age", 
-                                                 ifelse(Parameter == "starting_num.c", "Item magnitude", "Intercept"))))) %>%
-  filter(Parameter != "Intercept")%>%
-  mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "HCNN")))
-
-full.model.df.unit.slo %>%
-ggplot(aes(x = Parameter, y = Estimate)) +
-  geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
-                      ymax = Estimate + 1.96 * Std..Error,
-                      colour = Parameter)) +
-  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
-  theme_bw(base_size = 12) +
-  theme(axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10), 
-        legend.position = "none") +
-  coord_flip() +
-  langcog::scale_color_solarized() +
-  xlab("") +
-  scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
+# full.model.unit.slo <- summary(sf.slo.within.plus1)
+# 
+# AIC <- as.numeric(full.model.unit.slo$AICtab[1])
+# 
+# full.model.df.unit.slo <- data.frame(coef(full.model.unit.slo)[,0:4])
+# full.model.df.unit.slo <- add_rownames(full.model.df.unit.slo, "Parameter")
+# 
+# full.model.df.unit.slo %<>%
+#   mutate(Parameter = ifelse(Parameter == "highest_contig.c", "HCNN",
+#                                    ifelse(Parameter == "count_rangeWithin", "Within IHC",
+#                                           ifelse(Parameter == "age.c", "Age", 
+#                                                  ifelse(Parameter == "starting_num.c", "Item magnitude", "Intercept"))))) %>%
+#   filter(Parameter != "Intercept")%>%
+#   mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "HCNN")))
+# 
+# full.model.df.unit.slo %>%
+# ggplot(aes(x = Parameter, y = Estimate)) +
+#   geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
+#                       ymax = Estimate + 1.96 * Std..Error,
+#                       colour = Parameter)) +
+#   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+#   theme_bw(base_size = 12) +
+#   theme(axis.text = element_text(size = 10),
+#         axis.title = element_text(size = 10), 
+#         legend.position = "none") +
+#   coord_flip() +
+#   langcog::scale_color_solarized() +
+#   xlab("") +
+#   scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
 ```
 
 --- 
@@ -3147,10 +3145,10 @@ sf.us.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + starting
 sf.us.within.model.gain <- glmer(Correct ~ prod.gradient + count_range + starting_num.c +age.c + (1|SID), 
                              family = "binomial", 
                            data = sf.us.within) #ns
-
-sf.us.within.model.clust <- glmer(Correct ~ CLUST + count_range + starting_num.c +age.c + (1|SID), 
-                             family = "binomial", 
-                           data = sf.us.within)
+# 
+# sf.us.within.model.clust <- glmer(Correct ~ CLUST + count_range + starting_num.c +age.c + (1|SID), 
+#                              family = "binomial", 
+#                            data = sf.us.within)
 #post-hoc - mean nn
 # sf.us.within.model.nn <- glmer(Correct ~ mean.nn + count_range + starting_num.c +age.c + (1|SID), 
 #                              family = "binomial", 
@@ -3166,7 +3164,6 @@ mtable.sf.us <- mtable('Base Model' = sf.us.within.base,
             'Model 3: IHC' = sf.us.within.model3,
             'Model 4: Highest Contig.' = sf.us.within.model4,
             'Exp. model: Prod. gradient' = sf.us.within.model.gain,
-            'Exp. model: Cluster' = sf.us.within.model.clust,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.us
 ```
@@ -3265,43 +3262,42 @@ sf.us.within.plus3.pg <- glmer(Correct ~ prod.gradient + highest_contig.c + ihc.
 anova(sf.us.within.plus2.highest.contig, sf.us.within.plus3.pg, test = 'LRT')
 
 summary(sf.us.within.plus2.highest.contig)
-summary(sf.us.within.plus3.nn)
 ```
 
 ##US Unit Task within-language results: IHC and HCNN best predictor of performance on Unit Task
 ```{r}
 summary(sf.us.within.plus2.highest.contig)
 
-full.model.unit.us <- summary(sf.us.within.plus2.highest.contig)
-
-AIC <- as.numeric(full.model.unit.us$AICtab[1])
-
-full.model.df.unit.us <- data.frame(coef(full.model.unit.us)[,0:4])
-full.model.df.unit.us <- add_rownames(full.model.df.unit.us, "Parameter")
-
-full.model.df.unit.us %<>%
-  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "HCNN",
-                              ifelse(Parameter == "ihc.c", "IHC", 
-                                   ifelse(Parameter == "count_rangeWithin", "Within IHC",
-                                          ifelse(Parameter == "age.c", "Age", 
-                                                 ifelse(Parameter == "starting_num.c", "Item magnitude", "Intercept")))))) %>%
-  filter(Parameter != "Intercept")%>%
-  mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "HCNN", "IHC")))
-
-full.model.df.unit.us %>%
-ggplot(aes(x = Parameter, y = Estimate)) +
-  geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
-                      ymax = Estimate + 1.96 * Std..Error,
-                      colour = Parameter)) +
-  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
-  theme_bw(base_size = 12) +
-  theme(axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10), 
-        legend.position = "none") +
-  coord_flip() +
-  langcog::scale_color_solarized() +
-  xlab("") +
-  scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
+# full.model.unit.us <- summary(sf.us.within.plus2.highest.contig)
+# 
+# AIC <- as.numeric(full.model.unit.us$AICtab[1])
+# 
+# full.model.df.unit.us <- data.frame(coef(full.model.unit.us)[,0:4])
+# full.model.df.unit.us <- add_rownames(full.model.df.unit.us, "Parameter")
+# 
+# full.model.df.unit.us %<>%
+#   mutate(Parameter = ifelse(Parameter == "highest_contig.c", "HCNN",
+#                               ifelse(Parameter == "ihc.c", "IHC", 
+#                                    ifelse(Parameter == "count_rangeWithin", "Within IHC",
+#                                           ifelse(Parameter == "age.c", "Age", 
+#                                                  ifelse(Parameter == "starting_num.c", "Item magnitude", "Intercept")))))) %>%
+#   filter(Parameter != "Intercept")%>%
+#   mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "HCNN", "IHC")))
+# 
+# full.model.df.unit.us %>%
+# ggplot(aes(x = Parameter, y = Estimate)) +
+#   geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
+#                       ymax = Estimate + 1.96 * Std..Error,
+#                       colour = Parameter)) +
+#   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+#   theme_bw(base_size = 12) +
+#   theme(axis.text = element_text(size = 10),
+#         axis.title = element_text(size = 10), 
+#         legend.position = "none") +
+#   coord_flip() +
+#   langcog::scale_color_solarized() +
+#   xlab("") +
+#   scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
 ```
 
 ##Visualization of models
@@ -3488,6 +3484,76 @@ ggplot(aes(x = Parameter, y = Estimate)) +
             data = data.r) + 
   xlab("") +
   scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
+
+
+
+##Get the final model
+hk.final <- 
+slo.final <- 
+us.final <- 
+
+hk.final <- summary(sf.hk.within.plus1)
+hk.final.df <- data.frame(coef(hk.final)[,0:4])
+hk.final.df <- add_rownames(hk.final.df, "Parameter")
+hk.final.df %<>%
+  mutate(Language = "Cantonese")%>%
+  mutate(Parameter = ifelse(Parameter == "ihc.c", "IHC", as.character(Parameter)), 
+         AIC = round(as.numeric(hk.final$AICtab[1]), 2), 
+         p.val = round(anova(sf.hk.within.base, sf.hk.within.plus1, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(sf.hk.within.base, sf.hk.within.plus1, test = 'LRT')[2,6], 2))
+
+slo.final <- summary(sf.slo.within.plus1)
+slo.final.df <- data.frame(coef(slo.final)[,0:4])
+slo.final.df <- add_rownames(slo.final.df, "Parameter")
+slo.final.df %<>%
+  mutate(Language = "Slovenian")%>%
+  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "HCNN", as.character(Parameter)), 
+         AIC = round(as.numeric(slo.final$AICtab[1]), 2), 
+         p.val = round(anova(sf.slo.within.base, sf.slo.within.plus1, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(sf.slo.within.base, sf.slo.within.plus1, test = 'LRT')[2,6], 2))
+
+us.final <- summary(sf.us.within.plus2.highest.contig)
+us.final.df <- data.frame(coef(us.final)[,0:4])
+us.final.df <- add_rownames(us.final.df, "Parameter")
+us.final.df %<>%
+  mutate(Language = "English")%>%
+  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "HCNN", 
+                            ifelse(Parameter == "ihc.c", "IHC", as.character(Parameter))), 
+         AIC = round(as.numeric(us.final$AICtab[1]), 2), 
+         p.val = round(anova(sf.us.within.plus1, sf.us.within.plus2.highest.contig, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(sf.us.within.plus1, sf.us.within.plus2.highest.contig, test = 'LRT')[2,6], 2))
+
+all.models.final <- bind_rows(slo.final.df, hk.final.df, us.final.df)
+
+all.models.final %<>%
+  mutate(Parameter = ifelse(Parameter == "starting_num.c", "Item magnitude", 
+                            ifelse(Parameter == "count_rangeWithin", "Within IHC", 
+                                   ifelse(Parameter == "(Intercept)", "Intercept", 
+                                          ifelse(Parameter == "age.c", "Age", as.character(Parameter))))))%>%
+  mutate(Parameter = factor(Parameter, levels = c("IHC", "HCNN", "Intercept", "Age", "Item magnitude", "Within IHC")))%>%
+  mutate(p.val = ifelse(p.val < .000001, "<.0001", as.numeric(p.val)))%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English")))
+
+data.r <- all.models.final %>%
+  distinct(Language, Model, AIC, chi.stat, p.val)
+
+all.models.final %>%
+ggplot(aes(x = Parameter, y = Estimate)) +
+  facet_grid(~Language, scale = "free_x") +
+  geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
+                      ymax = Estimate + 1.96 * Std..Error,
+                      colour = Parameter)) +
+  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+  theme_bw(base_size = 13) +
+  # coord_flip() +
+  scale_colour_brewer(palette = "Dark2", ",", guide = "none") +
+  geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s \nAIC = %s", chi.stat, p.val, AIC)),
+            x = 4.1, y = .9, size = 3.5,
+            data = data.r) + 
+  xlab("") +
+  scale_y_continuous(name = "Coefficient Estimate (log likelihood)") + 
+  theme(axis.text.x = element_text(angle = 35, hjust = 1))
+
 ```
 
 ---
