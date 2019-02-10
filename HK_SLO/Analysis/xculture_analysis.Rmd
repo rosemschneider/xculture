@@ -1194,7 +1194,7 @@ all.data %>%
   filter(Language == "English (India)" |
            Language == "Hindi" |
            Language == "Gujarati")%>%
-  distinct(SID, highest_contig, Language, Productive)%>%
+  distinct(SID, highest_contig, Language, Productive)%>% 
   group_by(Language, Productive)%>%
   summarise(mean_hcnn = mean(highest_contig, na.rm = TRUE),
             sd_hcnn = sd(highest_contig, na.rm = TRUE), 
@@ -1331,7 +1331,146 @@ dip.test(subset(initial_final, Language == "English (US)")$IHC)
 
 ##Scatterplot of IHC and FHC
 ```{r}
+library("cowplot")
+library('ggjoy')
+library('ggstance')
+
+####HK#####
+hk_initial <- initial_final %>%
+  filter(Language == "Cantonese")
+
+pmain <- ggplot(hk_initial, aes(x = IHC, y = FHC, color = Productive)) + 
+  geom_point(size = 1.2) + 
+  geom_jitter() + 
+  theme(legend.position = c(.5, 0.2), 
+        legend.title = element_blank()) + 
+  scale_color_manual(values = productivity.pal) + 
+  coord_fixed() + 
+  scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  scale_y_continuous(breaks = seq(0, 140, 10)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  labs(x = "Initial Highest Count", y = "Final Highest Count", 
+       title = "Cantonese")
+
+xdens <- axis_canvas(pmain, axis = "x") + 
+  geom_ridgeline(data = hk_initial, aes(x = IHC, y = 0, height=..density.., 
+                                        fill = Productive), 
+                 stat = 'xdensity', alpha = .5, size = .2, trim = FALSE) + 
+  scale_fill_manual(values = productivity.pal)
+
+ydens <- axis_canvas(pmain, axis = "y") + 
+  geom_vridgeline(data = hk_initial, aes(y = FHC, x = 0, width=..density.., 
+                                        fill = Productive), 
+                 stat = 'ydensity', alpha = .5, size = .2, trim = FALSE) + 
+  scale_fill_manual(values = productivity.pal)
+
+p1 <- insert_xaxis_grob(pmain, xdens, grid::unit(.2, "null"), position = "top")
+p2 <- insert_yaxis_grob(p1, ydens, grid::unit(.2, "null"), position = "right")
+ggdraw(p2)
+
+####SLO####
+slo_initial <- initial_final %>%
+  filter(Language == "Slovenian")
+
+pmain.slo <- ggplot(slo_initial, aes(x = IHC, y = FHC, color = Productive)) + 
+  geom_point(size = 1.2) + 
+  theme(legend.position = c(.5, 0.2), 
+        legend.title = element_blank()) + 
+  scale_color_manual(values = productivity.pal) + 
+  coord_fixed() + 
+  scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  scale_y_continuous(breaks = seq(0, 140, 10)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  labs(x = "Initial Highest Count", y = "Final Highest Count", 
+       title = "Slovenian")
+
+xdens.slo <- axis_canvas(pmain, axis = "x") + 
+  geom_ridgeline(data = slo_initial, aes(x = IHC, y = 0, height=..density.., 
+                                        fill = Productive), 
+                 stat = 'xdensity', alpha = .5, size = .2, trim = FALSE) + 
+  scale_fill_manual(values = productivity.pal)
+
+ydens.slo <- axis_canvas(pmain, axis = "y") + 
+  geom_vridgeline(data = slo_initial, aes(y = FHC, x = 0, width=..density.., 
+                                        fill = Productive), 
+                 stat = 'ydensity', alpha = .5, size = .2, trim = FALSE) + 
+  scale_fill_manual(values = productivity.pal)
+
+p3 <- insert_xaxis_grob(pmain.slo, xdens.slo, grid::unit(.2, "null"), position = "top")
+p4 <- insert_yaxis_grob(p3, ydens.slo, grid::unit(.2, "null"), position = "right")
+ggdraw(p4)
+
+
+#####US####
+us_initial <- initial_final %>%
+  filter(Language == "English (US)")
+
+pmain.us <- ggplot(us_initial, aes(x = IHC, y = FHC, color = Productive)) + 
+  geom_point(size = 1.2) + 
+  geom_jitter() + 
+  theme(legend.position = c(.5, 0.2), 
+        legend.title = element_blank()) + 
+  scale_color_manual(values = productivity.pal) + 
+  coord_fixed() + 
+  scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  scale_y_continuous(breaks = seq(0, 140, 10)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  labs(x = "Initial Highest Count", y = "Final Highest Count", 
+       title = "English")
+
+xdens.us <- axis_canvas(pmain, axis = "x") + 
+  geom_ridgeline(data = us_initial, aes(x = IHC, y = 0, height=..density.., 
+                                        fill = Productive), 
+                 stat = 'xdensity', alpha = .5, size = .2, trim = FALSE) + 
+  scale_fill_manual(values = productivity.pal)
+
+ydens.us <- axis_canvas(pmain, axis = "y") + 
+  geom_vridgeline(data = us_initial, aes(y = FHC, x = 0, width=..density.., 
+                                        fill = Productive), 
+                 stat = 'ydensity', alpha = .5, size = .2, trim = FALSE) + 
+  scale_fill_manual(values = productivity.pal)
+
+p5 <- insert_xaxis_grob(pmain.us, xdens.us, grid::unit(.2, "null"), position = "top")
+p6 <- insert_yaxis_grob(p5, ydens.us, grid::unit(.2, "null"), position = "right")
+ggdraw(p6)
+
+
+####HINDI####
+hindi_initial <- initial_final %>%
+  filter(Language == "Hindi")
+
+pmain.hindi <- ggplot(hindi_initial, aes(x = IHC, y = FHC, color = Productive)) + 
+  geom_point(size = 1.2) + 
+  geom_jitter() + 
+  theme(legend.position = c(.5, 0.2), 
+        legend.title = element_blank()) + 
+  scale_color_manual(values = productivity.pal) + 
+  coord_fixed() + 
+  scale_x_continuous(breaks = seq(0, 140, 10)) + 
+  scale_y_continuous(breaks = seq(0, 140, 10)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  labs(x = "Initial Highest Count", y = "Final Highest Count", 
+       title = "Hindi")
+
+xdens.hindi <- axis_canvas(pmain, axis = "x") + 
+  geom_ridgeline(data = hindi_initial, aes(x = IHC, y = 0, height=..density.., 
+                                        fill = Productive), 
+                 stat = 'xdensity', alpha = .5, size = .2, trim = FALSE) + 
+  scale_fill_manual(values = productivity.pal)
+
+ydens.hindi <- axis_canvas(pmain, axis = "y") + 
+  geom_vridgeline(data = hindi_initial, aes(y = FHC, x = 0, width=..density.., 
+                                        fill = Productive), 
+                 stat = 'ydensity', alpha = .5, size = .2, trim = FALSE) + 
+  scale_fill_manual(values = productivity.pal)
+
+p7 <- insert_xaxis_grob(pmain.hindi, xdens.us, grid::unit(.2, "null"), position = "top")
+p8 <- insert_yaxis_grob(p7, ydens.hindi, grid::unit(.2, "null"), position = "right")
+ggdraw(p8)
+```
+
 #IHC/FHC scatter, HK/SLO/US
+```{r}
 initial_final %>%
   filter(Language == "English (US)" |
            Language == "Cantonese" |
@@ -3307,190 +3446,185 @@ To-do: Manually change the colors of prod.predictors
 #Get all the parameters in one model, then add column for parameter so we can graph all the individual models at once
 #
 
-#HK
-#productivity
-hk.prod.model <- summary(sf.hk.within.model1)
-hk.prod.model.df <- data.frame(coef(hk.prod.model)[,0:4])
-hk.prod.model.df <- add_rownames(hk.prod.model.df, "Parameter")
-hk.prod.model.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hk.prod.model$AICtab[1]), 2), 
-         Language = "Cantonese")
+# #HK
+# #productivity
+# hk.prod.model <- summary(sf.hk.within.model1)
+# hk.prod.model.df <- data.frame(coef(hk.prod.model)[,0:4])
+# hk.prod.model.df <- add_rownames(hk.prod.model.df, "Parameter")
+# hk.prod.model.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hk.prod.model$AICtab[1]), 2), 
+#          Language = "Cantonese")
+# 
+# #FHC
+# hk.fhc.model <- summary(sf.hk.within.model2)
+# hk.fhc.model.df <- data.frame(coef(hk.fhc.model)[,0:4])
+# hk.fhc.model.df <- add_rownames(hk.fhc.model.df, "Parameter")
+# hk.fhc.model.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.hk.within.base, sf.hk.within.model2, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.hk.within.base, sf.hk.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hk.fhc.model$AICtab[1]), 2), 
+#          Language = "Cantonese")
+# 
+# #IHC
+# hk.ihc.model <- summary(sf.hk.within.model3)
+# hk.ihc.model.df <- data.frame(coef(hk.ihc.model)[,0:4])
+# hk.ihc.model.df <- add_rownames(hk.ihc.model.df, "Parameter")
+# hk.ihc.model.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.hk.within.base, sf.hk.within.model3, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.hk.within.base, sf.hk.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hk.ihc.model$AICtab[1]), 2), 
+#          Language = "Cantonese")
+# 
+# #HCNN
+# hk.hcnn.model <- summary(sf.hk.within.model4)
+# hk.hcnn.model.df <- data.frame(coef(hk.hcnn.model)[,0:4])
+# hk.hcnn.model.df <- add_rownames(hk.hcnn.model.df, "Parameter")
+# hk.hcnn.model.df %<>%
+#   mutate(Model = "Highest Contiguous Next Number")%>%
+#   mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
+#          AIC = round(as.numeric(hk.hcnn.model$AICtab[1]), 2), 
+#          p.val = round(anova(sf.hk.within.base, sf.hk.within.model4, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.hk.within.base, sf.hk.within.model4, test = 'LRT')[2,6], 2), 
+#          Language = "Cantonese")
+# 
+# ###SLO
+# slo.prod.model <- summary(sf.slo.within.model1)
+# slo.prod.model.df <- data.frame(coef(slo.prod.model)[,0:4])
+# slo.prod.model.df <- add_rownames(slo.prod.model.df, "Parameter")
+# slo.prod.model.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(slo.prod.model$AICtab[1]), 2), 
+#          Language = "Slovenian")
+# 
+# slo.fhc.model <- summary(sf.slo.within.model2)
+# slo.fhc.model.df <- data.frame(coef(slo.fhc.model)[,0:4])
+# slo.fhc.model.df <- add_rownames(slo.fhc.model.df, "Parameter")
+# slo.fhc.model.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(slo.fhc.model$AICtab[1]), 2), 
+#          Language = "Slovenian")
+# 
+# slo.ihc.model <- summary(sf.slo.within.model3)
+# slo.ihc.model.df <- data.frame(coef(slo.ihc.model)[,0:4])
+# slo.ihc.model.df <- add_rownames(slo.ihc.model.df, "Parameter")
+# slo.ihc.model.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.slo.within.base, sf.slo.within.model3, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.slo.within.base, sf.slo.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(slo.ihc.model$AICtab[1]), 2), 
+#          Language = "Slovenian")
+# 
+# slo.hcnn.model <- summary(sf.slo.within.model4)
+# slo.hcnn.model.df <- data.frame(coef(slo.hcnn.model)[,0:4])
+# slo.hcnn.model.df <- add_rownames(slo.hcnn.model.df, "Parameter")
+# slo.hcnn.model.df %<>%
+#   mutate(Model = "Highest Contiguous Next Number")%>%
+#   mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
+#          AIC = round(as.numeric(slo.hcnn.model$AICtab[1]), 2), 
+#          p.val = round(anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')[2,6], 2), 
+#          Language = "Slovenian")
+# 
+# ###US
+# us.prod.model <- summary(sf.us.within.model1)
+# us.prod.model.df <- data.frame(coef(us.prod.model)[,0:4])
+# us.prod.model.df <- add_rownames(us.prod.model.df, "Parameter")
+# us.prod.model.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.prod.model$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# us.fhc.model <- summary(sf.us.within.model2)
+# us.fhc.model.df <- data.frame(coef(us.fhc.model)[,0:4])
+# us.fhc.model.df <- add_rownames(us.fhc.model.df, "Parameter")
+# us.fhc.model.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.fhc.model$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# us.ihc.model <- summary(sf.us.within.model3)
+# us.ihc.model.df <- data.frame(coef(us.ihc.model)[,0:4])
+# us.ihc.model.df <- add_rownames(us.ihc.model.df, "Parameter")
+# us.ihc.model.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.ihc.model$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# us.hcnn.model <- summary(sf.us.within.model4)
+# us.hcnn.model.df <- data.frame(coef(us.hcnn.model)[,0:4])
+# us.hcnn.model.df <- add_rownames(us.hcnn.model.df, "Parameter")
+# us.hcnn.model.df %<>%
+#   mutate(Model = "Highest Contiguous Next Number")%>%
+#   mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
+#          AIC = round(as.numeric(us.hcnn.model$AICtab[1]), 2), 
+#          p.val = round(anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')[2,6], 2), 
+#          Language = "English (US)")
+# 
+# 
+# #join togther 
+# all.models.unit <- bind_rows(hk.prod.model.df, hk.fhc.model.df, hk.ihc.model.df, hk.hcnn.model.df, 
+#                              slo.prod.model.df, slo.fhc.model.df, slo.ihc.model.df, slo.hcnn.model.df, 
+#                              us.prod.model.df, us.fhc.model.df, us.ihc.model.df, us.hcnn.model.df) 
+# 
+# all.models.unit %<>%
+#   filter(Parameter != "(Intercept)")%>%
+#   mutate(Parameter = ifelse(Parameter == "starting_num.c", "Item magnitude", 
+#                             ifelse(Parameter == "count_rangeWithin", "Within IHC", 
+#                                    ifelse(Parameter == "Prod. Predictor", "Productivity predictor", "Age"))))%>%
+#   mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "Productivity predictor")))%>%
+#   mutate(colors = ifelse((Parameter == "Age" | Parameter == "Item magnitude" | Parameter == "Within IHC"), as.character(Parameter), 
+#                          as.character(Model))) %>%
+#   mutate(Model = factor(Model, levels = c("Productivity", "Final Highest Count", "Initial Highest Count", 
+#                                           "Highest Contiguous Next Number"))) %>%
+#   mutate(p.val = ifelse(p.val < .000001, "<.0001", as.numeric(p.val)))%>%
+#   mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))
+# 
+# data.r <- all.models.unit %>%
+#   distinct(Language, Model, AIC, chi.stat, p.val)
+# 
+# quartz()
+# model.vis <- all.models.unit %>%
+# ggplot(aes(x = Parameter, y = Estimate)) +
+#   facet_grid(Language~Model)+
+#   geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
+#                       ymax = Estimate + 1.96 * Std..Error,
+#                       colour = Parameter)) +
+#   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+#   theme_bw(base_size = 10) +
+#   coord_flip() +
+#   scale_colour_brewer(palette = "Dark2", ",", guide = "none") +
+#   geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s \nAIC = %s", chi.stat, p.val, AIC)),
+#             x = 1.5, y = 1, size = 2.5,
+#             data = data.r) + 
+#   xlab("") +
+#   scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
 
-#FHC
-hk.fhc.model <- summary(sf.hk.within.model2)
-hk.fhc.model.df <- data.frame(coef(hk.fhc.model)[,0:4])
-hk.fhc.model.df <- add_rownames(hk.fhc.model.df, "Parameter")
-hk.fhc.model.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.hk.within.base, sf.hk.within.model2, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.hk.within.base, sf.hk.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hk.fhc.model$AICtab[1]), 2), 
-         Language = "Cantonese")
-
-#IHC
-hk.ihc.model <- summary(sf.hk.within.model3)
-hk.ihc.model.df <- data.frame(coef(hk.ihc.model)[,0:4])
-hk.ihc.model.df <- add_rownames(hk.ihc.model.df, "Parameter")
-hk.ihc.model.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.hk.within.base, sf.hk.within.model3, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.hk.within.base, sf.hk.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hk.ihc.model$AICtab[1]), 2), 
-         Language = "Cantonese")
-
-#HCNN
-hk.hcnn.model <- summary(sf.hk.within.model4)
-hk.hcnn.model.df <- data.frame(coef(hk.hcnn.model)[,0:4])
-hk.hcnn.model.df <- add_rownames(hk.hcnn.model.df, "Parameter")
-hk.hcnn.model.df %<>%
-  mutate(Model = "Highest Contiguous Next Number")%>%
-  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
-         AIC = round(as.numeric(hk.hcnn.model$AICtab[1]), 2), 
-         p.val = round(anova(sf.hk.within.base, sf.hk.within.model4, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.hk.within.base, sf.hk.within.model4, test = 'LRT')[2,6], 2), 
-         Language = "Cantonese")
-
-###SLO
-slo.prod.model <- summary(sf.slo.within.model1)
-slo.prod.model.df <- data.frame(coef(slo.prod.model)[,0:4])
-slo.prod.model.df <- add_rownames(slo.prod.model.df, "Parameter")
-slo.prod.model.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(slo.prod.model$AICtab[1]), 2), 
-         Language = "Slovenian")
-
-slo.fhc.model <- summary(sf.slo.within.model2)
-slo.fhc.model.df <- data.frame(coef(slo.fhc.model)[,0:4])
-slo.fhc.model.df <- add_rownames(slo.fhc.model.df, "Parameter")
-slo.fhc.model.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(slo.fhc.model$AICtab[1]), 2), 
-         Language = "Slovenian")
-
-slo.ihc.model <- summary(sf.slo.within.model3)
-slo.ihc.model.df <- data.frame(coef(slo.ihc.model)[,0:4])
-slo.ihc.model.df <- add_rownames(slo.ihc.model.df, "Parameter")
-slo.ihc.model.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.slo.within.base, sf.slo.within.model3, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.slo.within.base, sf.slo.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(slo.ihc.model$AICtab[1]), 2), 
-         Language = "Slovenian")
-
-slo.hcnn.model <- summary(sf.slo.within.model4)
-slo.hcnn.model.df <- data.frame(coef(slo.hcnn.model)[,0:4])
-slo.hcnn.model.df <- add_rownames(slo.hcnn.model.df, "Parameter")
-slo.hcnn.model.df %<>%
-  mutate(Model = "Highest Contiguous Next Number")%>%
-  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
-         AIC = round(as.numeric(slo.hcnn.model$AICtab[1]), 2), 
-         p.val = round(anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')[2,6], 2), 
-         Language = "Slovenian")
-
-###US
-us.prod.model <- summary(sf.us.within.model1)
-us.prod.model.df <- data.frame(coef(us.prod.model)[,0:4])
-us.prod.model.df <- add_rownames(us.prod.model.df, "Parameter")
-us.prod.model.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.prod.model$AICtab[1]), 2), 
-         Language = "English (US)")
-
-us.fhc.model <- summary(sf.us.within.model2)
-us.fhc.model.df <- data.frame(coef(us.fhc.model)[,0:4])
-us.fhc.model.df <- add_rownames(us.fhc.model.df, "Parameter")
-us.fhc.model.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.fhc.model$AICtab[1]), 2), 
-         Language = "English (US)")
-
-us.ihc.model <- summary(sf.us.within.model3)
-us.ihc.model.df <- data.frame(coef(us.ihc.model)[,0:4])
-us.ihc.model.df <- add_rownames(us.ihc.model.df, "Parameter")
-us.ihc.model.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.ihc.model$AICtab[1]), 2), 
-         Language = "English (US)")
-
-us.hcnn.model <- summary(sf.us.within.model4)
-us.hcnn.model.df <- data.frame(coef(us.hcnn.model)[,0:4])
-us.hcnn.model.df <- add_rownames(us.hcnn.model.df, "Parameter")
-us.hcnn.model.df %<>%
-  mutate(Model = "Highest Contiguous Next Number")%>%
-  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
-         AIC = round(as.numeric(us.hcnn.model$AICtab[1]), 2), 
-         p.val = round(anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')[2,6], 2), 
-         Language = "English (US)")
-
-
-#join togther 
-all.models.unit <- bind_rows(hk.prod.model.df, hk.fhc.model.df, hk.ihc.model.df, hk.hcnn.model.df, 
-                             slo.prod.model.df, slo.fhc.model.df, slo.ihc.model.df, slo.hcnn.model.df, 
-                             us.prod.model.df, us.fhc.model.df, us.ihc.model.df, us.hcnn.model.df) 
-
-all.models.unit %<>%
-  filter(Parameter != "(Intercept)")%>%
-  mutate(Parameter = ifelse(Parameter == "starting_num.c", "Item magnitude", 
-                            ifelse(Parameter == "count_rangeWithin", "Within IHC", 
-                                   ifelse(Parameter == "Prod. Predictor", "Productivity predictor", "Age"))))%>%
-  mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "Productivity predictor")))%>%
-  mutate(colors = ifelse((Parameter == "Age" | Parameter == "Item magnitude" | Parameter == "Within IHC"), as.character(Parameter), 
-                         as.character(Model))) %>%
-  mutate(Model = factor(Model, levels = c("Productivity", "Final Highest Count", "Initial Highest Count", 
-                                          "Highest Contiguous Next Number"))) %>%
-  mutate(p.val = ifelse(p.val < .000001, "<.0001", as.numeric(p.val)))%>%
-  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))
-
-data.r <- all.models.unit %>%
-  distinct(Language, Model, AIC, chi.stat, p.val)
-
-quartz()
-model.vis <- all.models.unit %>%
-ggplot(aes(x = Parameter, y = Estimate)) +
-  facet_grid(Language~Model)+
-  geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
-                      ymax = Estimate + 1.96 * Std..Error,
-                      colour = Parameter)) +
-  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
-  theme_bw(base_size = 10) +
-  coord_flip() +
-  scale_colour_brewer(palette = "Dark2", ",", guide = "none") +
-  geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s \nAIC = %s", chi.stat, p.val, AIC)),
-            x = 1.5, y = 1, size = 2.5,
-            data = data.r) + 
-  xlab("") +
-  scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
-
-
-
-##Get the final model
-hk.final <- 
-slo.final <- 
-us.final <- 
+####FINAL MODELS####
 
 hk.final <- summary(sf.hk.within.plus1)
 hk.final.df <- data.frame(coef(hk.final)[,0:4])
@@ -3954,186 +4088,252 @@ ggplot(aes(x = Parameter, y = Estimate)) +
 
 ##Visualizations - India models
 ```{r, echo = TRUE}
-#Get all the parameters in one model, then add column for parameter so we can graph all the individual models at once
-#
+# #Get all the parameters in one model, then add column for parameter so we can graph all the individual models at once
+# #
+# 
+# #Hindi
+# #productivity
+# hindi.prod.model <- summary(sf.hindi.within.model1)
+# hindi.prod.model.df <- data.frame(coef(hindi.prod.model)[,0:4])
+# hindi.prod.model.df <- add_rownames(hindi.prod.model.df, "Parameter")
+# hindi.prod.model.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.hindi.within.base, sf.hindi.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(sf.hindi.within.base, sf.hindi.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hindi.prod.model$AICtab[1]), 2), 
+#          Language = "Hindi")
+# 
+# #FHC
+# hindi.fhc.model <- summary(sf.hindi.within.model2)
+# hindi.fhc.model.df <- data.frame(coef(hindi.fhc.model)[,0:4])
+# hindi.fhc.model.df <- add_rownames(hindi.fhc.model.df, "Parameter")
+# hindi.fhc.model.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.hindi.within.base, sf.hindi.within.model2, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.hindi.within.base, sf.hindi.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hindi.fhc.model$AICtab[1]), 2), 
+#          Language = "Hindi")
+# 
+# #IHC
+# hindi.ihc.model <- summary(sf.hindi.within.model3)
+# hindi.ihc.model.df <- data.frame(coef(hindi.ihc.model)[,0:4])
+# hindi.ihc.model.df <- add_rownames(hindi.ihc.model.df, "Parameter")
+# hindi.ihc.model.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.hindi.within.base, sf.hindi.within.model3, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.hindi.within.base, sf.hindi.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hindi.ihc.model$AICtab[1]), 2), 
+#          Language = "Hindi")
+# 
+# #HCNN
+# hindi.hcnn.model <- summary(sf.hindi.within.model4)
+# hindi.hcnn.model.df <- data.frame(coef(hindi.hcnn.model)[,0:4])
+# hindi.hcnn.model.df <- add_rownames(hindi.hcnn.model.df, "Parameter")
+# hindi.hcnn.model.df %<>%
+#   mutate(Model = "Highest Contiguous Next Number")%>%
+#   mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
+#          AIC = round(as.numeric(hindi.hcnn.model$AICtab[1]), 2), 
+#          p.val = round(anova(sf.hindi.within.base, sf.hindi.within.model4, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.hindi.within.base, sf.hindi.within.model4, test = 'LRT')[2,6], 2), 
+#          Language = "Hindi")
+# 
+# ###GUJARATI###
+# gujarati.prod.model <- summary(sf.gujarati.within.model1)
+# gujarati.prod.model.df <- data.frame(coef(gujarati.prod.model)[,0:4])
+# gujarati.prod.model.df <- add_rownames(gujarati.prod.model.df, "Parameter")
+# gujarati.prod.model.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.gujarati.within.base, sf.gujarati.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(sf.gujarati.within.base, sf.gujarati.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(gujarati.prod.model$AICtab[1]), 2), 
+#          Language = "Gujarati")
+# 
+# gujarati.fhc.model <- summary(sf.gujarati.within.model2)
+# gujarati.fhc.model.df <- data.frame(coef(gujarati.fhc.model)[,0:4])
+# gujarati.fhc.model.df <- add_rownames(gujarati.fhc.model.df, "Parameter")
+# gujarati.fhc.model.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.gujarati.within.base, sf.gujarati.within.model2, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.gujarati.within.base, sf.gujarati.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(gujarati.fhc.model$AICtab[1]), 2), 
+#          Language = "Gujarati")
+# 
+# gujarati.ihc.model <- summary(sf.gujarati.within.model3)
+# gujarati.ihc.model.df <- data.frame(coef(gujarati.ihc.model)[,0:4])
+# gujarati.ihc.model.df <- add_rownames(gujarati.ihc.model.df, "Parameter")
+# gujarati.ihc.model.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.gujarati.within.base, sf.gujarati.within.model3, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.gujarati.within.base, sf.gujarati.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(gujarati.ihc.model$AICtab[1]), 2), 
+#          Language = "Gujarati")
+# 
+# gujarati.hcnn.model <- summary(sf.gujarati.within.model4)
+# gujarati.hcnn.model.df <- data.frame(coef(gujarati.hcnn.model)[,0:4])
+# gujarati.hcnn.model.df <- add_rownames(gujarati.hcnn.model.df, "Parameter")
+# gujarati.hcnn.model.df %<>%
+#   mutate(Model = "Highest Contiguous Next Number")%>%
+#   mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
+#          AIC = round(as.numeric(gujarati.hcnn.model$AICtab[1]), 2), 
+#          p.val = round(anova(sf.gujarati.within.base, sf.gujarati.within.model4, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.gujarati.within.base, sf.gujarati.within.model4, test = 'LRT')[2,6], 2), 
+#          Language = "Gujarati")
+# 
+# ###US
+# us.prod.model <- summary(sf.us.within.model1)
+# us.prod.model.df <- data.frame(coef(us.prod.model)[,0:4])
+# us.prod.model.df <- add_rownames(us.prod.model.df, "Parameter")
+# us.prod.model.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.prod.model$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# us.fhc.model <- summary(sf.us.within.model2)
+# us.fhc.model.df <- data.frame(coef(us.fhc.model)[,0:4])
+# us.fhc.model.df <- add_rownames(us.fhc.model.df, "Parameter")
+# us.fhc.model.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.fhc.model$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# us.ihc.model <- summary(sf.us.within.model3)
+# us.ihc.model.df <- data.frame(coef(us.ihc.model)[,0:4])
+# us.ihc.model.df <- add_rownames(us.ihc.model.df, "Parameter")
+# us.ihc.model.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.ihc.model$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# us.hcnn.model <- summary(sf.us.within.model4)
+# us.hcnn.model.df <- data.frame(coef(us.hcnn.model)[,0:4])
+# us.hcnn.model.df <- add_rownames(us.hcnn.model.df, "Parameter")
+# us.hcnn.model.df %<>%
+#   mutate(Model = "Highest Contiguous Next Number")%>%
+#   mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
+#          AIC = round(as.numeric(us.hcnn.model$AICtab[1]), 2), 
+#          p.val = round(anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')[2,8], 5), 
+#          chi.stat = round(anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')[2,6], 2), 
+#          Language = "English (US)")
+# 
+# 
+# #join togther 
+# all.models.unit <- bind_rows(hindi.prod.model.df, hindi.fhc.model.df, hindi.ihc.model.df, hindi.hcnn.model.df, 
+#                              gujarati.prod.model.df, gujarati.fhc.model.df, gujarati.ihc.model.df, gujarati.hcnn.model.df, 
+#                              us.prod.model.df, us.fhc.model.df, us.ihc.model.df, us.hcnn.model.df) 
+# 
+# all.models.unit %<>%
+#   filter(Parameter != "(Intercept)")%>%
+#   mutate(Parameter = ifelse(Parameter == "starting_num.c", "Item magnitude", 
+#                             ifelse(Parameter == "count_rangeWithin", "Within IHC", 
+#                                    ifelse(Parameter == "Prod. Predictor", "Productivity predictor", "Age"))))%>%
+#   mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "Productivity predictor")))%>%
+#   mutate(colors = ifelse((Parameter == "Age" | Parameter == "Item magnitude" | Parameter == "Within IHC"), as.character(Parameter), 
+#                          as.character(Model))) %>%
+#   mutate(Model = factor(Model, levels = c("Productivity", "Final Highest Count", "Initial Highest Count", 
+#                                           "Highest Contiguous Next Number"))) %>%
+#   mutate(p.val = ifelse(p.val < .000001, "<.0001", as.numeric(p.val)))%>%
+#   mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (US)")))
+# 
+# data.r <- all.models.unit %>%
+#   distinct(Language, Model, AIC, chi.stat, p.val)
+# 
+# quartz()
+# model.vis.india <- all.models.unit %>%
+# ggplot(aes(x = Parameter, y = Estimate)) +
+#   facet_grid(Model~Language)+
+#   geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
+#                       ymax = Estimate + 1.96 * Std..Error,
+#                       colour = Parameter)) +
+#   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+#   theme_bw(base_size = 10) +
+#   coord_flip() +
+#   scale_colour_brewer(palette = "Dark2", ",", guide = "none") +
+#   geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s \nAIC = %s", chi.stat, p.val, AIC)),
+#             x = 1.5, y = 1, size = 2.5,
+#             data = data.r) + 
+#   xlab("") +
+#   scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
 
-#Hindi
-#productivity
-hindi.prod.model <- summary(sf.hindi.within.model1)
-hindi.prod.model.df <- data.frame(coef(hindi.prod.model)[,0:4])
-hindi.prod.model.df <- add_rownames(hindi.prod.model.df, "Parameter")
-hindi.prod.model.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.hindi.within.base, sf.hindi.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(sf.hindi.within.base, sf.hindi.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hindi.prod.model$AICtab[1]), 2), 
-         Language = "Hindi")
-
-#FHC
-hindi.fhc.model <- summary(sf.hindi.within.model2)
-hindi.fhc.model.df <- data.frame(coef(hindi.fhc.model)[,0:4])
-hindi.fhc.model.df <- add_rownames(hindi.fhc.model.df, "Parameter")
-hindi.fhc.model.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.hindi.within.base, sf.hindi.within.model2, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.hindi.within.base, sf.hindi.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hindi.fhc.model$AICtab[1]), 2), 
-         Language = "Hindi")
-
-#IHC
-hindi.ihc.model <- summary(sf.hindi.within.model3)
-hindi.ihc.model.df <- data.frame(coef(hindi.ihc.model)[,0:4])
-hindi.ihc.model.df <- add_rownames(hindi.ihc.model.df, "Parameter")
-hindi.ihc.model.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.hindi.within.base, sf.hindi.within.model3, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.hindi.within.base, sf.hindi.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hindi.ihc.model$AICtab[1]), 2), 
-         Language = "Hindi")
-
-#HCNN
-hindi.hcnn.model <- summary(sf.hindi.within.model4)
-hindi.hcnn.model.df <- data.frame(coef(hindi.hcnn.model)[,0:4])
-hindi.hcnn.model.df <- add_rownames(hindi.hcnn.model.df, "Parameter")
-hindi.hcnn.model.df %<>%
-  mutate(Model = "Highest Contiguous Next Number")%>%
-  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
-         AIC = round(as.numeric(hindi.hcnn.model$AICtab[1]), 2), 
-         p.val = round(anova(sf.hindi.within.base, sf.hindi.within.model4, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.hindi.within.base, sf.hindi.within.model4, test = 'LRT')[2,6], 2), 
-         Language = "Hindi")
-
-###GUJARATI###
-gujarati.prod.model <- summary(sf.gujarati.within.model1)
-gujarati.prod.model.df <- data.frame(coef(gujarati.prod.model)[,0:4])
-gujarati.prod.model.df <- add_rownames(gujarati.prod.model.df, "Parameter")
-gujarati.prod.model.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.gujarati.within.base, sf.gujarati.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(sf.gujarati.within.base, sf.gujarati.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(gujarati.prod.model$AICtab[1]), 2), 
-         Language = "Gujarati")
-
-gujarati.fhc.model <- summary(sf.gujarati.within.model2)
-gujarati.fhc.model.df <- data.frame(coef(gujarati.fhc.model)[,0:4])
-gujarati.fhc.model.df <- add_rownames(gujarati.fhc.model.df, "Parameter")
-gujarati.fhc.model.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.gujarati.within.base, sf.gujarati.within.model2, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.gujarati.within.base, sf.gujarati.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(gujarati.fhc.model$AICtab[1]), 2), 
-         Language = "Gujarati")
-
-gujarati.ihc.model <- summary(sf.gujarati.within.model3)
-gujarati.ihc.model.df <- data.frame(coef(gujarati.ihc.model)[,0:4])
-gujarati.ihc.model.df <- add_rownames(gujarati.ihc.model.df, "Parameter")
-gujarati.ihc.model.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.gujarati.within.base, sf.gujarati.within.model3, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.gujarati.within.base, sf.gujarati.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(gujarati.ihc.model$AICtab[1]), 2), 
-         Language = "Gujarati")
-
-gujarati.hcnn.model <- summary(sf.gujarati.within.model4)
-gujarati.hcnn.model.df <- data.frame(coef(gujarati.hcnn.model)[,0:4])
-gujarati.hcnn.model.df <- add_rownames(gujarati.hcnn.model.df, "Parameter")
-gujarati.hcnn.model.df %<>%
-  mutate(Model = "Highest Contiguous Next Number")%>%
-  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
-         AIC = round(as.numeric(gujarati.hcnn.model$AICtab[1]), 2), 
-         p.val = round(anova(sf.gujarati.within.base, sf.gujarati.within.model4, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.gujarati.within.base, sf.gujarati.within.model4, test = 'LRT')[2,6], 2), 
-         Language = "Gujarati")
-
-###US
-us.prod.model <- summary(sf.us.within.model1)
-us.prod.model.df <- data.frame(coef(us.prod.model)[,0:4])
-us.prod.model.df <- add_rownames(us.prod.model.df, "Parameter")
-us.prod.model.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.prod.model$AICtab[1]), 2), 
-         Language = "English (US)")
-
-us.fhc.model <- summary(sf.us.within.model2)
-us.fhc.model.df <- data.frame(coef(us.fhc.model)[,0:4])
-us.fhc.model.df <- add_rownames(us.fhc.model.df, "Parameter")
-us.fhc.model.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.fhc.model$AICtab[1]), 2), 
-         Language = "English (US)")
-
-us.ihc.model <- summary(sf.us.within.model3)
-us.ihc.model.df <- data.frame(coef(us.ihc.model)[,0:4])
-us.ihc.model.df <- add_rownames(us.ihc.model.df, "Parameter")
-us.ihc.model.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.ihc.model$AICtab[1]), 2), 
-         Language = "English (US)")
-
-us.hcnn.model <- summary(sf.us.within.model4)
-us.hcnn.model.df <- data.frame(coef(us.hcnn.model)[,0:4])
-us.hcnn.model.df <- add_rownames(us.hcnn.model.df, "Parameter")
-us.hcnn.model.df %<>%
-  mutate(Model = "Highest Contiguous Next Number")%>%
-  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "Prod. Predictor", as.character(Parameter)), 
-         AIC = round(as.numeric(us.hcnn.model$AICtab[1]), 2), 
-         p.val = round(anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')[2,8], 5), 
-         chi.stat = round(anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')[2,6], 2), 
-         Language = "English (US)")
 
 
-#join togther 
-all.models.unit <- bind_rows(hindi.prod.model.df, hindi.fhc.model.df, hindi.ihc.model.df, hindi.hcnn.model.df, 
-                             gujarati.prod.model.df, gujarati.fhc.model.df, gujarati.ihc.model.df, gujarati.hcnn.model.df, 
-                             us.prod.model.df, us.fhc.model.df, us.ihc.model.df, us.hcnn.model.df) 
+####FINAL MODELS####
 
-all.models.unit %<>%
-  filter(Parameter != "(Intercept)")%>%
+hindi.final <- summary(sf.hindi.within.plus2.hc)
+hindi.final.df <- data.frame(coef(hindi.final)[,0:4])
+hindi.final.df <- add_rownames(hindi.final.df, "Parameter")
+hindi.final.df %<>%
+  mutate(Language = "Hindi")%>%
+  mutate(Parameter = ifelse(Parameter == "ihc.c", "IHC", 
+                            ifelse(Parameter == "highest_contig.c", "HCNN", as.character(Parameter))), 
+         AIC = round(as.numeric(hindi.final$AICtab[1]), 2), 
+         p.val = round(anova(sf.hindi.within.plus1, sf.hindi.within.plus2.hc, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(sf.hindi.within.plus1, sf.hindi.within.plus2.hc, test = 'LRT')[2,6], 2))
+
+gujarati.final <- summary(sf.gujarati.within.base)
+gujarati.final.df <- data.frame(coef(gujarati.final)[,0:4])
+gujarati.final.df <- add_rownames(gujarati.final.df, "Parameter")
+gujarati.final.df %<>%
+  mutate(Language = "Gujarati")%>%
+  mutate(AIC = NA, 
+         p.val = NA, 
+         chi.stat = NA)
+
+us.final <- summary(sf.us.within.plus2.highest.contig)
+us.final.df <- data.frame(coef(us.final)[,0:4])
+us.final.df <- add_rownames(us.final.df, "Parameter")
+us.final.df %<>%
+  mutate(Language = "English (US)")%>%
+  mutate(Parameter = ifelse(Parameter == "highest_contig.c", "HCNN", 
+                            ifelse(Parameter == "ihc.c", "IHC", as.character(Parameter))), 
+         AIC = round(as.numeric(us.final$AICtab[1]), 2), 
+         p.val = round(anova(sf.us.within.plus1, sf.us.within.plus2.highest.contig, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(sf.us.within.plus1, sf.us.within.plus2.highest.contig, test = 'LRT')[2,6], 2))
+
+all.models.final.india <- bind_rows(hindi.final.df, gujarati.final.df, us.final.df)
+
+all.models.final.india %<>%
   mutate(Parameter = ifelse(Parameter == "starting_num.c", "Item magnitude", 
                             ifelse(Parameter == "count_rangeWithin", "Within IHC", 
-                                   ifelse(Parameter == "Prod. Predictor", "Productivity predictor", "Age"))))%>%
-  mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "Productivity predictor")))%>%
-  mutate(colors = ifelse((Parameter == "Age" | Parameter == "Item magnitude" | Parameter == "Within IHC"), as.character(Parameter), 
-                         as.character(Model))) %>%
-  mutate(Model = factor(Model, levels = c("Productivity", "Final Highest Count", "Initial Highest Count", 
-                                          "Highest Contiguous Next Number"))) %>%
+                                   ifelse(Parameter == "(Intercept)", "Intercept", 
+                                          ifelse(Parameter == "age.c", "Age", as.character(Parameter))))))%>%
+  mutate(Parameter = factor(Parameter, levels = c("IHC", "HCNN", "Intercept", "Age", "Item magnitude", "Within IHC")))%>%
   mutate(p.val = ifelse(p.val < .000001, "<.0001", as.numeric(p.val)))%>%
   mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (US)")))
 
-data.r <- all.models.unit %>%
+data.r <- all.models.final.india %>%
   distinct(Language, Model, AIC, chi.stat, p.val)
 
-quartz()
-model.vis.india <- all.models.unit %>%
+all.models.final.india %>%
 ggplot(aes(x = Parameter, y = Estimate)) +
-  facet_grid(Model~Language)+
+  facet_grid(~Language, scale = "free_x") +
   geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
                       ymax = Estimate + 1.96 * Std..Error,
                       colour = Parameter)) +
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
-  theme_bw(base_size = 10) +
-  coord_flip() +
+  theme_bw(base_size = 13) +
+  # coord_flip() +
   scale_colour_brewer(palette = "Dark2", ",", guide = "none") +
-  geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s \nAIC = %s", chi.stat, p.val, AIC)),
-            x = 1.5, y = 1, size = 2.5,
+  geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s", chi.stat, p.val)),
+            x = 4.1, y = .9, size = 3.5,
             data = data.r) + 
   xlab("") +
-  scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
+  scale_y_continuous(name = "Coefficient Estimate (log likelihood)") + 
+  theme(axis.text.x = element_text(angle = 35, hjust = 1))
 ```
 
 
@@ -5238,193 +5438,268 @@ ggplot(aes(x = Parameter, y = Estimate)) +
 ##Visualizations
 
 ```{r, echo = TRUE}
-#Get all the parameters in one model, then add column for parameter so we can graph all the individual models at once
-#
+# #Get all the parameters in one model, then add column for parameter so we can graph all the individual models at once
+# #
+# 
+# #Hindi
+# #productivity
+# hindi.prod.model.wcn <- summary(wcn.hindi.within.model1)
+# hindi.prod.model.wcn.df <- data.frame(coef(hindi.prod.model.wcn)[,0:4])
+# hindi.prod.model.wcn.df <- add_rownames(hindi.prod.model.wcn.df, "Parameter")
+# hindi.prod.model.wcn.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.hindi.within.base, wcn.hindi.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.hindi.within.base, wcn.hindi.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hindi.prod.model.wcn$AICtab[1]), 2), 
+#          Language = "Hindi")
+# 
+# #FHC
+# hindi.fhc.model.wcn <- summary(wcn.hindi.within.model2)
+# hindi.fhc.model.wcn.df <- data.frame(coef(hindi.fhc.model.wcn)[,0:4])
+# hindi.fhc.model.wcn.df <- add_rownames(hindi.fhc.model.wcn.df, "Parameter")
+# hindi.fhc.model.wcn.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.hindi.within.base, wcn.hindi.within.model2, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.hindi.within.base, wcn.hindi.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hindi.fhc.model.wcn$AICtab[1]), 2), 
+#          Language = "Hindi")
+# 
+# #IHC
+# hindi.ihc.model.wcn <- summary(wcn.hindi.within.model3)
+# hindi.ihc.model.wcn.df <- data.frame(coef(hindi.ihc.model.wcn)[,0:4])
+# hindi.ihc.model.wcn.df <- add_rownames(hindi.ihc.model.wcn.df, "Parameter")
+# hindi.ihc.model.wcn.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.hindi.within.base, wcn.hindi.within.model3, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.hindi.within.base, wcn.hindi.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(hindi.ihc.model.wcn$AICtab[1]), 2), 
+#          Language = "Hindi")
+# 
+# ##Gujarati##
+# #productivity
+# gujarati.prod.model.wcn <- summary(wcn.gujarati.within.model1)
+# gujarati.prod.model.wcn.df <- data.frame(coef(gujarati.prod.model.wcn)[,0:4])
+# gujarati.prod.model.wcn.df <- add_rownames(gujarati.prod.model.wcn.df, "Parameter")
+# gujarati.prod.model.wcn.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(gujarati.prod.model.wcn$AICtab[1]), 2), 
+#          Language = "Gujarati")
+# 
+# #FHC
+# gujarati.fhc.model.wcn <- summary(wcn.gujarati.within.model2)
+# gujarati.fhc.model.wcn.df <- data.frame(coef(gujarati.fhc.model.wcn)[,0:4])
+# gujarati.fhc.model.wcn.df <- add_rownames(gujarati.fhc.model.wcn.df, "Parameter")
+# gujarati.fhc.model.wcn.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model2, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(gujarati.fhc.model.wcn$AICtab[1]), 2), 
+#          Language = "Gujarati")
+# 
+# #IHC
+# gujarati.ihc.model.wcn <- summary(wcn.gujarati.within.model3)
+# gujarati.ihc.model.wcn.df <- data.frame(coef(gujarati.ihc.model.wcn)[,0:4])
+# gujarati.ihc.model.wcn.df <- add_rownames(gujarati.ihc.model.wcn.df, "Parameter")
+# gujarati.ihc.model.wcn.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model3, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(gujarati.ihc.model.wcn$AICtab[1]), 2), 
+#          Language = "Gujarati")
+# 
+# 
+# ##US##
+# #productivity
+# us.prod.model.wcn <- summary(wcn.us.within.model1)
+# us.prod.model.wcn.df <- data.frame(coef(us.prod.model.wcn)[,0:4])
+# us.prod.model.wcn.df <- add_rownames(us.prod.model.wcn.df, "Parameter")
+# us.prod.model.wcn.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.us.within.base, wcn.us.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.us.within.base, wcn.us.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.prod.model.wcn$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# #FHC
+# us.fhc.model.wcn <- summary(wcn.us.within.model2)
+# us.fhc.model.wcn.df <- data.frame(coef(us.fhc.model.wcn)[,0:4])
+# us.fhc.model.wcn.df <- add_rownames(us.fhc.model.wcn.df, "Parameter")
+# us.fhc.model.wcn.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.us.within.base, wcn.us.within.model2, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.us.within.base, wcn.us.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.fhc.model.wcn$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# #IHC
+# us.ihc.model.wcn <- summary(wcn.us.within.model3)
+# us.ihc.model.wcn.df <- data.frame(coef(us.ihc.model.wcn)[,0:4])
+# us.ihc.model.wcn.df <- add_rownames(us.ihc.model.wcn.df, "Parameter")
+# us.ihc.model.wcn.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.us.within.base, wcn.us.within.model3, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.us.within.base, wcn.us.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(us.ihc.model.wcn$AICtab[1]), 2), 
+#          Language = "English (US)")
+# 
+# ##English - India##
+# #productivity
+# ind.eng.prod.model.wcn <- summary(wcn.ind.eng.within.model1)
+# ind.eng.prod.model.wcn.df <- data.frame(coef(ind.eng.prod.model.wcn)[,0:4])
+# ind.eng.prod.model.wcn.df <- add_rownames(ind.eng.prod.model.wcn.df, "Parameter")
+# ind.eng.prod.model.wcn.df %<>%
+#   mutate(Model = "Productivity")%>%
+#   mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model1, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model1, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(ind.eng.prod.model.wcn$AICtab[1]), 2), 
+#          Language = "English (India)")
+# 
+# #FHC
+# ind.eng.fhc.model.wcn <- summary(wcn.ind.eng.within.model2)
+# ind.eng.fhc.model.wcn.df <- data.frame(coef(ind.eng.fhc.model.wcn)[,0:4])
+# ind.eng.fhc.model.wcn.df <- add_rownames(ind.eng.fhc.model.wcn.df, "Parameter")
+# ind.eng.fhc.model.wcn.df %<>%
+#   mutate(Model = "Final Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model2, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model2, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(ind.eng.fhc.model.wcn$AICtab[1]), 2), 
+#          Language = "English (India)")
+# 
+# #IHC
+# ind.eng.ihc.model.wcn <- summary(wcn.ind.eng.within.model3)
+# ind.eng.ihc.model.wcn.df <- data.frame(coef(ind.eng.ihc.model.wcn)[,0:4])
+# ind.eng.ihc.model.wcn.df <- add_rownames(ind.eng.ihc.model.wcn.df, "Parameter")
+# ind.eng.ihc.model.wcn.df %<>%
+#   mutate(Model = "Initial Highest Count")%>%
+#   mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
+#          p.val = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model3, test = 'LRT')[2,8], 2), 
+#          chi.stat = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model3, test = 'LRT')[2,6], 2), 
+#          AIC = round(as.numeric(ind.eng.ihc.model.wcn$AICtab[1]), 2), 
+#          Language = "English (India)")
+# #join togther 
+# india.all.models.wcn <- bind_rows(hindi.prod.model.wcn.df, hindi.fhc.model.wcn.df, hindi.ihc.model.wcn.df, 
+#                             gujarati.prod.model.wcn.df, gujarati.fhc.model.wcn.df, gujarati.ihc.model.wcn.df, 
+#                             us.prod.model.wcn.df, us.fhc.model.wcn.df, us.ihc.model.wcn.df, 
+#                             ind.eng.prod.model.wcn.df, ind.eng.fhc.model.wcn.df,ind.eng.ihc.model.wcn.df) 
+# 
+# india.all.models.wcn %<>%
+#   filter(Parameter != "(Intercept)")%>%
+#   mutate(Parameter = ifelse(Parameter == "starting_num.c", "Item magnitude", 
+#                             ifelse(Parameter == "count_rangeWithin", "Within IHC", 
+#                                    ifelse(Parameter == "Prod. Predictor", "Productivity predictor", "Age"))))%>%
+#   mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "Productivity predictor")))%>%
+#   mutate(colors = ifelse((Parameter == "Age" | Parameter == "Item magnitude" | Parameter == "Within IHC"), as.character(Parameter), 
+#                          as.character(Model))) %>%
+#   mutate(Model = factor(Model, levels = c("Productivity", "Final Highest Count", "Initial Highest Count"))) %>%
+#   mutate(p.val = ifelse(p.val < .000001, "<.0001", as.numeric(p.val)))%>%
+#   mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))
+# 
+# data.r <- india.all.models.wcn %>%
+#   distinct(Language, Model, AIC, chi.stat, p.val)
+# 
+# india.all.models.wcn %>%
+# ggplot(aes(x = Parameter, y = Estimate)) +
+#   facet_grid(Language~Model)+
+#   geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
+#                       ymax = Estimate + 1.96 * Std..Error,
+#                       colour = Parameter)) +
+#   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+#   theme_bw(base_size = 10) +
+#   coord_flip() +
+#   scale_colour_brewer(palette = "Dark2", ",", guide = "none") +
+#   geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s \nAIC = %s", chi.stat, p.val, AIC)),
+#             x = 1.5, y = 2, size = 2.5,
+#             data = data.r) + 
+#   xlab("") +
+#   scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
 
-#Hindi
-#productivity
-hindi.prod.model.wcn <- summary(wcn.hindi.within.model1)
-hindi.prod.model.wcn.df <- data.frame(coef(hindi.prod.model.wcn)[,0:4])
-hindi.prod.model.wcn.df <- add_rownames(hindi.prod.model.wcn.df, "Parameter")
-hindi.prod.model.wcn.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.hindi.within.base, wcn.hindi.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.hindi.within.base, wcn.hindi.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hindi.prod.model.wcn$AICtab[1]), 2), 
-         Language = "Hindi")
+####FINAL MODELS####
 
-#FHC
-hindi.fhc.model.wcn <- summary(wcn.hindi.within.model2)
-hindi.fhc.model.wcn.df <- data.frame(coef(hindi.fhc.model.wcn)[,0:4])
-hindi.fhc.model.wcn.df <- add_rownames(hindi.fhc.model.wcn.df, "Parameter")
-hindi.fhc.model.wcn.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.hindi.within.base, wcn.hindi.within.model2, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.hindi.within.base, wcn.hindi.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hindi.fhc.model.wcn$AICtab[1]), 2), 
-         Language = "Hindi")
+hindi.final.wcn <- summary(wcn.hindi.within.plus1)
+hindi.final.wcn.df <- data.frame(coef(hindi.final.wcn)[,0:4])
+hindi.final.wcn.df <- add_rownames(hindi.final.wcn.df, "Parameter")
+hindi.final.wcn.df %<>%
+  mutate(Language = "Hindi")%>%
+  mutate(Parameter = ifelse(Parameter == "ihc.c", "IHC", as.character(Parameter)), 
+         AIC = round(as.numeric(hindi.final.wcn$AICtab[1]), 2), 
+         p.val = round(anova(wcn.hindi.within.base, wcn.hindi.within.plus1, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(wcn.hindi.within.base, wcn.hindi.within.plus1, test = 'LRT')[2,6], 2))
 
-#IHC
-hindi.ihc.model.wcn <- summary(wcn.hindi.within.model3)
-hindi.ihc.model.wcn.df <- data.frame(coef(hindi.ihc.model.wcn)[,0:4])
-hindi.ihc.model.wcn.df <- add_rownames(hindi.ihc.model.wcn.df, "Parameter")
-hindi.ihc.model.wcn.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.hindi.within.base, wcn.hindi.within.model3, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.hindi.within.base, wcn.hindi.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(hindi.ihc.model.wcn$AICtab[1]), 2), 
-         Language = "Hindi")
+gujarati.final.wcn <- summary(wcn.gujarati.within.plus2.prod)
+gujarati.final.wcn.df <- data.frame(coef(gujarati.final.wcn)[,0:4])
+gujarati.final.wcn.df <- add_rownames(gujarati.final.wcn.df, "Parameter")
+gujarati.final.wcn.df %<>%
+  mutate(Language = "Gujarati")%>%
+  mutate(Parameter = ifelse(Parameter == "fhc.c", "FHC", 
+                            ifelse(Parameter == "ProductiveProductive", "Productive", as.character(Parameter))), 
+         AIC = round(as.numeric(gujarati.final.wcn$AICtab[1]), 2), 
+         p.val = round(anova(wcn.gujarati.within.plus1, wcn.gujarati.within.plus2.prod, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(wcn.gujarati.within.plus1, wcn.gujarati.within.plus2.prod, test = 'LRT')[2,6], 2))
 
-##Gujarati##
-#productivity
-gujarati.prod.model.wcn <- summary(wcn.gujarati.within.model1)
-gujarati.prod.model.wcn.df <- data.frame(coef(gujarati.prod.model.wcn)[,0:4])
-gujarati.prod.model.wcn.df <- add_rownames(gujarati.prod.model.wcn.df, "Parameter")
-gujarati.prod.model.wcn.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(gujarati.prod.model.wcn$AICtab[1]), 2), 
-         Language = "Gujarati")
+us.final.wcn <- summary(wcn.us.within.plus1)
+us.final.wcn.df <- data.frame(coef(us.final.wcn)[,0:4])
+us.final.wcn.df <- add_rownames(us.final.wcn.df, "Parameter")
+us.final.wcn.df %<>%
+  mutate(Language = "English (US)")%>%
+  mutate(Parameter = ifelse(Parameter == "fhc.c", "FHC", as.character(Parameter)), 
+         AIC = round(as.numeric(us.final.wcn$AICtab[1]), 2), 
+         p.val = round(anova(wcn.us.within.base, wcn.us.within.plus1, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(wcn.us.within.base, wcn.us.within.plus1, test = 'LRT')[2,6], 2))
 
-#FHC
-gujarati.fhc.model.wcn <- summary(wcn.gujarati.within.model2)
-gujarati.fhc.model.wcn.df <- data.frame(coef(gujarati.fhc.model.wcn)[,0:4])
-gujarati.fhc.model.wcn.df <- add_rownames(gujarati.fhc.model.wcn.df, "Parameter")
-gujarati.fhc.model.wcn.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model2, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(gujarati.fhc.model.wcn$AICtab[1]), 2), 
-         Language = "Gujarati")
+ind.eng.final.wcn <- summary(wcn.ind.eng.within.plus2)
+ind.eng.final.wcn.df <- data.frame(coef(ind.eng.final.wcn)[,0:4])
+ind.eng.final.wcn.df <- add_rownames(ind.eng.final.wcn.df, "Parameter")
+ind.eng.final.wcn.df %<>%
+  mutate(Language = "English (India)")%>%
+  mutate(Parameter = ifelse(Parameter == "fhc.c", "FHC", 
+                            ifelse(Parameter == "ihc.c", "IHC", as.character(Parameter))), 
+         AIC = round(as.numeric(ind.eng.final.wcn$AICtab[1]), 2), 
+         p.val = round(anova(wcn.ind.eng.within.plus1, wcn.ind.eng.within.plus2, test = 'LRT')[2,8], 5), 
+         chi.stat = round(anova(wcn.ind.eng.within.plus1, wcn.ind.eng.within.plus2, test = 'LRT')[2,6], 2))
 
-#IHC
-gujarati.ihc.model.wcn <- summary(wcn.gujarati.within.model3)
-gujarati.ihc.model.wcn.df <- data.frame(coef(gujarati.ihc.model.wcn)[,0:4])
-gujarati.ihc.model.wcn.df <- add_rownames(gujarati.ihc.model.wcn.df, "Parameter")
-gujarati.ihc.model.wcn.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model3, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.gujarati.within.base, wcn.gujarati.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(gujarati.ihc.model.wcn$AICtab[1]), 2), 
-         Language = "Gujarati")
+all.models.final.india.wcn <- bind_rows(hindi.final.wcn.df, gujarati.final.wcn.df, us.final.wcn.df, ind.eng.final.wcn.df)
 
-
-##US##
-#productivity
-us.prod.model.wcn <- summary(wcn.us.within.model1)
-us.prod.model.wcn.df <- data.frame(coef(us.prod.model.wcn)[,0:4])
-us.prod.model.wcn.df <- add_rownames(us.prod.model.wcn.df, "Parameter")
-us.prod.model.wcn.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.us.within.base, wcn.us.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.us.within.base, wcn.us.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.prod.model.wcn$AICtab[1]), 2), 
-         Language = "English (US)")
-
-#FHC
-us.fhc.model.wcn <- summary(wcn.us.within.model2)
-us.fhc.model.wcn.df <- data.frame(coef(us.fhc.model.wcn)[,0:4])
-us.fhc.model.wcn.df <- add_rownames(us.fhc.model.wcn.df, "Parameter")
-us.fhc.model.wcn.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.us.within.base, wcn.us.within.model2, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.us.within.base, wcn.us.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.fhc.model.wcn$AICtab[1]), 2), 
-         Language = "English (US)")
-
-#IHC
-us.ihc.model.wcn <- summary(wcn.us.within.model3)
-us.ihc.model.wcn.df <- data.frame(coef(us.ihc.model.wcn)[,0:4])
-us.ihc.model.wcn.df <- add_rownames(us.ihc.model.wcn.df, "Parameter")
-us.ihc.model.wcn.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.us.within.base, wcn.us.within.model3, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.us.within.base, wcn.us.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(us.ihc.model.wcn$AICtab[1]), 2), 
-         Language = "English (US)")
-
-##English - India##
-#productivity
-ind.eng.prod.model.wcn <- summary(wcn.ind.eng.within.model1)
-ind.eng.prod.model.wcn.df <- data.frame(coef(ind.eng.prod.model.wcn)[,0:4])
-ind.eng.prod.model.wcn.df <- add_rownames(ind.eng.prod.model.wcn.df, "Parameter")
-ind.eng.prod.model.wcn.df %<>%
-  mutate(Model = "Productivity")%>%
-  mutate(Parameter = ifelse(Parameter == "ProductiveProductive", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model1, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model1, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(ind.eng.prod.model.wcn$AICtab[1]), 2), 
-         Language = "English (India)")
-
-#FHC
-ind.eng.fhc.model.wcn <- summary(wcn.ind.eng.within.model2)
-ind.eng.fhc.model.wcn.df <- data.frame(coef(ind.eng.fhc.model.wcn)[,0:4])
-ind.eng.fhc.model.wcn.df <- add_rownames(ind.eng.fhc.model.wcn.df, "Parameter")
-ind.eng.fhc.model.wcn.df %<>%
-  mutate(Model = "Final Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "fhc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model2, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model2, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(ind.eng.fhc.model.wcn$AICtab[1]), 2), 
-         Language = "English (India)")
-
-#IHC
-ind.eng.ihc.model.wcn <- summary(wcn.ind.eng.within.model3)
-ind.eng.ihc.model.wcn.df <- data.frame(coef(ind.eng.ihc.model.wcn)[,0:4])
-ind.eng.ihc.model.wcn.df <- add_rownames(ind.eng.ihc.model.wcn.df, "Parameter")
-ind.eng.ihc.model.wcn.df %<>%
-  mutate(Model = "Initial Highest Count")%>%
-  mutate(Parameter = ifelse(Parameter == "ihc.c", "Prod. Predictor", as.character(Parameter)), 
-         p.val = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model3, test = 'LRT')[2,8], 2), 
-         chi.stat = round(anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model3, test = 'LRT')[2,6], 2), 
-         AIC = round(as.numeric(ind.eng.ihc.model.wcn$AICtab[1]), 2), 
-         Language = "English (India)")
-#join togther 
-india.all.models.wcn <- bind_rows(hindi.prod.model.wcn.df, hindi.fhc.model.wcn.df, hindi.ihc.model.wcn.df, 
-                            gujarati.prod.model.wcn.df, gujarati.fhc.model.wcn.df, gujarati.ihc.model.wcn.df, 
-                            us.prod.model.wcn.df, us.fhc.model.wcn.df, us.ihc.model.wcn.df, 
-                            ind.eng.prod.model.wcn.df, ind.eng.fhc.model.wcn.df,ind.eng.ihc.model.wcn.df) 
-
-india.all.models.wcn %<>%
-  filter(Parameter != "(Intercept)")%>%
+all.models.final.india.wcn %<>%
   mutate(Parameter = ifelse(Parameter == "starting_num.c", "Item magnitude", 
                             ifelse(Parameter == "count_rangeWithin", "Within IHC", 
-                                   ifelse(Parameter == "Prod. Predictor", "Productivity predictor", "Age"))))%>%
-  mutate(Parameter = factor(Parameter, levels = c("Age", "Item magnitude", "Within IHC", "Productivity predictor")))%>%
-  mutate(colors = ifelse((Parameter == "Age" | Parameter == "Item magnitude" | Parameter == "Within IHC"), as.character(Parameter), 
-                         as.character(Model))) %>%
-  mutate(Model = factor(Model, levels = c("Productivity", "Final Highest Count", "Initial Highest Count"))) %>%
+                                   ifelse(Parameter == "(Intercept)", "Intercept", 
+                                          ifelse(Parameter == "age.c", "Age", as.character(Parameter))))))%>%
+  mutate(Parameter = factor(Parameter, levels = c("IHC", "FHC", "Productive", "Intercept", "Age", "Item magnitude", "Within IHC")))%>%
   mutate(p.val = ifelse(p.val < .000001, "<.0001", as.numeric(p.val)))%>%
   mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))
 
-data.r <- india.all.models.wcn %>%
+data.r <- all.models.final.india.wcn %>%
   distinct(Language, Model, AIC, chi.stat, p.val)
 
-india.all.models.wcn %>%
+all.models.final.india.wcn %>%
 ggplot(aes(x = Parameter, y = Estimate)) +
-  facet_grid(Language~Model)+
+  facet_grid(~Language, scale = "free_x") +
   geom_pointrange(aes(ymin = Estimate - 1.96 * Std..Error,
                       ymax = Estimate + 1.96 * Std..Error,
                       colour = Parameter)) +
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
-  theme_bw(base_size = 10) +
-  coord_flip() +
+  theme_bw(base_size = 13) +
+  # coord_flip() +
   scale_colour_brewer(palette = "Dark2", ",", guide = "none") +
-  geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s \nAIC = %s", chi.stat, p.val, AIC)),
-            x = 1.5, y = 2, size = 2.5,
+  geom_text(aes(label = sprintf("χ² = %-11s \np = %-11s", chi.stat, p.val)),
+            x = 4.1, y = 1.8, size = 3.5,
             data = data.r) + 
   xlab("") +
-  scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
+  scale_y_continuous(name = "Coefficient Estimate (log likelihood)") + 
+  theme(axis.text.x = element_text(angle = 35, hjust = 1))
 ```
 
 ---
@@ -5669,12 +5944,12 @@ sf.cross.model.gain <- glmer(Correct ~ prod.gradient + Language*ihc.c + count_ra
                         control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
 
-##exploratory - mean.nn
-sf.cross.model.nn <- glmer(Correct ~ mean.nn + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
-                           (1|SID), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
+# ##exploratory - mean.nn
+# sf.cross.model.nn <- glmer(Correct ~ mean.nn + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
+#                            (1|SID), 
+#                        family = "binomial", data = sf.df.cross, 
+#                         control=glmerControl(optimizer="bobyqa",
+#                          optCtrl=list(maxfun=2e4)))
 ```
 
 ##Cross-linguistic model comparison
@@ -5684,7 +5959,6 @@ mtable.sf.cross <- mtable('Base Model' = sf.cross.base,
             'Model 2: FHC' = sf.cross.model2,
             'Model 3: Highest Contig.' = sf.cross.model3, 
             'Exp: Prod. gradient' = sf.cross.model.gain,
-            'Exp: NN' = sf.cross.model.nn,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.cross
 ```
@@ -5723,13 +5997,13 @@ sf.cross.model3 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_ran
                        family = "binomial", data = sf.df.cross, 
                         control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
-sf.cross.model.plus.nn <- glmer(Correct ~ mean.nn+ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
-                           (1|SID), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#compare
-anova(sf.cross.model3, sf.cross.model.plus.nn, test = 'LRT')
+# sf.cross.model.plus.nn <- glmer(Correct ~ mean.nn+ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
+#                            (1|SID), 
+#                        family = "binomial", data = sf.df.cross, 
+#                         control=glmerControl(optimizer="bobyqa",
+#                          optCtrl=list(maxfun=2e4)))
+# #compare
+# anova(sf.cross.model3, sf.cross.model.plus.nn, test = 'LRT')
 
 
 summary(sf.cross.model3)
@@ -6271,6 +6545,7 @@ ggplot(aes(x = Parameter, y = Estimate)) +
   scale_y_continuous(name = "Coefficient Estimate (log likelihood)")
 ```
 ---
+
 #WCN - HK/SLO/US Cross linguistic
 
 ##Build the models
@@ -6601,6 +6876,14 @@ summary(ihc.cross.model.hk.slo)
 
 ihc.cross.ind <- ihc.cross %>%
   filter(Language == "English (US)"|
+           Language == "Hindi" |
+           Language == "Gujarati")
+
+ihc.cross.model.ind <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.ind)
+summary(ihc.cross.model.ind)
+
+ihc.cross.ind <- ihc.cross %>%
+  filter(Language == "English (India)"|
            Language == "Hindi" |
            Language == "Gujarati")
 
