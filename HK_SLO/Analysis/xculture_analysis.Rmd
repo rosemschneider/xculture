@@ -816,6 +816,11 @@ all.data %>%
   mutate(total.n = sum(n))%>%
   kable()
 
+#KL by language
+all.data %>%
+  distinct(SID, Language, Age, Productive, Knower.level)%>%
+  group_by(Language, Knower.level)%>%
+  summarise(n = n())
   
 #histogram of age
 all.data %>%
@@ -831,15 +836,102 @@ ggplot(aes(x = Age, fill = Language)) +
   labs(y = "Count", title = "Number of children in age bin by language")
 ```
 
-##KL by language
+---
+#Highest Count descriptives
+Productivity, prompts, errors
+
+##Productivity descriptives by language
+
+###IHC, FHC by language, productivity
 ```{r}
+productivity.pal <- c("#666666","#00b8e6")
+#IHC, FHC by language, productiviity
 all.data %>%
-  distinct(SID, Language, Age, Productive, Knower.level)%>%
-  group_by(Language, Knower.level)%>%
-  summarise(n = n())
+  filter(!is.na(Language))%>%
+  distinct(SID, Age, Productive, Language, IHC, FHC)%>%
+  group_by(Language, Productive)%>%
+  summarise(n = n(),
+            mean_IHC = round(mean(IHC)), 
+            sd_IHC = round(sd(IHC), 2), 
+            median_IHC = round(median(IHC)), 
+            mean_FHC = round(mean(FHC)), 
+            sd_FHC = round(sd(FHC), 2), 
+            median_FHC = round(median(FHC)))%>%
+  kable()
+
 ```
 
-##Are there significantly more productive counters by language?
+###Productivity gradient
+```{r}
+#what about productivity gradient?
+all.data %>%
+  distinct(SID, Age, Productive, Language, prod.gradient, delta.hc)%>%
+  group_by(Language, Productive)%>%
+  summarise(n =n(), 
+            mean_prod.gradient = mean(prod.gradient), 
+            sd_prod.gradient = sd(prod.gradient), 
+            mean_delta.hc = mean(delta.hc), 
+            sd_delta.hc = sd(delta.hc))%>%
+  kable()
+```
+
+###Mean IHC/FHC overall by language
+```{r}
+#overall mean ihc/fhc by language
+all.data %>%
+  distinct(SID, Age, Language, IHC, FHC)%>%
+  group_by(Language)%>%
+  summarise(mean_IHC = mean(IHC), 
+           sd_IHC = sd(IHC), 
+           mean_FHC = mean(FHC), 
+           sd_FHC = sd(FHC))
+```
+
+###Prompts by productivity and language
+```{r}
+#how many prompts do productive and nonproductive counters need? and what kind of errors do they make?
+#bind productive and hc.df 
+productive %<>% 
+  dplyr::select(SID, Productive)
+
+error.freq <- full_join(hc.df, productive, by = "SID")%>%
+  filter(!is.na(Last_successful))%>%
+  mutate(Error_type = ifelse((Language == "Cantonese" | 
+                                Language == "Slovenian" |
+                                Language == "English (India)" |
+                                Language == "English (US)") & Last_successful %% 10 == 9 , "Decade end", 
+                             ifelse(Last_successful %% 10 == 0, "Decade beginning",
+                                    ifelse(Last_successful %% 10 == 8 & (Language == "Hindi" | Language == "Gujarati"), "Hindi/Gujarati pre-decade transition", "Mid-decade"))))
+
+#mean number of prompts by Language, productivity
+mean_prompts.type <- error.freq %>%
+  group_by(Language, Error_type, Productive)%>%
+  summarise(n = n())%>%
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+            prop = n/total.n)
+
+#all productive errors grouped together
+mean_prompts.type.prod <- error.freq %>%
+  group_by(Language, Error_type, Productive)%>%
+  filter(Productive == "Productive")%>%
+  summarise(n = n())%>%
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+            prop = n/total.n)
+
+#all nonproductive errors grouped together
+mean_prompts.type.nonprod <- error.freq %>%
+  group_by(Language, Error_type, Productive)%>%
+  filter(Productive == "Nonproductive")%>%
+  summarise(n = n())%>%
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+            prop = n/total.n)
+
+```
+
+###Analysis: Are there significantly more productive counters by language?
 ```{r}
 ##HK/SLO/US
 #Cantonese v. English & Slovenian
@@ -896,87 +988,7 @@ prod.lang.us.eng <- glm(Productive ~ Language, family = "binomial", data = class
 summary(prod.lang.us.eng)
 ```
 
-###Productivity descriptives
-```{r}
-productivity.pal <- c("#666666","#00b8e6")
-#IHC, FHC by language, productiviity
-all.data %>%
-  filter(!is.na(Language))%>%
-  distinct(SID, Age, Productive, Language, IHC, FHC)%>%
-  group_by(Language, Productive)%>%
-  summarise(n = n(),
-            mean_IHC = round(mean(IHC)), 
-            sd_IHC = round(sd(IHC), 2), 
-            median_IHC = round(median(IHC)), 
-            mean_FHC = round(mean(FHC)), 
-            sd_FHC = round(sd(FHC), 2), 
-            median_FHC = round(median(FHC)))%>%
-  kable()
-
-#what about productivity gradient?
-all.data %>%
-  distinct(SID, Age, Productive, Language, prod.gradient, delta.hc)%>%
-  group_by(Language, Productive)%>%
-  summarise(n =n(), 
-            mean_prod.gradient = mean(prod.gradient), 
-            sd_prod.gradient = sd(prod.gradient), 
-            mean_delta.hc = mean(delta.hc), 
-            sd_delta.hc = sd(delta.hc))%>%
-  kable()
-
-#overall mean ihc/fhc by language
-all.data %>%
-  distinct(SID, Age, Language, IHC, FHC)%>%
-  group_by(Language)%>%
-  summarise(mean_IHC = mean(IHC), 
-           sd_IHC = sd(IHC), 
-           mean_FHC = mean(FHC), 
-           sd_FHC = sd(FHC))
-
-#how many prompts do productive and nonproductive counters need? and what kind of errors do they make?
-#bind productive and hc.df 
-productive %<>% 
-  dplyr::select(SID, Productive)
-
-error.freq <- full_join(hc.df, productive, by = "SID")%>%
-  filter(!is.na(Last_successful))%>%
-  mutate(Error_type = ifelse((Language == "Cantonese" | 
-                                Language == "Slovenian" |
-                                Language == "English (India)" |
-                                Language == "English (US)") & Last_successful %% 10 == 9 , "Decade end", 
-                             ifelse(Last_successful %% 10 == 0, "Decade beginning",
-                                    ifelse(Last_successful %% 10 == 8 & (Language == "Hindi" | Language == "Gujarati"), "Hindi/Gujarati pre-decade transition", "Mid-decade"))))
-
-#mean number of prompts by Language, productivity
-mean_prompts.type <- error.freq %>%
-  group_by(Language, Error_type, Productive)%>%
-  summarise(n = n())%>%
-  group_by(Language, Productive)%>%
-  mutate(total.n = sum(n), 
-            prop = n/total.n)
-
-#all productive errors grouped together
-mean_prompts.type.prod <- error.freq %>%
-  group_by(Language, Error_type, Productive)%>%
-  filter(Productive == "Productive")%>%
-  summarise(n = n())%>%
-  group_by(Language, Productive)%>%
-  mutate(total.n = sum(n), 
-            prop = n/total.n)
-
-#all nonproductive errors grouped together
-mean_prompts.type.nonprod <- error.freq %>%
-  group_by(Language, Error_type, Productive)%>%
-  filter(Productive == "Nonproductive")%>%
-  summarise(n = n())%>%
-  group_by(Language, Productive)%>%
-  mutate(total.n = sum(n), 
-            prop = n/total.n)
-
-```
-
-
-#Where are errors happening? - in progress, how can we visualize these?
+###Where are errors happening?
 ```{r}
 error.freq.decade <- error.freq %>%
   mutate(error.decade = ifelse(Last_successful < 10, 0, 
@@ -1132,7 +1144,7 @@ check <- error.freq.decade %>%
 #4 participants, but these are language switches did not receive a prompt
 ```
 
-##How many participants used all 14 prompts?
+###How many participants used all 14 prompts?
 ```{r}
 hc.df %>%
   group_by(SID, Language)%>%
@@ -1160,7 +1172,7 @@ hc.df %>%
             mode = getmode(n))
 ```
 
-##How many errors on average by language?
+###How many errors on average by language?
 ```{r}
 error.freq %>%
   filter(Last_successful != 140)%>%
@@ -1172,6 +1184,8 @@ error.freq %>%
   kable()
 ```
 
+---
+#Highest Contiguous Next Number
 ##HCNN by each language
 ```{r}
 india.pal <- c("#E7298A","#66A61E","#E6AB02", "#D95F02")
@@ -1260,42 +1274,42 @@ unique.hc.data <- all.data %>%
          IHC_FHC = factor(IHC_FHC, levels = c("IHC", "FHC"), 
                           labels = c("Initial Highest Count", "Final Highest Count")))
 
-#Initial/Final, HK/SLO/US
-unique.hc.data %>%
-  filter(Language == "English (US)" |
-           Language == "Cantonese" |
-           Language == "Slovenian")%>%
-  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))%>%
-ggplot(aes(x=highest_count, fill=Productive)) + 
-  geom_histogram(binwidth = 10, colour = "black") +
-  theme_bw(base_size = 10)+
-  facet_grid(IHC_FHC~Language) +
-  scale_x_continuous(breaks = seq(0, 140, 10))+
-  scale_fill_manual(values = productivity.pal) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        panel.grid.minor = element_blank(), 
-        legend.title = element_blank())+
-  theme(legend.position = "bottom") + 
-  labs(x = "Highest count", y = "Frequency")
-
-#Initial/Final, India
-unique.hc.data %>%
-  filter(Language == "English (India)"|
-           Language == "English (US)" |
-           Language == "Hindi" | 
-           Language == "Gujarati")%>%
-  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))%>%
-ggplot(aes(x=highest_count, fill=Productive)) + 
-  geom_histogram(binwidth = 10, colour = "black") +
-  theme_bw(base_size = 10)+
-  facet_grid(IHC_FHC~Language) +
-  scale_x_continuous(breaks = seq(0, 140, 10))+
-  scale_fill_manual(values = productivity.pal) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        panel.grid.minor = element_blank(), 
-        legend.title = element_blank()) +
-  theme(legend.position = "bottom") + 
-  labs(x = "Highest count", y = "Frequency")
+# #Initial/Final, HK/SLO/US
+# unique.hc.data %>%
+#   filter(Language == "English (US)" |
+#            Language == "Cantonese" |
+#            Language == "Slovenian")%>%
+#   mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))%>%
+# ggplot(aes(x=highest_count, fill=Productive)) + 
+#   geom_histogram(binwidth = 10, colour = "black") +
+#   theme_bw(base_size = 10)+
+#   facet_grid(IHC_FHC~Language) +
+#   scale_x_continuous(breaks = seq(0, 140, 10))+
+#   scale_fill_manual(values = productivity.pal) +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+#         panel.grid.minor = element_blank(), 
+#         legend.title = element_blank())+
+#   theme(legend.position = "bottom") + 
+#   labs(x = "Highest count", y = "Frequency")
+# 
+# #Initial/Final, India
+# unique.hc.data %>%
+#   filter(Language == "English (India)"|
+#            Language == "English (US)" |
+#            Language == "Hindi" | 
+#            Language == "Gujarati")%>%
+#   mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))%>%
+# ggplot(aes(x=highest_count, fill=Productive)) + 
+#   geom_histogram(binwidth = 10, colour = "black") +
+#   theme_bw(base_size = 10)+
+#   facet_grid(IHC_FHC~Language) +
+#   scale_x_continuous(breaks = seq(0, 140, 10))+
+#   scale_fill_manual(values = productivity.pal) +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+#         panel.grid.minor = element_blank(), 
+#         legend.title = element_blank()) +
+#   theme(legend.position = "bottom") + 
+#   labs(x = "Highest count", y = "Frequency")
 
 ```
 
@@ -1329,7 +1343,7 @@ dip.test(subset(initial_final, Language == "English (India)")$IHC)
 dip.test(subset(initial_final, Language == "English (US)")$IHC)
 ```
 
-##Scatterplot of IHC and FHC
+##Scatterplot of IHC and FHC - now with density distributions
 ```{r}
 library("cowplot")
 library('ggjoy')
@@ -1469,57 +1483,57 @@ p8 <- insert_yaxis_grob(p7, ydens.hindi, grid::unit(.2, "null"), position = "rig
 ggdraw(p8)
 ```
 
-#IHC/FHC scatter, HK/SLO/US
+###IHC/FHC scatter, HK/SLO/US
 ```{r}
-initial_final %>%
-  filter(Language == "English (US)" |
-           Language == "Cantonese" |
-           Language == "Slovenian")%>%
-  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))%>%
-ggplot(aes(x = IHC, y = FHC, 
-                          color = Productive)) +
-  geom_point(size = 1) + geom_jitter(width = .1) +
-  labs(x = "Initial highest count", y = "Final highest count", 
-                      color = "", title = "") +
-  theme_bw(base_size = 12) + 
-  scale_x_continuous(breaks = seq(0, 140, 10)) + 
-  scale_y_continuous(breaks = seq(0, 140, 10)) + 
-  theme(panel.grid.minor = element_blank(), 
-        legend.position = "bottom", 
-        legend.text = element_text(size = 8)) + 
-  facet_wrap(~Language, ncol = 3) + 
-  scale_colour_manual(values = productivity.pal) +
-  theme(legend.position = "bottom") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-#IHC/FHC scatter, India
-initial_final %>%
-  filter(Language == "English (US)" |
-           Language == "English (India)" |
-           Language == "Hindi" |
-           Language == "Gujarati")%>%
-   mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (US)", "English (India)")))%>%
-ggplot(aes(x = IHC, y = FHC, 
-                          color = Productive)) +
-  geom_point(size = 1) + geom_jitter(width = .1) +
-  labs(x = "Initial highest count", y = "Final highest count", 
-                      color = "", title = "") +
-  theme_bw(base_size = 12) + 
-  scale_x_continuous(breaks = seq(0, 140, 10)) + 
-  scale_y_continuous(breaks = seq(0, 140, 10)) + 
-  theme(panel.grid.minor = element_blank(), 
-        legend.position = "bottom", 
-        legend.text = element_text(size = 8)) + 
-  facet_wrap(~Language, ncol = 4) + 
-  scale_colour_manual(values = productivity.pal) +
-  theme(legend.position = "bottom") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# initial_final %>%
+#   filter(Language == "English (US)" |
+#            Language == "Cantonese" |
+#            Language == "Slovenian")%>%
+#   mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))%>%
+# ggplot(aes(x = IHC, y = FHC, 
+#                           color = Productive)) +
+#   geom_point(size = 1) + geom_jitter(width = .1) +
+#   labs(x = "Initial highest count", y = "Final highest count", 
+#                       color = "", title = "") +
+#   theme_bw(base_size = 12) + 
+#   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+#   scale_y_continuous(breaks = seq(0, 140, 10)) + 
+#   theme(panel.grid.minor = element_blank(), 
+#         legend.position = "bottom", 
+#         legend.text = element_text(size = 8)) + 
+#   facet_wrap(~Language, ncol = 3) + 
+#   scale_colour_manual(values = productivity.pal) +
+#   theme(legend.position = "bottom") + 
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# 
+# #IHC/FHC scatter, India
+# initial_final %>%
+#   filter(Language == "English (US)" |
+#            Language == "English (India)" |
+#            Language == "Hindi" |
+#            Language == "Gujarati")%>%
+#    mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (US)", "English (India)")))%>%
+# ggplot(aes(x = IHC, y = FHC, 
+#                           color = Productive)) +
+#   geom_point(size = 1) + geom_jitter(width = .1) +
+#   labs(x = "Initial highest count", y = "Final highest count", 
+#                       color = "", title = "") +
+#   theme_bw(base_size = 12) + 
+#   scale_x_continuous(breaks = seq(0, 140, 10)) + 
+#   scale_y_continuous(breaks = seq(0, 140, 10)) + 
+#   theme(panel.grid.minor = element_blank(), 
+#         legend.position = "bottom", 
+#         legend.text = element_text(size = 8)) + 
+#   facet_wrap(~Language, ncol = 4) + 
+#   scale_colour_manual(values = productivity.pal) +
+#   theme(legend.position = "bottom") + 
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
 
-#Do IHCs differ by language? - Gaussian Mixture Modeling
-##Test for multiple modes, quantify each mode
+###Analysis: Do IHCs differ by language? - Gaussian Mixture Modeling
+####Test for multiple modes, quantify each mode
 First, get density of IHC in each language
 ```{r}
 initial_final %>%
@@ -2353,69 +2367,6 @@ all.data %>%
 
 ---
 
-##SF and NN together
-###By-item performance 
-####HK/SLO/US
-```{r}
-all.data %>%
-  filter(!is.na(Productive))%>%
-  filter(Task == "NN" | Task == "SF")%>%
-  filter(Language == "Cantonese" | 
-           Language == "English (US)" |
-           Language == "Slovenian") %>%
-  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", "24", "52", "71", 
-                                                  "105", "107", "116", "224", "252", "271")))%>%
-  filter(Dataset != "India")%>%
-  group_by(Task, Productive, Task_item, Language, Dataset)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE), 
-            n = n(), 
-            sd = sd(Correct, na.rm = TRUE), 
-            se = sd/sqrt(n)) %>%
-  ggplot(aes(x = Task_item, y = mean, colour = Language, group= Language)) +
-  geom_point(size = 2) + 
-  geom_line() +
-  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
-                width = .1) +
-  theme_bw(base_size = 10) + 
-  facet_grid(Productive~Task) +
-  scale_colour_brewer(palette = "Dark2") +
-  theme(legend.position = "bottom") +
-  labs(x = "Number queried", y = "Mean performance") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-```
-
-####India
-```{r}
-all.data %>%
-  filter(!is.na(Productive))%>%
-  filter(Task == "NN" | Task == "SF")%>%
-  filter(Language == "English (US)" |
-           Language == "Hindi" |
-           Language == "Gujarati" |
-           Language == "English (India)")%>%
-  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", "24", "52", "71", 
-                                                  "105", "107", "116", "224", "252", "271")))%>%
-  group_by(Task, Productive, Task_item, Language, Dataset)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE), 
-            n = n(), 
-            sd = sd(Correct, na.rm = TRUE), 
-            se = sd/sqrt(n)) %>%
-  ggplot(aes(x = Task_item, y = mean, colour = Language, group= Language)) +
-  geom_point(size = 2) + 
-  geom_line() +
-  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
-                width = .1) +
-  theme_bw(base_size = 10) + 
-  facet_grid(Productive~Task) +
-  scale_colour_manual(values = india.pal) +
-  theme(legend.position = "bottom") +
-  labs(x = "Number queried", y = "Mean performance") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
----
-
 ##WPPSI
 ###Histogram of scores by language
 ```{r, warning = FALSE}
@@ -2481,6 +2432,7 @@ all.data %>%
 
 
 ---
+
 ##Scatterplots of correlations
 ##IHC to NN and Unit task mean performance
 ```{r}
@@ -2998,7 +2950,7 @@ anova(sf.hk.within.base, sf.hk.within.model.pg, test = 'LRT')
 1.  IHC - AIC = 1589.3
 2.  HCNN - AIC = 1616.3
 3.  FHC - AIC = 1616.5
-4.  Productivity - NS
+4.  Productivity - 1624.3
 
 ####Exploratory
 1. Productivity gradient - AIC = 1624.3
@@ -3139,13 +3091,13 @@ mtable.sf.slo
 ```
 
 ##Model Comparisons
-###Base v. Productivity - sig, Chis(1) = 7.18, p = .007, AIC = 1428.9
+###Base v. Productivity - sig, Chis(1) = 6.65, p = .01, AIC = 1397.5
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')
 ```
 
  
-###Base v. FHC - Sig, Chisq(1) = 12.264, p = .0005, AIC = 1423.8
+###Base v. FHC - Sig, Chisq(1) = 11.45, p = .0007, AIC = 1392.7
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')
 ```
@@ -3155,12 +3107,12 @@ anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')
 anova(sf.slo.within.base, sf.slo.within.model3, test = 'LRT')
 ````
 
-###Base v. Highest Contiguous NN - Sig, Chisq(1) = 22.44, p < .0001, AIC = 1413.6
+###Base v. Highest Contiguous NN - Sig, Chisq(1) = 22.44, p < .0001, AIC = 1369.7
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')
 ```
 
-###Exploratory - Prod. gain
+###Exploratory - Prod. gain - significant, Chisq. = 9.56, p = .002
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model.pg, test = 'LRT')
 # anova(sf.slo.within.base, sf.slo.within.model.clust, test = 'LRT')
@@ -3169,10 +3121,10 @@ anova(sf.slo.within.base, sf.slo.within.model.pg, test = 'LRT')
 ```
 
 ##Ranking of Productivity predictors from AIC 
-1.  HCNN - 1413.6
-2.  FHC - 1423.8
-3.  Productivity - 1428.9
-4.  IHC - 1433 (NS)
+1.  HCNN - 1369.7
+2.  FHC - 1392.7
+3.  Productivity - 1397.5
+4.  IHC - 1401 (NS)
 
 
 ##Large model
@@ -3308,22 +3260,22 @@ mtable.sf.us
 ```
 
 ##Model comparisons
-###Base v. Productivity - NS, Chisq(1) = 1.10, p = .29, AIC = 1516.3
+###Base v. Productivity - NS, Chisq(1) = 1.19, p = .27, AIC = 1514.6
 ```{r}
 anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 18.68, p < .0001, AIC = 1498.8
+###Base v. FHC - Sig, Chisq(1) = 18.85, p < .0001, AIC = 1496.9
 ```{r}
 anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 49.80, p < .0001, AIC = 1467.7
+###Base v. IHC - Sig, Chisq(1) = 49.48, p < .0001, AIC = 1466.3
 ```{r}
 anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')
 ````
 
-###Base v. Highest Contig. - Sig, Chisq(1) = 34.88, p < .0001, AIC = 1482.6
+###Base v. Highest Contig. - Sig, Chisq(1) = 35.86, p < .0001, AIC = 1479.9
 ```{r}
 anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')
 ```
@@ -3336,13 +3288,13 @@ anova(sf.us.within.base, sf.us.within.model.gain, test = 'LRT')
 ```
 
 ##Ranking of productivity predictors by AIC 
-1.  IHC - 1467.7  
-2.  FHC - 1498.3 
-3.  HCNN - 1482.6
-4.  Productivity - 1516.3
+1.  IHC - 1466.3 
+2.  HCNN - 1479.9
+3.  FHC - 1496.9
+4.  Productivity - 1514
 
 ##Large model
-Base = IHC (AIC = 1473.8)
+Base = IHC 
 ```{r}
 #IHC
 sf.us.within.plus1 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), 
@@ -3690,6 +3642,37 @@ ggplot(aes(x = Parameter, y = Estimate)) +
 
 ```
 
+##Within-language comparison of > 100 items
+```{r}
+##Within language
+sf.hk.within %<>%
+  mutate(item_100 = ifelse(Task_item > 100, ">100", "<100"))
+
+sf.hk.within.sub.100 <- sf.hk.within %>%
+  filter(item_100 == "<100")
+
+post.hk.sf.base <- glmer(Correct ~ count_range + starting_num.c + age.c + (1|SID), 
+                         family = "binomial", data = sf.hk.within)
+post.hk.sf.ihc <- glmer(Correct ~ ihc.c*item_100 + count_range + starting_num.c + age.c + (1|SID), 
+                        family = "binomial", data = sf.hk.within)
+post.hk.sf.fhc <- glmer(Correct ~ fhc.c*item_100 + count_range + starting_num.c + age.c + (1|SID), 
+                        family = "binomial", data = sf.hk.within, 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+post.hk.sf.hcnn <- glmer(Correct ~ highest_contig.c*item_100 + count_range + starting_num.c + age.c + (1|SID), 
+                        family = "binomial", data = sf.hk.within, 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+post.hk.sf.prod <- glmer(Correct ~ Productive*item_100 + count_range + starting_num.c + age.c + (1|SID), 
+                        family = "binomial", data = sf.hk.within)
+
+#model comparisons
+anova(post.hk.sf.base, post.hk.sf.ihc, test = 'LRT')
+anova(post.hk.sf.base, post.hk.sf.fhc, test = 'LRT')
+anova(post.hk.sf.base, post.hk.sf.hcnn, test = 'LRT')
+anova(post.hk.sf.base, post.hk.sf.prod, test = 'LRT')
+```
+
 ---
 
 #English (India): Within-language models, Unit Task (recall that these models include starting magnitude, centered)
@@ -3860,17 +3843,17 @@ mtable.sf.hindi
 anova(sf.hindi.within.base, sf.hindi.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - sig, Chisq(1) = 21.5, p < .0001, AIC = 1327.3
+###Base v. FHC - sig, Chisq(1) = 21.6, p < .0001, AIC = 1325.1
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, chisq(1) = 28.45, p < .0001, AIC = 1320.4
+###Base v. IHC - Sig, chisq(1) = 28.436, p < .0001, AIC = 1318.4
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model3, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 28.26, p < .0001, AIC = 1320.5
+###Base v. Highest contig. - Sig, Chisq(1) = 27.63, p < .0001, AIC = 1319.1
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model4, test = 'LRT')
 ```
@@ -3881,10 +3864,10 @@ anova(sf.hindi.within.base, sf.hindi.within.model.gain, test = 'LRT')
 ```
 
 ###Ranking of productivtiy predictors by AIC
-1.  IHC = 1320.4
-2.  HCNN = 1320.5
-3.  FHC = 1327.3
-4.  Productivity = 1345.6 (NS)
+1.  IHC = 1318
+2.  HCNN = 1319
+3.  FHC = 1325
+4.  Productivity = 1343
 
 
 ##Large model
@@ -4546,24 +4529,24 @@ mtable.wcn.hk
 anova(wcn.hk.within.base, wcn.hk.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 34.75, p < .0001, AIC = 1172.8
+###Base v. FHC - Sig, Chisq(1) = 34.33, p < .0001, AIC = 1171.2
 ````{r}
 anova(wcn.hk.within.base, wcn.hk.within.model2, test = 'LRT')
 ````
 
-###Base v. IHC = Sig, Chisq(1) = 69.17, p < .0001, AIC = 1138.4
+###Base v. IHC = Sig, Chisq(1) = 68.63, p < .0001, AIC = 1136.9
 ```{r}
 anova(wcn.hk.within.base, wcn.hk.within.model3, test = 'LRT')
 ```
 
-###Exploratory - prod. gradient
+###Exploratory - prod. gradient - Sig, Prod. 
 ```{r}
 anova(wcn.hk.within.base, wcn.hk.within.model.gain, test = 'LRT')
 ```
 
 ##Ranking of HK prod. predictors - WCN by AIC
-1.  IHC - 1138.4
-2.  FHC - 1172.8
+1.  IHC - 1136.9
+2.  FHC - 1171.2
 3.  Productivity - 1206.7 (NS)
 
 
@@ -4577,6 +4560,7 @@ wcn.hk.within.plus1 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + ag
 wcn.hk.within.plus2 <- glmer(Correct ~ fhc.c + ihc.c + count_range + starting_num.c + age.c + (1|SID), 
                             family = "binomial", data = wcn.hk.within)
 
+#compare IHC and FHC
 anova(wcn.hk.within.plus1, wcn.hk.within.plus2, test = 'LRT') 
 
 #exp - prod.gradient
@@ -4665,22 +4649,22 @@ mtable.wcn.slo
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 20.48, p < .0001, AIC = 860.46
+###Base v. Productivity - Sig, Chisq(1) = 20.6, p < .0001, AIC = 847.12
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 41.86, p < .0001, AIC = 839.1
+###Base v. FHC - Sig, Chisq(1) = 41.96, p < .0001, AIC = 825.76
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 15.13 p = .0001, AIC = 865.81
+###Base v. IHC - Sig, Chisq(1) = 15.07 p = .0001, AIC = 865.81
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model3, test = 'LRT')
 ```
 
-###Productivity gradient - Sig, Chisq(1) = 27.24, p < .0001, AIC = 838.46
+###Productivity gradient - Sig, Chisq(1) = 25.37, p < .0001, AIC = 842.35
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model.gain, test = 'LRT')
 ```
@@ -4798,17 +4782,17 @@ mtable.wcn.us
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 14.8, p = .0001, AIC = 1043.2
+###Base v. Productivity - Sig, Chisq(1) = 14.8, p = .0001, AIC = 1042.3
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 44.1, p < .0001, AIC = 1013.9
+###Base v. FHC - Sig, Chisq(1) = 44, p < .0001, AIC = 1013
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 30.403, p < .0001, AIC = 1010.6
+###Base v. IHC - Sig, Chisq(1) = 30.52, p < .0001, AIC = 1026.5
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model3, test = 'LRT')
 ```
@@ -4819,9 +4803,9 @@ anova(wcn.us.within.base, wcn.us.within.model.gain, test = 'LRT')
 ```
 
 ##Ranking of prod predictors - WCN by AIC
-1.  FHC - 1013.9
-2.  IHC - 1027.5
-3.  Productivity - 1043.2
+1.  FHC - 1013
+2.  IHC - 1026.5
+3.  Productivity - 1042.3
 
 ##Large Model comparison
 ```{r}
@@ -5093,12 +5077,12 @@ mtable.ind.eng
 anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 21.56, p < .0001, AIC = 681.18
+###Base v. FHC - Sig, Chisq(1) = 21.1, p < .0001, AIC = 678.7
 ```{r}
 anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 19.68, p < .0001, AIC = 683.06
+###Base v. IHC - Sig, Chisq(1) = 19.49, p < .0001, AIC = 680.30
 ```{r}
 anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model3, test = 'LRT')
 ```
@@ -5201,30 +5185,30 @@ mtable.hindi
 ```
 
 ##Model comparisons
-###Base v. Productivity - sig, Chisq(1) = 4.64, p = .03, AIC = 853.39
+###Base v. Productivity - sig, Chisq(1) = 4.5, p = .03, AIC = 850.45
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - sig, Chisq(1) = 27.76, p < .0001, AIC = 830.27
+###Base v. FHC - sig, Chisq(1) = 27.4, p < .0001, AIC = 827.62
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 33.88, p < .0001, AIC = 824.15
+###Base v. IHC - Sig, Chisq(1) = 33.41, p < .0001, AIC = 821.6
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model3, test = 'LRT')
 ```
 
-###Base v. Prod. gradient - Sig, Chisq(1) = 33.542, p < .0001, AIC = 806.07
+###Base v. Prod. gradient - Sig, Chisq(1) = 10.03, p = .001, AIC = 844.97
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model.gain, test = 'LRT')
 ```
 
 ##Ranking of NN predictors, HIndi, by AIC
-1.  IHC - 824.15
-2.  FHC - 830.27
-3.  Productivity - 853.39
+1.  IHC - 821.6
+2.  FHC - 827.6
+3.  Productivity - 850
 
 
 ##Large Model
@@ -5336,17 +5320,17 @@ mtable.gujarati
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 10.2, p = .002, AIC = 788.92
+###Base v. Productivity - Sig, Chisq(1) = 10.06, p = .002, AIC = 787.41
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 36.43, p < .0001, AIC  762.64
+###Base v. FHC - Sig, Chisq(1) = 36.25, p < .0001, AIC  761.2
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC = Sig, Chisq(1) = 33.46, p < .0001, AIC = 765.61
+###Base v. IHC = Sig, Chisq(1) = 33.45, p < .0001, AIC = 764.02
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model3, test = 'LRT')
 ```
@@ -5357,9 +5341,9 @@ anova(wcn.gujarati.within.base, wcn.gujarati.within.model.gain, test = 'LRT')
 ```
 
 ##Ranking of NN Predictors, Gujarati, by AIC 
-1.  FHC - 762.64
-2.  IHC - 765.61
-3.  Productivity - 788.92
+1.  FHC - 761.2
+2.  IHC - 764.02
+3.  Productivity - 787
 
 ##Large Model
 ```{r}
@@ -5937,12 +5921,37 @@ sf.cross.model3 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_ran
                         control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
 
-##exploratory - prod.gain
+#highest contig.
 sf.cross.model.gain <- glmer(Correct ~ prod.gradient + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
                            (1|SID), 
                        family = "binomial", data = sf.df.cross, 
                         control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
+
+# ###up to 100
+# sf.df.cross.sub.100 <- sf.df.cross %>%
+#   filter(as.numeric(as.character(Task_item)) < 100)
+# 
+# sf.cross.base.sub.100 <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+#                        family = "binomial", data = sf.df.cross.sub.100, 
+#                         control=glmerControl(optimizer="bobyqa",
+#                          optCtrl=list(maxfun=2e4)))
+# #productivity
+# sf.cross.model1.sub.100 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c +age.c + wppsi.c + (1|SID), 
+#                        family = "binomial", data = sf.df.cross.sub.100, 
+#                         control=glmerControl(optimizer="bobyqa",
+#                          optCtrl=list(maxfun=2e4)))
+# #fhc
+# sf.cross.model2sub.100 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+#                        family = "binomial", data = sf.df.cross.sub.100, 
+#                         control=glmerControl(optimizer="bobyqa",
+#                          optCtrl=list(maxfun=2e4)))
+# #highest contig.
+# sf.cross.model3sub.100 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
+#                            (1|SID), 
+#                        family = "binomial", data = sf.df.cross.sub.100, 
+#                         control=glmerControl(optimizer="bobyqa",
+#                          optCtrl=list(maxfun=2e4)))
 
 # ##exploratory - mean.nn
 # sf.cross.model.nn <- glmer(Correct ~ mean.nn + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
@@ -5964,17 +5973,17 @@ mtable.sf.cross
 ```
 
 ##Model Comparisons
-###Base v. productivity - NS, p = .32
+###Base v. productivity - NS, p = .31
 ```{r}
 anova(sf.cross.base, sf.cross.model1, test = 'LRT')
 ```
 
-###Base v. FHC - NS, p = .09
+###Base v. FHC - NS, p = .08
 ```{r}
 anova(sf.cross.base, sf.cross.model2, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 25.502, p < .0001, AIC = 4363.6
+###Base v. Highest contig. - Sig, Chisq(1) = 26.01, p < .0001, AIC = 4361.
 ```{r}
 anova(sf.cross.base, sf.cross.model3, test = 'LRT')
 ```
@@ -6034,7 +6043,7 @@ lang.prod.int.hk.noint <- glmer(Correct ~ highest_contig.c + Language*ihc.c + co
                             (1|SID), family = "binomial", data = sf.df.cross, 
                             control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
-lang.prod.int.hk <- glmer(Correct ~ highest_contig.c*Language + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
+lang.prod.int.hk <- glmer(Correct ~ highest_contig.c*Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
                             (1|SID), family = "binomial", data = sf.df.cross, 
                           control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
@@ -6182,22 +6191,22 @@ mtable.sf.cross.india
 ```
 
 ##Model Comparisons
-###Base v. productivity - NS, p = .87
+###Base v. productivity - NS, p = .85
 ```{r}
 anova(sf.cross.base.india, sf.cross.model1.india, test = 'LRT')
 ```
 
-###Base v. FHC - NS, p = .95
+###Base v. FHC - NS, p = .99
 ```{r}
 anova(sf.cross.base.india, sf.cross.model2.india, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 12.49, p = .0004, AIC = 3948.2
+###Base v. Highest contig. - Sig, Chisq(1) = 13.11, p = .0003, AIC = 3943.9
 ```{r}
 anova(sf.cross.base.india, sf.cross.model3.india, test = 'LRT')
 ```
 
-#Exploratory - Prod. gradient, NS - p = .43
+#Exploratory - Prod. gradient, NS - p = .46
 ```{r}
 anova(sf.cross.base.india, sf.cross.model.gain.india, test = 'LRT')
 # anova(sf.cross.base.india, sf.cross.model.nn.india, test = 'LRT')
@@ -6317,11 +6326,13 @@ sf.india.lang.noint <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count
                          data = tmp, family = "binomial", 
                          control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
-sf.india.lang.int <- glmer(Correct ~ highest_contig.c*Language + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+sf.india.lang.int <- glmer(Correct ~ highest_contig.c*Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
                          data = tmp, family = "binomial", 
                          control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
 anova(sf.india.lang.noint, sf.india.lang.int, test = 'LRT') 
+
+summary(sf.india.lang.int)
 ```
 
 #Cross-linguistic comparison of mean performance on unit task 
@@ -6381,17 +6392,17 @@ mtable.wcn.cross.india
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 10.1, p = .001, AIC = 2555.4
+###Base v. Productivity - Sig, Chisq(1) = 9.9, p = .002, AIC = 2550
 ```{r}
 anova(wcn.cross.base.india, wcn.cross.model1.india, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 22.994, p < .0001, AIC = 2542.5
+###Base v. FHC - Sig, Chisq(1) = 22.71, p < .0001, AIC = 2537.9
 ```{r}
 anova(wcn.cross.base.india, wcn.cross.model2.india, test = 'LRT')
 ```
 
-###Base v. Prod. gradient - Sig, Chisq(1) = 16.23, p < .0001, AIC = 2549.3
+###Base v. Prod. gradient - Sig, Chisq(1) = 16.05, p < .0001, AIC = 2544
 ```{r}
 anova(wcn.cross.base.india, wcn.cross.model.gain, test = 'LRT')
 ```
@@ -6436,7 +6447,7 @@ lang.prod.int.india.noint <- glmer(Correct ~ fhc.c + Language*ihc.c + count_rang
                             (1|SID), family = "binomial", data = wcn.df.cross.india, 
                             control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
-lang.prod.int.india <- glmer(Correct ~ fhc.c*Language + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
+lang.prod.int.india <- glmer(Correct ~ fhc.c*Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
                             (1|SID), family = "binomial", data = wcn.df.cross.india, 
                           control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
@@ -6585,12 +6596,12 @@ mtable.wcn.cross
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 14.82, p = .0001, AIC = 2966.5
+###Base v. Productivity - Sig, Chisq(1) = 14.67, p = .0001, AIC = 2963.8
 ```{r}
 anova(wcn.cross.base, wcn.cross.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 38.04, p < .0001, AIC = 2943.3
+###Base v. FHC - Sig, Chisq(1) = 37.76, p < .0001, AIC = 2940.8
 ```{r}
 anova(wcn.cross.base, wcn.cross.model2, test = 'LRT')
 ```
@@ -6601,8 +6612,8 @@ anova(wcn.cross.base, wcn.cross.model.gain, test = 'LRT')
 ```
 
 ##Ranking of productivity predictors - WCN by AIC
-1.  FHC - 2943.3
-2.  Productivity - 2966.5
+1.  FHC - 2940.8
+2.  Productivity - 2963.8
 
 ##Large model
 ```{r}
@@ -6654,7 +6665,7 @@ anova(wcn.nolang.base, wcn.nolang.model1, test = 'LRT')
 
 #Lang*prod interaction because we found significant effects for FHC in SLO and English, but not Cantonese
 ```{r}
-wcn.prod.int <- glmer(Correct ~ Language*fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+wcn.prod.int <- glmer(Correct ~ fhc.c*Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
                          data = wcn.df.cross, family = "binomial", 
                          control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
@@ -6666,6 +6677,17 @@ anova(wcn.prod.noint, wcn.prod.int, test = 'LRT')
 
 summary(wcn.prod.int)
 
+all.data %>%
+  filter(Task == "NN", 
+         Language == "Cantonese" | 
+           Language == "English (US)" | 
+           Language == "Slovenian")%>%
+  group_by(SID, IHC, FHC, Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))%>%
+  ggplot(aes(x = FHC, y = mean, color = IHC, group = Language)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_grid(~Language)
 ```
 
 ##Visualizations
