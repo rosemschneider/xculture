@@ -1390,7 +1390,7 @@ pmain.slo <- ggplot(slo_initial, aes(x = IHC, y = FHC, color = Productive)) +
   geom_point(size = 1.2) + 
   theme(legend.position = c(.5, 0.2), 
         legend.title = element_blank()) + 
-  scale_color_manual(values = productivity.pal) + 
+  viridis::scale_color_viridis(discrete = TRUE, option = "C") + 
   coord_fixed() + 
   scale_x_continuous(breaks = seq(0, 140, 10)) + 
   scale_y_continuous(breaks = seq(0, 140, 10)) +
@@ -1398,17 +1398,17 @@ pmain.slo <- ggplot(slo_initial, aes(x = IHC, y = FHC, color = Productive)) +
   labs(x = "Initial Highest Count", y = "Final Highest Count", 
        title = "Slovenian")
 
-xdens.slo <- axis_canvas(pmain, axis = "x") + 
+xdens.slo <- axis_canvas(pmain.slo, axis = "x") + 
   geom_ridgeline(data = slo_initial, aes(x = IHC, y = 0, height=..density.., 
                                         fill = Productive), 
                  stat = 'xdensity', alpha = .5, size = .2, trim = FALSE) + 
-  scale_fill_manual(values = productivity.pal)
+  viridis::scale_fill_viridis(discrete = TRUE, option = "C")
 
-ydens.slo <- axis_canvas(pmain, axis = "y") + 
+ydens.slo <- axis_canvas(pmain.slo, axis = "y") + 
   geom_vridgeline(data = slo_initial, aes(y = FHC, x = 0, width=..density.., 
                                         fill = Productive), 
                  stat = 'ydensity', alpha = .5, size = .2, trim = FALSE) + 
-  scale_fill_manual(values = productivity.pal)
+  viridis::scale_fill_viridis(discrete = TRUE, option = "C")
 
 p3 <- insert_xaxis_grob(pmain.slo, xdens.slo, grid::unit(.2, "null"), position = "top")
 p4 <- insert_yaxis_grob(p3, ydens.slo, grid::unit(.2, "null"), position = "right")
@@ -2434,6 +2434,133 @@ all.data %>%
 ---
 
 ##Scatterplots of correlations
+###Overall correlations
+```{r}
+tmp.data <- all.data %>%
+  distinct(SID, Language, Age, FHC, IHC, highest_contig, sum_wppsi)
+
+mean.unit <- all.data %>%
+  filter(Task == "SF")%>%
+  group_by(SID, Age, Task) %>%
+  summarise(mean.unit = mean(Correct, na.rm= TRUE))%>%
+  dplyr::select(SID, mean.unit)
+
+sub.dat <- as.data.frame(right_join(mean.unit, tmp.data, by = "SID"))
+
+mean.nn <- all.data %>%
+  filter(Task == "NN")%>%
+  group_by(SID, Age, Task) %>%
+  summarise(mean.nn = mean(Correct, na.rm= TRUE))%>%
+  dplyr::select(SID, mean.nn)
+
+sub.dat <- as.data.frame(sub.dat <- full_join(mean.nn, sub.dat, by = "SID"))
+
+sub.dat %<>%
+  distinct(SID, Language, Age, IHC, FHC, mean.unit, mean.nn, highest_contig, sum_wppsi)%>%
+  dplyr::select(-SID)%>%
+  mutate(highest_contig = as.numeric(highest_contig))%>%
+  mutate()
+  
+library(corrplot)
+##Write a function to run correlations for all languages 
+
+langs <- as.vector(unique(all.data$Language))
+
+corregram <- function(df) {
+  for (language in langs) {
+    tmp <- df %>%
+      filter(Language == language)%>%
+      dplyr::select(-Language)
+    
+    M<-cor(tmp, use = "complete.obs")
+    head(round(M,2))
+    
+  #   #add p values
+  # cor.mtest <- function(mat, ...) {
+  #   mat <- as.matrix(mat)
+  #   n <- ncol(mat)
+  #   p.mat<- matrix(NA, n, n)
+  #   diag(p.mat) <- 0
+  #   for (i in 1:(n - 1)) {
+  #       for (j in (i + 1):n) {
+  #           tmp <- cor.test(mat[, i], mat[, j], ...)
+  #           p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+  #       }
+  #   }
+  # colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  # p.mat
+  # }
+  # # matrix of the p-value of the correlation
+  # p.mat <- cor.mtest(sub.dat)
+  # head(p.mat[, 1:7])
+    
+  corr.plot <- corrplot(M, type="upper", order="hclust", method = "color",
+         addCoef.col = "white",
+         tl.col="black", tl.srt=45, sig.level = 0.01, 
+         title = as.character(language), 
+         mar=c(0,0,1,0))
+  }
+  corr.plot
+}
+
+corregram(sub.dat)
+
+
+
+
+```
+
+
+###Age and Unit/NN task perfomance
+```{r}
+##HK/US/SLO
+all.data %>%
+  filter(Task == "SF" |
+           Task == "NN", 
+         Language == "English (US)" |
+           Language == "Cantonese" | 
+           Language == "Slovenian") %>%
+  filter(!is.na(Productive))%>%
+  group_by(SID, Task, Age, Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))%>%
+  ggplot(aes(x = Age, y = mean, colour = Language, group = Language)) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  theme_bw(base_size = 12) +
+  scale_color_brewer(palette = "Dark2")+
+  theme(legend.position = "bottom", 
+        legend.title = element_blank())+
+  labs(x = "Age", 
+       y = "Mean Unit Task Performance") + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  facet_grid(~Task)
+
+all.data %>%
+  filter(Task == "SF" |
+           Task == "NN", 
+         Language == "English (US)" |
+           Language == "Hindi" | 
+           Language == "Gujarati" |
+           Language == "English (India)") %>%
+  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))%>%
+  filter(!is.na(Productive))%>%
+  group_by(SID, Task, Age, Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))%>%
+  ggplot(aes(x = Age, y = mean, colour = Language, group = Language)) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  theme_bw(base_size = 12) +
+  scale_color_manual(values = india.pal)+
+  theme(legend.position = "bottom", 
+        legend.title = element_blank())+
+  labs(x = "Age", 
+       y = "Mean Unit Task Performance") + 
+  coord_cartesian(ylim = seq(0,1, .2), expand = TRUE)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  facet_grid(~Task)
+```
+
 ##IHC to NN and Unit task mean performance
 ```{r}
 all.data %>%
