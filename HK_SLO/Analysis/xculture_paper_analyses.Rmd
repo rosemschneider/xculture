@@ -1219,10 +1219,12 @@ cowplot::plot_grid(ggdraw(hk_dens), ggdraw(slo_dens),
 ```{r}
 all.data %>%
   filter(Task == "SF")%>%
+  group_by(SID, Language)%>%
+  summarise(mean_sub = mean(Correct, na.rm = TRUE))%>%
   group_by(Language)%>%
   summarise(n = n(),
-            mean = mean(Correct, na.rm = TRUE), 
-            sd = sd(Correct, na.rm = TRUE), 
+            mean = mean(mean_sub, na.rm = TRUE), 
+            sd = sd(mean_sub, na.rm = TRUE), 
             se = sd/sqrt(n))%>%
   kable()
 ```
@@ -2122,10 +2124,12 @@ t.test(subset(sf.gujarati.mean.ms, Productive == "Resilient")$mean,
 ```{r}
 all.data %>%
   filter(Task == "NN")%>%
+  group_by(SID, Language)%>%
+  summarise(mean_sub = mean(Correct, na.rm = TRUE))%>%
   group_by(Language)%>%
   summarise(n = n(),
-            mean = mean(Correct, na.rm = TRUE), 
-            sd = sd(Correct, na.rm = TRUE), 
+            mean = mean(mean_sub, na.rm = TRUE), 
+            sd = sd(mean_sub, na.rm = TRUE), 
             se = sd/sqrt(n))%>%
   kable()
 ```
@@ -4110,4 +4114,47 @@ gujarati.wcn.100.full <- glmer(Correct ~ above.100 +fhc.c + count_range+ age.c +
                         family = 'binomial', data = wcn.gujarati.within)
 anova(gujarati.wcn.100.base, gujarati.wcn.100.full, test = 'LRT')
 summary(gujarati.wcn.100.full)
+```
+
+##Pull out numbers that could never have been produced in Highest Count
+
+##By-item graph for each lang
+```{r}
+##first SF
+all.data %>%
+  mutate(exclude = ifelse((Language == "English (India)" & Task == "SF"), 1, 0))%>%
+  filter(exclude != 1)%>%
+  filter(Task == "SF" | 
+           Task == "NN")%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)", "Hindi", 
+                                                "Gujarati", "English (India)")))%>%
+  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", 
+                                                  "24", "52","71", 
+                                                  "105", "107", "116", 
+                                                  "224", "252", "271")), 
+         Experiment = ifelse((Language == "Cantonese" | Language == "Slovenian" | Language == "English (US)"), "Experiment 1", "Experiment 2"), 
+         Task = factor(Task, levels = c("SF", "NN"), labels = c("Unit Task", "Next Number")))%>%
+  group_by(SID, Task, Language, Experiment, Task_item)%>%
+  summarise(mean_sub = mean(Correct, na.rm = TRUE))%>%
+  group_by(Language, Task, Experiment, Task_item)%>%
+  summarise(n = n(), 
+            mean = mean(mean_sub), 
+            sd = sd(mean_sub, na.rm = TRUE), 
+            se = sd/sqrt(n)) %>%
+  ggplot(aes(x = Task_item, y = mean, colour = Language, group= Language)) +
+  geom_point(size = 3) + 
+  geom_line() +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
+                width = .1, size = 1) +
+  theme_bw(base_size = 13) + 
+  facet_grid(Experiment~Task) + 
+  scale_color_brewer(palette = "Dark2")+
+  theme(legend.position = "right", 
+        legend.title = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Number queried", y = "Mean Unit Task performance")
+ggsave("unit_nn_item.png")
+
 ```
