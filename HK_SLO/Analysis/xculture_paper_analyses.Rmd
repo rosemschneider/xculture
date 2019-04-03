@@ -582,16 +582,18 @@ error.freq.decade %>%
   ggplot(aes(x = error.base, y = Language)) +
   geom_tile(aes(fill = round(prop, 2))) +
   geom_text(aes(label = as.character(round(prop, 2))), 
-            size = 3) +
+            size = 2.5) +
   coord_equal() +
   scale_fill_gradient2(low = "white", high = "red", "Proportion") + 
-  theme_bw(base_size = 10) + 
+  theme_bw(base_size = 13) + 
   labs(x = "Unit of error") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        legend.position = "bottom", 
+        legend.position = "right", 
         panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
+        panel.grid.minor = element_blank(), 
+        legend.title = element_text(size = 11)) +
   facet_grid(rows = vars(Productive))
+ggsave("errors.png")
 ```
 
 ####Sanity check - does anyone have more than 3 errors within a decade?
@@ -814,7 +816,7 @@ summary(mod.ind.eng, parameters = TRUE)
 #Highest Contiguous Next Number
 ##HCNN by each language
 ```{r}
-india.pal <- c("#E7298A","#66A61E","#E6AB02", "#D95F02")
+india.pal <- c("#E7298A","#66A61E","#E6AB02", "#7570B3")
 
 #how many children have 0s
 all.data %>%
@@ -2161,16 +2163,18 @@ ms.nn <- all.data %>%
 
 nn.full <- full_join(ms.nn, unique.hc.data, by = "SID")
 
+##HK/SLO/US
 nn.full %>%
   filter(Language == "Cantonese" |
            Language == "Slovenian" | 
            Language == "English (US)")%>%
   mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)")))%>%
   ggplot(aes(x = highest_count, y = mean.nn, color = Language, group = Language)) +
-  geom_count(show.legend = FALSE, alpha = .7) +
-  geom_smooth(aes(fill = Language), se = TRUE, size = 1.6, alpha =.2) + 
+  geom_count(show.legend = FALSE, alpha = .85) +
+  geom_smooth(aes(fill = Language), se = TRUE, size = 1.6, alpha =.16) + 
   facet_grid(~IHC_FHC)+
-  langcog::scale_color_solarized() +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2")+
   coord_cartesian(ylim = c(0, 1))+
   theme_bw(base_size = 13) +
   theme(legend.position = "bottom", 
@@ -2180,6 +2184,32 @@ nn.full %>%
         panel.grid.minor = element_blank()) + 
   scale_x_continuous(breaks = seq(0, 140, 20)) + 
   labs(x = "Highest Count", y = "Mean Next Number performance")
+ggsave("nn_by_hc_hkSloUS.png")
+
+india.pal <- c("#E7298A","#66A61E","#E6AB02", "#D95F02")
+
+nn.full %>%
+  filter(Language == "Hindi" |
+           Language == "Gujarati" | 
+           Language == "English (US)" |
+           Language == "English (India)")%>%
+  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati", "English (India)", "English (US)")))%>%
+  ggplot(aes(x = highest_count, y = mean.nn, color = Language, group = Language)) +
+  geom_count(show.legend = FALSE, alpha = .85) +
+  geom_smooth(aes(fill = Language), se = TRUE, size = 1.6, alpha =.16) + 
+  facet_grid(~IHC_FHC)+
+  scale_color_manual(values = india.pal) +
+  scale_fill_manual(values = india.pal)+
+  coord_cartesian(ylim = c(0, 1))+
+  theme_bw(base_size = 13) +
+  theme(legend.position = "bottom", 
+        legend.direction = 'horizontal',
+        legend.title = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  scale_x_continuous(breaks = seq(0, 140, 20)) + 
+  labs(x = "Highest Count", y = "Mean Next Number performance")
+ggsave("nn_by_hc_india.png")
 ```
 
 ##Analysis: Productivity Range, NN
@@ -4116,7 +4146,6 @@ anova(gujarati.wcn.100.base, gujarati.wcn.100.full, test = 'LRT')
 summary(gujarati.wcn.100.full)
 ```
 
-##Pull out numbers that could never have been produced in Highest Count
 
 ##By-item graph for each lang
 ```{r}
@@ -4141,11 +4170,11 @@ all.data %>%
             mean = mean(mean_sub), 
             sd = sd(mean_sub, na.rm = TRUE), 
             se = sd/sqrt(n)) %>%
-  ggplot(aes(x = Task_item, y = mean, colour = Language, group= Language)) +
+  ggplot(aes(x = Task_item, y = mean, colour = Language, group= Language, shape = Language)) +
   geom_point(size = 3) + 
   geom_line() +
   geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
-                width = .1, size = 1) +
+                width = .1, size = .8) +
   theme_bw(base_size = 13) + 
   facet_grid(Experiment~Task) + 
   scale_color_brewer(palette = "Dark2")+
@@ -4155,6 +4184,27 @@ all.data %>%
         panel.grid.minor = element_blank(), 
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x = "Number queried", y = "Mean Unit Task performance")
-ggsave("unit_nn_item.png")
+ggsave("unit_nn_item.png", width = 9, height = 5.3)
 
+```
+
+##IHC cluster visualization 
+```{r}
+initial_final %>%
+  mutate(Experiment = ifelse((Language == "Hindi" | Language == "Gujarati" | Language == "English (India)"), "Experiment 2", "Experiment 1"))%>%
+  dplyr::select(IHC, Experiment, Language)%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)", "Hindi", "Gujarati", "English (India)")))%>%
+  ggplot(aes(x = IHC, colour= Language)) + geom_density(adjust = .5, size = 1.5) +
+  scale_x_continuous(breaks = seq(0, 140, 10)) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "right",
+        panel.grid.minor = element_blank()) +
+  scale_colour_brewer(palette = "Dark2") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "bottom") +
+  labs(x = "Initial Highest Count", y = "Density") + 
+  facet_grid(~Experiment)
+ggsave("ihc_density_language.png", height = 5)
 ```
