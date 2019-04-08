@@ -415,6 +415,66 @@ ggplot(aes(x = Age, fill = Language)) +
 #Highest Count descriptives
 Productivity, prompts, errors
 
+##What is the correlation between IHC and FHC in each language? 
+```{r}
+##make df
+distinct_counts <- all.data %>%
+  distinct(SID, Language, Productive, IHC, FHC)
+
+#how many children were able to count at least a little beyond their IHC
+tmp <- distinct_counts %>%
+  mutate(delta = FHC-IHC, 
+         delta.gain = ifelse(delta == 0, "no gain", "gain"))%>%
+  group_by(delta.gain)%>%
+  summarise(n = n())
+
+##what do the children with 0 gain look like?
+tmp <- distinct_counts %>%
+  mutate(delta = FHC-IHC, 
+         delta.gain = ifelse(delta == 0, "no gain", "gain"))%>%
+  group_by(Language, delta.gain)%>%
+  summarise(mean_IHC = mean(IHC), 
+            mean_FHC = mean(FHC))
+
+##HK
+cor.test(subset(distinct_counts, Language == "Cantonese")$IHC, 
+         subset(distinct_counts, Language == "Cantonese")$FHC)
+
+cor.test(subset(distinct_counts, Language == "Slovenian")$IHC, 
+         subset(distinct_counts, Language == "Slovenian")$FHC)
+
+cor.test(subset(distinct_counts, Language == "English (US)")$IHC, 
+         subset(distinct_counts, Language == "English (US)")$FHC)
+
+cor.test(subset(distinct_counts, Language == "English (India)")$IHC, 
+         subset(distinct_counts, Language == "English (India)")$FHC)
+
+cor.test(subset(distinct_counts, Language == "Hindi")$IHC, 
+         subset(distinct_counts, Language == "Hindi")$FHC)
+
+cor.test(subset(distinct_counts, Language == "Gujarati")$IHC, 
+         subset(distinct_counts, Language == "Gujarati")$FHC)
+
+##what about by productivity
+cor.test(subset(distinct_counts, Language == "Cantonese" & Productive == "Resilient")$IHC, 
+         subset(distinct_counts, Language == "Cantonese" & Productive == "Resilient")$FHC)
+
+cor.test(subset(distinct_counts, Language == "Slovenian" & Productive == "Resilient")$IHC, 
+         subset(distinct_counts, Language == "Slovenian" & Productive == "Resilient")$FHC)
+
+cor.test(subset(distinct_counts, Language == "English (US)" & Productive == "Resilient")$IHC, 
+         subset(distinct_counts, Language == "English (US)" & Productive == "Resilient")$FHC)
+
+cor.test(subset(distinct_counts, Language == "English (India)" & Productive == "Resilient")$IHC, 
+         subset(distinct_counts, Language == "English (India)" & Productive == "Resilient")$FHC)
+
+cor.test(subset(distinct_counts, Language == "Hindi" & Productive == "Resilient")$IHC, 
+         subset(distinct_counts, Language == "Hindi" & Productive == "Resilient")$FHC)
+
+cor.test(subset(distinct_counts, Language == "Gujarati" & Productive == "Resilient")$IHC, 
+         subset(distinct_counts, Language == "Gujarati" & Productive == "Resilient")$FHC)
+```
+
 ##Productivity descriptives by language
 
 ###IHC, FHC by language, productivity
@@ -426,6 +486,26 @@ all.data %>%
   mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
   distinct(SID, Age, Productive, Language, IHC, FHC)%>%
   group_by(Language, Productive)%>%
+  summarise(n = n(),
+            mean_IHC = round(mean(IHC)), 
+            sd_IHC = round(sd(IHC), 2), 
+            median_IHC = round(median(IHC)), 
+            mean_FHC = round(mean(FHC)), 
+            sd_FHC = round(sd(FHC), 2), 
+            median_FHC = round(median(FHC)))%>%
+  kable()
+
+```
+
+###IHC, FHC by language
+```{r}
+productivity.pal <- c("#666666","#00b8e6")
+#IHC, FHC by language, productiviity
+all.data %>%
+  filter(!is.na(Language))%>%
+  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
+  distinct(SID, Age, Language, IHC, FHC)%>%
+  group_by(Language)%>%
   summarise(n = n(),
             mean_IHC = round(mean(IHC)), 
             sd_IHC = round(sd(IHC), 2), 
@@ -449,19 +529,6 @@ all.data %>%
             sd_prod.gradient = sd(prod.gradient), 
             mean_delta.hc = mean(delta.hc), 
             sd_delta.hc = sd(delta.hc))%>%
-  kable()
-```
-
-###Mean IHC/FHC overall by language
-```{r}
-#overall mean ihc/fhc by language
-all.data %>%
-  distinct(SID, Age, Language, IHC, FHC)%>%
-  group_by(Language)%>%
-  summarise(mean_IHC = mean(IHC), 
-           sd_IHC = sd(IHC), 
-           mean_FHC = mean(FHC), 
-           sd_FHC = sd(FHC))%>%
   kable()
 ```
 
@@ -634,7 +701,7 @@ hc.df %>%
             mode = getmode(n))
 ```
 
-###How many errors on average by language?
+###How many errors on average by language, productivity?
 ```{r}
 error.freq %>%
   mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
@@ -642,6 +709,17 @@ error.freq %>%
   group_by(SID, Language, Productive)%>%
   summarise(n = n())%>%
   group_by(Language, Productive)%>%
+  summarise(mean_prompts = round(mean(n, na.rm = TRUE), 2),
+            sd_prompts = round(sd(n, na.rm = TRUE), 2))%>%
+  kable()
+```
+###Errors by language
+```{r}
+error.freq %>%
+  filter(Last_successful != 140)%>% #filter out kids who got to 140
+  group_by(SID, Language)%>%
+  summarise(n = n())%>%
+  group_by(Language)%>%
   summarise(mean_prompts = round(mean(n, na.rm = TRUE), 2),
             sd_prompts = round(sd(n, na.rm = TRUE), 2))%>%
   kable()
