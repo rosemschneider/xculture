@@ -217,7 +217,7 @@ all.data %<>%
 # unique.hc <- hc.df %>%
 #   distinct(SID)
 # 
-# tmp <- unique.sid %>%
+# tmp <- unique.sid %>% 
 #   filter(SID %!in% unique.hc$SID)
 # 
 # l <- unique.sid %>%
@@ -238,18 +238,19 @@ hc.check <- all.data %>%
 
 if(length(hc.check$SID) != 0) {
   print("WARNING: CHECK PRODUCTIVITY")
-}
+}#no errors! We're okay!
 ```
 
 ##Highest Contiguous NN
 Highest Contiguous NN is a measure of productivity. This is the highest number for which a child was correct on the Next Number task, provided that all the previous numbers had also been correct.
 ```{r}
-#get unique ids
+#first, get unique ids
 unique.nn <- all.data %>%
   filter(Task == "NN")%>%
   droplevels() %>%
   distinct(SID)
 
+#push unique SIDs and next number items into vectors for function below
 unique.nn <- as.vector(unique.nn$SID)
 nextnums <- as.vector(c(5, 7, 16, 24, 52, 71, 105, 107, 116, 224, 252, 271))
 
@@ -263,28 +264,28 @@ get_contiguous <- function(){
              Correct == 0)%>%
       mutate(Task_item = as.integer(as.character(Task_item)))%>%
       mutate(Task_item = sort(as.integer(as.character(Task_item))))
-    if (length(tmp$SID) == 0) {
+    if (length(tmp$SID) == 0) { #if no incorrect trials, hcnn = 271
       highest_contig = 271
       sub_contig <- data.frame(sub, highest_contig)
        sub_contig %<>%
         mutate(sub = as.character(sub),
                 highest_contig = as.character(highest_contig))
       contig <- bind_rows(contig, sub_contig)
-    } else if (sub %in% failed.nn.sids) {
+    } else if (sub %in% failed.nn.sids) { #if they failed first item (1), then hcnn = 0
       highest_contig = 0
       sub_contig <- data.frame(sub, highest_contig)
       sub_contig %<>%
         mutate(sub = as.character(sub),
                 highest_contig = as.character(highest_contig))
       contig <- bind_rows(contig, sub_contig)
-    } else if (length(tmp$Task_item) > 0 & min(as.integer(as.character(tmp$Task_item))) == 5) {
+    } else if (length(tmp$Task_item) > 0 & min(as.integer(as.character(tmp$Task_item))) == 5) { #if they got more than one trial incorrect, and min of incorrect trials = 5, then hcnn = 1
       highest_contig = 1
       sub_contig <- data.frame(sub, highest_contig)
        sub_contig %<>%
         mutate(sub = as.character(sub),
                 highest_contig = as.character(highest_contig))
       contig <- bind_rows(contig, sub_contig)
-    } else {
+    } else { #otherwise, get the min nn
       min.nn <- min(as.integer(as.character(tmp$Task_item)))
       prev_correct <- nextnums[nextnums < min.nn]
       highest_contig <- as.character(max(prev_correct))
@@ -321,8 +322,8 @@ all.data %<>%
 #   kable()
 
 #Check - does anyone have NA for HCNN? Yes, these are kids who were excluded from NN
-all.data %>%
-  filter(is.na(highest_contig))
+# all.data %>%
+#   filter(is.na(highest_contig))
 ```
 
 ##Within/outside count range
@@ -355,10 +356,9 @@ all.data %<>%
 ---
 
 #Demographics
-```{r, warning = FALSE}
-all.data %<>%
-  filter(!is.na(Language))
 
+##By age group, language
+```{r, warning = FALSE}
 #demos by age group, Language
 all.data %>%
   distinct(SID, Language, Agegroup, Age)%>%
@@ -370,36 +370,10 @@ all.data %>%
   mutate(total.n = sum(n), 
          prop = n/total.n)%>%
   kable()
+```
 
-#demos by Language
-all.data %>%
-  distinct(SID, Language, Age)%>%
-  group_by(Language)%>%
-  summarise(n = n(),
-            Mean_age = round(mean(Age, na.rm = TRUE), 2), 
-            SD_age = round(sd(Age, na.rm = TRUE), 2), 
-            med_age = round(median(Age, na.rm = TRUE), 2))%>%
-  kable()
-
-#sex
-all.data %>%
-  distinct(SID, Age, Language, Sex)%>%
-  group_by(Language, Sex)%>%
-  summarise(n = n(), 
-            mean_age = round(mean(Age),2), 
-            sd_age = round(sd(Age),2))%>%
-  group_by(Language)%>%
-  mutate(total.n = sum(n))%>%
-  kable()
-
-#KL by language
-all.data %>%
-  distinct(SID, Language, Age, Productive, Knower.level)%>%
-  group_by(Language, Knower.level)%>%
-  summarise(n = n())%>%
-  kable()
-  
-#histogram of age
+##Histogram of age
+```{r}
 all.data %>%
   distinct(SID, Language, Age)%>%
 ggplot(aes(x = Age, fill = Language)) +
@@ -413,9 +387,43 @@ ggplot(aes(x = Age, fill = Language)) +
   labs(y = "Count", title = "Number of children in age bin by language")
 ```
 
+##By Language
+```{r}
+all.data %>%
+  distinct(SID, Language, Age)%>%
+  group_by(Language)%>%
+  summarise(n = n(),
+            Mean_age = round(mean(Age, na.rm = TRUE), 2), 
+            SD_age = round(sd(Age, na.rm = TRUE), 2), 
+            med_age = round(median(Age, na.rm = TRUE), 2))%>%
+  kable()
+```
 
+##By sex, language
+```{r}
+all.data %>%
+  distinct(SID, Age, Language, Sex)%>%
+  group_by(Language, Sex)%>%
+  summarise(n = n(), 
+            mean_age = round(mean(Age),2), 
+            sd_age = round(sd(Age),2))%>%
+  group_by(Language)%>%
+  mutate(total.n = sum(n))%>%
+  kable()
+```
+
+##KL by language
+```{r}
+all.data %>%
+  distinct(SID, Language, Age, Productive, Knower.level)%>%
+  group_by(Language, Knower.level)%>%
+  summarise(n = n())%>%
+  kable()
+```
+  
 ---
-#Highest Count descriptives
+
+#Highest Count
 Productivity, prompts, errors
 
 ##What is the correlation between IHC and FHC in each language? 
@@ -432,50 +440,39 @@ tmp <- distinct_counts %>%
   summarise(n = n())
 
 ##what do the children with 0 gain look like?
-tmp <- distinct_counts %>%
+distinct_counts %>%
   mutate(delta = FHC-IHC, 
          delta.gain = ifelse(delta == 0, "no gain", "gain"))%>%
   group_by(Language, delta.gain)%>%
   summarise(mean_IHC = mean(IHC), 
-            mean_FHC = mean(FHC))
+            mean_FHC = mean(FHC))%>%
+  kable()
+
+##Correlation between FHC and IHC in all languages
 
 ##HK
 cor.test(subset(distinct_counts, Language == "Cantonese")$IHC, 
          subset(distinct_counts, Language == "Cantonese")$FHC)
 
+##Slovenian
 cor.test(subset(distinct_counts, Language == "Slovenian")$IHC, 
          subset(distinct_counts, Language == "Slovenian")$FHC)
 
+##US English
 cor.test(subset(distinct_counts, Language == "English (US)")$IHC, 
          subset(distinct_counts, Language == "English (US)")$FHC)
 
+##Indian English
 cor.test(subset(distinct_counts, Language == "English (India)")$IHC, 
          subset(distinct_counts, Language == "English (India)")$FHC)
 
+##Hindi
 cor.test(subset(distinct_counts, Language == "Hindi")$IHC, 
          subset(distinct_counts, Language == "Hindi")$FHC)
 
+##Gujarati
 cor.test(subset(distinct_counts, Language == "Gujarati")$IHC, 
          subset(distinct_counts, Language == "Gujarati")$FHC)
-
-##what about by productivity
-cor.test(subset(distinct_counts, Language == "Cantonese" & Productive == "Resilient")$IHC, 
-         subset(distinct_counts, Language == "Cantonese" & Productive == "Resilient")$FHC)
-
-cor.test(subset(distinct_counts, Language == "Slovenian" & Productive == "Resilient")$IHC, 
-         subset(distinct_counts, Language == "Slovenian" & Productive == "Resilient")$FHC)
-
-cor.test(subset(distinct_counts, Language == "English (US)" & Productive == "Resilient")$IHC, 
-         subset(distinct_counts, Language == "English (US)" & Productive == "Resilient")$FHC)
-
-cor.test(subset(distinct_counts, Language == "English (India)" & Productive == "Resilient")$IHC, 
-         subset(distinct_counts, Language == "English (India)" & Productive == "Resilient")$FHC)
-
-cor.test(subset(distinct_counts, Language == "Hindi" & Productive == "Resilient")$IHC, 
-         subset(distinct_counts, Language == "Hindi" & Productive == "Resilient")$FHC)
-
-cor.test(subset(distinct_counts, Language == "Gujarati" & Productive == "Resilient")$IHC, 
-         subset(distinct_counts, Language == "Gujarati" & Productive == "Resilient")$FHC)
 ```
 
 ##Productivity descriptives by language
