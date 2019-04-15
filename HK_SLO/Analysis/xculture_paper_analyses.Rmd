@@ -477,26 +477,6 @@ cor.test(subset(distinct_counts, Language == "Gujarati")$IHC,
 
 ##Productivity descriptives by language
 
-###IHC, FHC by language, productivity
-```{r}
-productivity.pal <- c("#666666","#00b8e6")
-#IHC, FHC by language, productiviity
-all.data %>%
-  filter(!is.na(Language))%>%
-  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
-  distinct(SID, Age, Productive, Language, IHC, FHC)%>%
-  group_by(Language, Productive)%>%
-  summarise(n = n(),
-            mean_IHC = round(mean(IHC)), 
-            sd_IHC = round(sd(IHC), 2), 
-            median_IHC = round(median(IHC)), 
-            mean_FHC = round(mean(FHC)), 
-            sd_FHC = round(sd(FHC), 2), 
-            median_FHC = round(median(FHC)))%>%
-  kable()
-
-```
-
 ###IHC, FHC by language
 ```{r}
 productivity.pal <- c("#666666","#00b8e6")
@@ -517,7 +497,27 @@ all.data %>%
 
 ```
 
-###Productivity gradient
+
+###IHC, FHC by language and productivity
+```{r}
+#IHC, FHC by language, productiviity
+all.data %>%
+  filter(!is.na(Language))%>%
+  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
+  distinct(SID, Age, Productive, Language, IHC, FHC)%>%
+  group_by(Language, Productive)%>%
+  summarise(n = n(),
+            mean_IHC = round(mean(IHC)), 
+            sd_IHC = round(sd(IHC), 2), 
+            median_IHC = round(median(IHC)), 
+            mean_FHC = round(mean(FHC)), 
+            sd_FHC = round(sd(FHC), 2), 
+            median_FHC = round(median(FHC)))%>%
+  kable()
+```
+
+
+###Productivity gradient by Language, productivity
 ```{r}
 #what about productivity gradient?
 all.data %>%
@@ -534,6 +534,7 @@ all.data %>%
 
 ##Errors in HC
 ###Prompts by productivity and language
+How many prompts do productive and nonproductive counters need? And what kind of errors do they make?
 ```{r}
 #how many prompts do productive and nonproductive counters need? and what kind of errors do they make?
 #bind productive and hc.df 
@@ -544,6 +545,7 @@ productive %<>%
 productive %<>%
   mutate(Productive = ifelse(Productive == "Productive", "Resilient", "Non-Resilient"))
 
+#Make a df just for errors
 error.freq <- full_join(hc.df, productive, by = "SID")%>%
   filter(!is.na(Last_successful))%>%
   mutate(Error_type = ifelse((Language == "Cantonese" | 
@@ -552,37 +554,46 @@ error.freq <- full_join(hc.df, productive, by = "SID")%>%
                                 Language == "English (US)") & Last_successful %% 10 == 9 , "Decade end", 
                              ifelse(Last_successful %% 10 == 0, "Decade beginning",
                                     ifelse(Last_successful %% 10 == 8 & (Language == "Hindi" | Language == "Gujarati"), "Hindi/Gujarati pre-decade transition", "Mid-decade"))))
+```
 
-#mean number of prompts by Language, productivity
-mean_prompts.type <- error.freq %>%
+####Mean number of prompts by Language, productivity
+```{r}
+error.freq %>%
   mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
   group_by(Language, Error_type, Productive)%>%
   summarise(n = n())%>%
   group_by(Language, Productive)%>%
   mutate(total.n = sum(n), 
-            prop = n/total.n)
+            prop = n/total.n)%>%
+  kable()
+```
 
-#all productive errors grouped together
-mean_prompts.type.prod <- error.freq %>%
+####Just productive errors 
+```{r}
+error.freq %>%
   group_by(Language, Error_type, Productive)%>%
   filter(Productive == "Resilient")%>%
   summarise(n = n())%>%
   group_by(Language, Productive)%>%
   mutate(total.n = sum(n), 
-            prop = n/total.n)
+            prop = n/total.n)%>%
+  kable()
+```
 
-#all nonproductive errors grouped together
-mean_prompts.type.nonprod <- error.freq %>%
+####Just nonproductive errors
+```{r}
+error.freq %>%
   group_by(Language, Error_type, Productive)%>%
   filter(Productive == "Non-Resilient")%>%
   summarise(n = n())%>%
   group_by(Language, Productive)%>%
   mutate(total.n = sum(n), 
-            prop = n/total.n)
-
+            prop = n/total.n)%>%
+  kable()
 ```
 
 ###Where are errors happening?
+Visualization of units
 ```{r}
 error.freq.decade <- error.freq %>%
   filter(Last_successful != 140)%>%
@@ -605,7 +616,7 @@ error.freq.decade <- error.freq %>%
 
 ##Error by decade
 ##all
-all.error <- error.freq.decade %>%
+error.freq.decade %>%
   mutate(Language = factor(Language, levels = c("Hindi", "Gujarati","English (India)", "English (US)", "Slovenian", "Cantonese")), 
          Productive = factor(Productive, levels = c("Resilient", "Non-Resilient"))) %>%
   mutate(error.decade = factor(error.decade, levels = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 
@@ -673,27 +684,26 @@ check <- error.freq.decade %>%
 #4 participants, but these are language switches did not receive a prompt
 ```
 
-###How many participants used all 14 prompts?
+####How many participants used all 14 prompts?
 ```{r}
+#how many participants used at least 10 prompts?
 hc.df %>%
   group_by(SID, Language)%>%
-  filter(Last_successful != 140)%>%
+  filter(Last_successful != 140)%>% #filter out 140 because it's the last number reached, not a prompt
   summarise(n = n())%>%
   filter(n >= 10)%>%
   kable()
-
+ 
+#get mode function
 getmode <- function(v) {
    uniqv <- unique(v)
    uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
-#HK/SLO/US
+#mean, median, and mode of prompts
 hc.df %>%
   group_by(SID, Language)%>%
-  filter(Last_successful != 140, 
-         Language == "Cantonese" | 
-           Language == "Slovenian" | 
-           Language == "English (US)")%>%
+  filter(Last_successful != 140)%>%
   summarise(n = n())%>%
   group_by()%>%
   summarise(mean = mean(n), 
@@ -701,7 +711,7 @@ hc.df %>%
             mode = getmode(n))
 ```
 
-###How many errors on average by language, productivity?
+###How many prompts on average by language, productivity?
 ```{r}
 error.freq %>%
   mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
@@ -713,7 +723,7 @@ error.freq %>%
             sd_prompts = round(sd(n, na.rm = TRUE), 2))%>%
   kable()
 ```
-###Errors by language
+###Prompts by language
 ```{r}
 error.freq %>%
   filter(Last_successful != 140)%>% #filter out kids who got to 140
@@ -730,7 +740,7 @@ First, set up GMM
 ```{r}
 library(mclust)
 
-#make a function to identify cluster membership
+#make a function to identify cluster membership for Initial Highest Count
 prod.clust <- function(df) {
   languages <- c("English (US)", "English (India)", "Hindi", "Gujarati", "Slovenian", "Cantonese")
   
@@ -794,9 +804,10 @@ all.data %>%
   kable()
 ```
 
+##Initial Highest Count
 ###Analysis: Do IHCs differ by language? - Gaussian Mixture Modeling
-###Set up df for these
 ```{r}
+#make a df for IHC
 initial_final <- all.data %>%
   filter(!is.na(Productive))%>%
   distinct(SID, Language, IHC, FHC, Productive, Dataset, prod.gradient, delta.hc)%>%
