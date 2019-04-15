@@ -59,11 +59,9 @@ cp.df <- all.data %>%
   dplyr::select(-sum_correct)
 
 all.data <- full_join(all.data, cp.df, by = "SID")
-
-#manual update, one participant only made it through one trial of 
 ```
 
-##WPPSI score
+##WPPSI scorei
 WPPSI score is just the total correct items by participant, excluding feedback/training trials
 ```{r}
  #get sum per SID, add to sf and wcn for CROSS-LINGUISTIC models
@@ -88,6 +86,7 @@ all.data <- full_join(all.data, wppsi.sid, by = "SID")
 ##Productivity
 Children are classified as productive if they are able to count at least 2 decades higher than an error without making more than 3 errors along the way, OR if they are able to count to 140 without making an error.
 ```{r}
+##make a data frame for running prod. function on
 hc.df %<>%
   mutate(Last_successful = ifelse(Last_successful == "Is quiet", "IDK", Last_successful))%>%
   filter(Exclude != 1)%>%
@@ -96,8 +95,9 @@ hc.df %<>%
          SID != "CH-MV-14", 
          SID != 'GV-21-SB', 
          SID != 'RT09', 
-         SID != 'SK-M-4-GJ')#excluding these kids because they break my productivity code
+         SID != 'SK-M-4-GJ')#excluding these kids because they break productivity function; these are kids who have language-specific errors
 
+#simplify above df
 hc <- hc.df %>% 
   dplyr::select(SID, Last_successful, IHC, FHC, Language) %>%
   mutate_at(c('Last_successful','IHC','FHC'),
@@ -105,12 +105,11 @@ hc <- hc.df %>%
   mutate(Last_successful = ifelse(is.na(Last_successful), 140, Last_successful))%>%
   mutate(SID = as.character(SID))
 
-# 
 # function for determining productivity
 is.productive = function(subject){
   # takes as input the data for a single subject
   # RULES:
-  # - counts to 120 unaided = productive
+  # - counts to 140 unaided = productive
   # - after making first error, counts >= 20 higher, with no more than 3 errors on way
   if(subject$IHC[1] >= 140){
     # if they get to 140 on first try, = productive
@@ -152,9 +151,10 @@ is.productive = function(subject){
   }
 }
 # 
-#make function to run for all participants
+#get unique SIDs
 unique_SIDs <- as.vector(unique(hc.df$SID))
-# 
+
+#now run productivity function on the above unique SIDs
 class_prod <- function(vector) {
   temp_data <- data.frame()
   for (i in vector) {
@@ -182,9 +182,11 @@ productive <- class_prod(unique_SIDs)
 #RT09, IHC = 20, FHC = 43, Nonproductive
 #SK-M-4-GJ, IHC = 20, FHC = 44, Nonproductive
 
+#remove last successful so we can add this to all.data
 hc %<>%
   dplyr::select(-Last_successful)
 
+#join hc data with productivity data
 productive <- full_join(productive, hc, by = "SID")%>%
   distinct(SID, IHC, FHC, productive)%>%
   dplyr::rename(Productive = productive)
@@ -197,6 +199,7 @@ productive <- rbind(productive, c("GV-21-SB", 'Nonproductive', 20, 40))
 productive <- rbind(productive, c('RT09', 'Nonproductive', 20, 43))
 productive <- rbind(productive, c('SK-M-4-GJ', 'Nonproductive', 20, 44))
 
+#Finally! Merge back with all.data
 all.data <- full_join(all.data, productive, by = "SID")%>%
   dplyr::mutate(IHC = as.integer(IHC), 
          FHC = as.integer(FHC))%>%
