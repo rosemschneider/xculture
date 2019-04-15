@@ -30,7 +30,7 @@ slo.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_S
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_1_double, 
                 -Mem_check_2_single, -Mem_check_2_double, - X, - X.1, 
-                -Notes_single_coding, -Notes_double, -DOB, -DOT)%>% #remove single & double coding, keep final
+                -Notes_single_coding, -Notes_double)%>% #remove single & double coding, keep final
   dplyr::rename(Response = Response_final, 
                 Mem_check_1 = Mem_check_1_final, 
                 Mem_check_2 = Mem_check_2_final, 
