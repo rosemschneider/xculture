@@ -61,7 +61,7 @@ cp.df <- all.data %>%
 all.data <- full_join(all.data, cp.df, by = "SID")
 ```
 
-##WPPSI scorei
+##WPPSI score
 WPPSI score is just the total correct items by participant, excluding feedback/training trials
 ```{r}
  #get sum per SID, add to sf and wcn for CROSS-LINGUISTIC models
@@ -129,7 +129,7 @@ is.productive = function(subject){
       for(i in 1:nrow(subject)){ # start at row 2
         # check if they ever made it >= 20 counts & <= 3 errors after an error
         runLength = 0 # they just made an error, so no post-error successes yet
-        numErrors = 0 # first row was an error if it's not finalCount == 120
+        numErrors = 0 # first row was an error if it's not finalCount == 140
         prev = subject$Last_successful[i]
         for (j in i+1:nrow(subject)){ # from current row until end...
           numErrors = numErrors + 1 # new row means new error
@@ -226,6 +226,24 @@ all.data %<>%
 # 
 # tmp <- unique.hc %>%
 #   filter(SID %in% unique.sid$SID)
+
+tmp <- productive %>%
+  dplyr::select(SID, Productive)
+
+tmp1 <- right_join(tmp, hc.df, by = "SID")
+
+ tmp1 %>%
+  group_by(SID, Language, IHC, FHC, Productive)%>%
+  summarise(n = n())%>%
+  filter(IHC != 140)%>%
+  ggplot(aes(x = n, fill = Productive)) + 
+  geom_histogram() + 
+  facet_wrap(~Language, ncol = 2) + 
+  theme(legend.position = "bottom")
+  
+
+
+
 ```
 
 ###Sanity check for Productivity
@@ -434,10 +452,26 @@ distinct_counts <- all.data %>%
 
 #how many children were able to count at least a little beyond their IHC
 tmp <- distinct_counts %>%
+  filter(IHC != 140)%>% #filter out kids who reached 140
+  mutate(Exp = ifelse((Language == "Cantonese" | Language == "English (US)" | 
+                         Language == "Slovenian"), 1, 2))%>%
   mutate(delta = FHC-IHC, 
          delta.gain = ifelse(delta == 0, "no gain", "gain"))%>%
-  group_by(delta.gain)%>%
-  summarise(n = n())
+  group_by(Exp, Language, delta.gain)%>%
+  summarise(n = n())%>%
+  group_by(Exp)%>%
+  mutate(total.n = sum(n))
+
+tmp <- distinct_counts %>%
+  filter(IHC != 140)%>% #filter out kids who reached 140
+  mutate(Exp = ifelse((Language == "Cantonese" | Language == "English (US)" | 
+                         Language == "Slovenian"), 1, 2))%>%
+  mutate(delta = FHC-IHC, 
+         delta.gain = ifelse(delta == 0, "no gain", "gain"))%>%
+  group_by(Exp, Language, delta.gain)%>%
+  summarise(n = n())%>%
+  group_by(Exp)%>%
+  mutate(total.n = sum(n))
 
 ##what do the children with 0 gain look like?
 distinct_counts %>%
@@ -691,7 +725,9 @@ hc.df %>%
   group_by(SID, Language)%>%
   filter(Last_successful != 140)%>% #filter out 140 because it's the last number reached, not a prompt
   summarise(n = n())%>%
-  filter(n >= 10)%>%
+  filter(n >= 5)%>%
+  group_by()%>%
+  mutate(total.n = length(unique(SID)))%>%
   kable()
  
 #get mode function
@@ -815,6 +851,8 @@ initial_final <- all.data %>%
          FHC = as.numeric(FHC))
 ```
 
+Now fit GMM on IHC for every language
+
 ###Cantonese
 ```{r}
 #Cantonese
@@ -899,9 +937,8 @@ summary(mod.ind.eng, parameters = TRUE)
 
 ```
 
-
-
 ---
+
 #Highest Contiguous Next Number
 ##HCNN by each language
 ```{r}
@@ -1018,7 +1055,8 @@ pmain.hk <- ggplot(hk_initial, aes(x = IHC, y = FHC, color = Productive, shape =
         legend.title = element_blank(), 
         axis.text = element_text(size = 7)) + 
   labs(x = "Initial Highest Count", y = "Final Highest Count", 
-       title = "Cantonese")
+       title = "Cantonese") + 
+  xlab('')
 
 xdens.hk <- axis_canvas(pmain.hk, axis = "x") + 
   # geom_ridgeline(data = us_initial, aes(x = IHC, y = 0, height=..density.., 
@@ -1068,7 +1106,8 @@ pmain.slo <- ggplot(slo_initial, aes(x = IHC, y = FHC, color = Productive, shape
         legend.title = element_text(size = 6), 
          axis.text = element_text(size = 7)) + 
   labs(x = "Initial Highest Count", y = "Final Highest Count", 
-       title = "Slovenian")
+       title = "Slovenian") + 
+  ylab('')
 
 xdens.slo <- axis_canvas(pmain.slo, axis = "x") + 
   # geom_ridgeline(data = us_initial, aes(x = IHC, y = 0, height=..density.., 
@@ -1118,7 +1157,9 @@ pmain.us <- ggplot(us_initial, aes(x = IHC, y = FHC, color = Productive, shape =
         legend.title = element_text(size = 6), 
          axis.text = element_text(size = 7)) +
   labs(x = "Initial Highest Count", y = "Final Highest Count", 
-       title = "English (US)")
+       title = "English (US)") + 
+  ylab('') + 
+  xlab('')
 
 xdens.us <- axis_canvas(pmain.us, axis = "x") + 
   # geom_ridgeline(data = us_initial, aes(x = IHC, y = 0, height=..density.., 
@@ -1145,6 +1186,14 @@ us_dens <- insert_yaxis_grob(p5, ydens.us, grid::unit(.2, "null"), position = "r
 # dev.off()
 ```
 
+##Get all of these scatterplots together in a single plot
+###HK/SLO/US
+```{r}
+cowplot::plot_grid(ggdraw(hk_dens), ggdraw(slo_dens), 
+                   ggdraw(us_dens), ncol = 3)
+ggsave("HKSLOUS_dens.png")
+```
+
 ```{r}
 #####HINDI####
 hindi_initial <- initial_final %>%
@@ -1153,9 +1202,7 @@ hindi_initial <- initial_final %>%
 pmain.hindi <- ggplot(hindi_initial, aes(x = IHC, y = FHC, color = Productive, shape = Productive)) + 
   geom_point(size = 1.3, alpha = .9, position = position_jitter()) + 
   geom_jitter() + 
-  theme(legend.position = c(.5, 0.2), 
-        legend.title = element_blank()) + 
-  scale_color_brewer(palette = "Paired", guide = "none") + 
+  scale_color_brewer(palette = "Paired") + 
   coord_fixed() + 
   scale_x_continuous(breaks = seq(0, 140, 10), limits = c(0, 140)) + 
   scale_y_continuous(breaks = seq(0, 140, 10), limits = c(0, 140)) +
@@ -1164,13 +1211,14 @@ pmain.hindi <- ggplot(hindi_initial, aes(x = IHC, y = FHC, color = Productive, s
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         plot.title = element_text(hjust = 0.5, size = 9, face = "bold"), 
-        legend.position = "none", 
         axis.title = element_text(size = 8),
-        legend.text = element_text(size = 5), 
-        legend.title = element_text(size = 6), 
-         axis.text = element_text(size = 7)) +
+        legend.position = c(.75, 0.2), 
+        legend.text = element_text(size = 6), 
+        legend.title = element_blank(), 
+        axis.text = element_text(size = 7)) +
   labs(x = "Initial Highest Count", y = "Final Highest Count", 
-       title = "Hindi")
+       title = "Hindi") + 
+  xlab('')
 
 xdens.hindi <- axis_canvas(pmain.hindi, axis = "x") + 
   # geom_ridgeline(data = us_initial, aes(x = IHC, y = 0, height=..density.., 
@@ -1220,7 +1268,8 @@ pmain.gujarati <- ggplot(gujarati_initial, aes(x = IHC, y = FHC, color = Product
         legend.title = element_text(size = 6), 
          axis.text = element_text(size = 7)) + 
   labs(x = "Initial Highest Count", y = "Final Highest Count", 
-       title = "Gujarati")
+       title = "Gujarati") + 
+  ylab('')
 
 xdens.gujarati <- axis_canvas(pmain.gujarati, axis = "x") + 
   # geom_ridgeline(data = us_initial, aes(x = IHC, y = 0, height=..density.., 
@@ -1269,7 +1318,9 @@ pmain.ind.eng <- ggplot(ind.eng_initial, aes(x = IHC, y = FHC, color = Productiv
         legend.title = element_text(size = 6), 
          axis.text = element_text(size = 7)) + 
   labs(x = "Initial Highest Count", y = "Final Highest Count", 
-       title = "English (India)")
+       title = "English (India)") + 
+  xlab('') + 
+  ylab('')
 
 xdens.ind.eng <- axis_canvas(pmain.ind.eng, axis = "x") + 
   # geom_ridgeline(data = us_initial, aes(x = IHC, y = 0, height=..density.., 
@@ -1297,10 +1348,11 @@ ind_dens <- insert_yaxis_grob(p5, ydens.ind.eng, grid::unit(.2, "null"), positio
 ```
 
 ##Get all of these scatterplots together in a single plot
+###Hindi/Gujarati/Ind. Eng
 ```{r}
-cowplot::plot_grid(ggdraw(hk_dens), ggdraw(slo_dens), 
-                   ggdraw(us_dens), ggdraw(ind_dens), 
-                   ggdraw(hind_dens), ggdraw(gujarati_dens), ncol = 2)
+cowplot::plot_grid(ggdraw(hind_dens), ggdraw(gujarati_dens), 
+                   ggdraw(ind_dens), ncol = 3)
+ggsave("india_dens.png")
 ```
 
 ---
