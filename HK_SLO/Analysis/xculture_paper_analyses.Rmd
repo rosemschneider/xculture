@@ -1785,37 +1785,37 @@ tab_model(sf.slo.within.model4, transform = NULL)
 ```
 
 ##Model Comparisons
-###Base v. Productivity - sig, Chis(1) = 19.749, p < .001, AIC = 1401.2
+###Base v. Productivity - sig, Chis(1) = 15.967, p < .0001, AIC = 1422.7
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')
 ```
 
  
-###Base v. FHC - Sig, Chisq(1) = 24.661, p < .001, AIC = 1396.3
+###Base v. FHC - Sig, Chisq(1) = 25.132, p < .0001, AIC = 1413.6
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Chisq(1) = 13.847, p = .0002, AIC = 1407.2
+###Base v. IHC - Chisq(1) = 14.585, p = .0001, AIC = 1424.1
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model3, test = 'LRT')
 ````
 
-###Base v. Highest Contiguous NN - Sig, Chisq(1) = 25.127, p < .0001, AIC = 1395.9
+###Base v. Highest Contiguous NN - Sig, Chisq(1) = 26.227, p < .0001, AIC = 1412.5
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')
 ```
 
-###Exploratory - Prod. gain - significant, Chisq. = 9.56, p = .002
+###Exploratory - Prod. gain - significant, Chisq. = 21.596, p < .0001
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model.pg, test = 'LRT')
 ```
 
 ##Ranking of Productivity predictors from AIC 
-1.  HCNN - 1395.1
-2.  FHC - 1396.3
-3.  Productivity - 1401.2
-4.  IHC - 1407.2
+1.  HCNN - 1412.46
+2.  FHC - 1413.56
+3.  Productivity - 1422.72
+4.  IHC - 1424.10
 
 
 ##Large model
@@ -2545,29 +2545,29 @@ tab_model(wcn.slo.within.model3, transform = NULL)
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 41.1, p < .0001, AIC = 846.98
+###Base v. Productivity - Sig, Chisq(1) = 40.26, p < .0001, AIC = 863.31
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 71.56, p < .0001, AIC = 816.51
+###Base v. FHC - Sig, Chisq(1) = 72.93, p < .0001, AIC = 830.63
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 35.40 p < .0001, AIC = 852.67
+###Base v. IHC - Sig, Chisq(1) = 36.19 p < .0001, AIC = 867.38
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model3, test = 'LRT')
 ```
 
-###Productivity gradient - Sig, Chisq(1) = 25.37, p < .0001, AIC = 842.35
+###Productivity gradient - Sig, Chisq(1) = 43.52, p < .0001, AIC = 860.04
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model.gain, test = 'LRT')
 ```
 ##Ranking of prod predictors - WCN by AIC
-1.  FHC - 816.54
-2.  Productivity - 846.98
-3.  IHC - 852.67
+1.  FHC - 830.64
+2.  Productivity - 863.01
+3.  IHC - 8567.38
 
 
 ##Large Model comparison
@@ -3320,7 +3320,7 @@ tab_model(sf.cross.model3, transform = NULL)
 ```
 
 ##Model Comparisons
-###Base v. productivity - NS, p = .16
+###Base v. productivity - NS, p = .21
 ```{r}
 anova(sf.cross.base, sf.cross.model1, test = 'LRT')
 ```
@@ -3330,7 +3330,7 @@ anova(sf.cross.base, sf.cross.model1, test = 'LRT')
 anova(sf.cross.base, sf.cross.model2, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 22.21, p < .0001, AIC = 4366.
+###Base v. Highest contig. - Sig, Chisq(1) = 22.664, p < .0001, AIC = 4382.3.
 ```{r}
 anova(sf.cross.base, sf.cross.model3, test = 'LRT')
 ```
@@ -3789,12 +3789,12 @@ tab_model(wcn.cross.model2, transform = NULL)
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 19.45, p = .0001, AIC = 2954.2
+###Base v. Productivity - Sig, Chisq(1) = 19.85, p = .0001, AIC = 2968.6
 ```{r}
 anova(wcn.cross.base, wcn.cross.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 38.82, p < .0001, AIC = 2934.8
+###Base v. FHC - Sig, Chisq(1) = 38.99, p < .0001, AIC = 2949.5
 ```{r}
 anova(wcn.cross.base, wcn.cross.model2, test = 'LRT')
 ```
@@ -3805,8 +3805,8 @@ anova(wcn.cross.base, wcn.cross.model.gain, test = 'LRT')
 ```
 
 ##Ranking of productivity predictors - WCN by AIC
-1.  FHC - 2934.8
-2.  Productivity - 2954
+1.  FHC - 2949.5
+2.  Productivity - 2968.6
 
 ##Large model
 ```{r}
@@ -3835,6 +3835,7 @@ anova(wcn.cross.plus1, wcn.cross.plus.gain, test = 'LRT')
 
 #summary of final model
 summary(wcn.cross.plus1)
+tab_model(wcn.cross.plus1, transform = NULL)
 # summary(wcn.cross.plus.gain)
 
 ```
@@ -4108,13 +4109,21 @@ wcn.model <- all.data %>%
   mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
                             Language == "Slovenian", "HK/SLO/US", "India"))%>%
   distinct(SID, Language, Age, sum_wppsi, Productive, highest_contig, Dataset)%>%
-  filter(Productive == "Nonproductive")%>%
+  filter(Productive == "Non-Resilient")%>%
   mutate(Language = factor(Language))%>%
   mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
          wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
 
 wcn.model.hk.slo <- wcn.model %>%
   filter(Dataset == "HK/SLO/US")
+
+highest_contig.model.hk.slo <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model.hk.slo)
+summary(highest_contig.model.hk.slo)
+
+#flip reference group
+wcn.model.hk.slo <- wcn.model %>%
+  filter(Dataset == "HK/SLO/US")%>%
+  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
 
 highest_contig.model.hk.slo <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model.hk.slo)
 summary(highest_contig.model.hk.slo)
@@ -4168,13 +4177,13 @@ anova(hk.sf.100.base, hk.sf.100.full, test = 'LRT')
 summary(hk.sf.100.full) ##no difference for items above 100
 
 #Slovenian
-#does above 100 explain additional variances
+#does above 100 explain additional variance
 slo.sf.100.base <- glmer(Correct ~ fhc.c + highest_contig.c + count_range  + age.c + (1|SID), 
                    family = 'binomial', data = sf.slo.within)
 
 slo.sf.100.full <- glmer(Correct ~ above.100 + fhc.c + highest_contig.c + count_range + age.c + (1|SID),
                         family = 'binomial', data = sf.slo.within)
-anova(slo.sf.100.base, slo.sf.100.full, test = 'LRT')
+anova(slo.sf.100.base, slo.sf.100.full, test = 'LRT')#ns
 summary(slo.sf.100.full)
 
 #us
@@ -4253,7 +4262,7 @@ slo.wcn.100.base <- glmer(Correct ~ fhc.c + count_range  + age.c + (1|SID),
 
 slo.wcn.100.full <- glmer(Correct ~ above.100 + fhc.c + count_range + age.c + (1|SID),
                         family = 'binomial', data = wcn.slo.within)
-anova(slo.wcn.100.base, slo.wcn.100.full, test = 'LRT')
+anova(slo.wcn.100.base, slo.wcn.100.full, test = 'LRT') #yes
 summary(slo.wcn.100.full)
 
 #us
@@ -4339,7 +4348,8 @@ initial_final %>%
   scale_x_continuous(breaks = seq(0, 140, 10)) +
   theme_bw(base_size = 13) +
   theme(legend.position = "right",
-        panel.grid.minor = element_blank()) +
+        panel.grid.minor = element_blank(), 
+        legend.title = element_blank()) +
   scale_colour_brewer(palette = "Dark2") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
         panel.grid.major = element_blank(), 
