@@ -19,6 +19,8 @@ library(RColorBrewer)
 library(ggthemes)
 library(memisc)
 '%!in%' <- function(x,y)!('%in%'(x,y))
+
+productivity.pal <- c("#666666","#00b8e6")
 ```
 
 #Load data
@@ -192,12 +194,12 @@ productive <- full_join(productive, hc, by = "SID")%>%
   dplyr::rename(Productive = productive)
 
 #manually add back in kids who break the code
-productive <- rbind(productive, c('CH-VC-1', 'Nonproductive', 20, 56))
-productive <- rbind(productive, c('SR-8-MP', 'Nonproductive', 19, 39))
-productive <- rbind(productive, c('CH-MV-14', 'Nonproductive', 48, 68))
-productive <- rbind(productive, c("GV-21-SB", 'Nonproductive', 20, 40))
-productive <- rbind(productive, c('RT09', 'Nonproductive', 20, 43))
-productive <- rbind(productive, c('SK-M-4-GJ', 'Nonproductive', 20, 44))
+productive <- rbind(productive, c('CH-VC-1', 20, 56, 'Nonproductive'))
+productive <- rbind(productive, c('SR-8-MP', 19, 39, 'Nonproductive'))
+productive <- rbind(productive, c('CH-MV-14', 48, 68, 'Nonproductive'))
+productive <- rbind(productive, c("GV-21-SB", 20, 40, 'Nonproductive'))
+productive <- rbind(productive, c('RT09', 20, 43, 'Nonproductive'))
+productive <- rbind(productive, c('SK-M-4-GJ', 20, 44, 'Nonproductive'))
 
 #Finally! Merge back with all.data
 all.data <- full_join(all.data, productive, by = "SID")%>%
@@ -227,19 +229,7 @@ all.data %<>%
 # tmp <- unique.hc %>%
 #   filter(SID %in% unique.sid$SID)
 
-tmp <- productive %>%
-  dplyr::select(SID, Productive)
 
-tmp1 <- right_join(tmp, hc.df, by = "SID")
-
- tmp1 %>%
-  group_by(SID, Language, IHC, FHC, Productive)%>%
-  summarise(n = n())%>%
-  filter(IHC != 140)%>%
-  ggplot(aes(x = n, fill = Productive)) + 
-  geom_histogram() + 
-  facet_wrap(~Language, ncol = 2) + 
-  theme(legend.position = "bottom")
   
 
 
@@ -443,8 +433,46 @@ all.data %>%
 
 #Highest Count
 Productivity, prompts, errors
+##Productivity descriptives by language
 
-##What is the correlation between IHC and FHC in each language? 
+###IHC, FHC by language
+```{r}
+#IHC, FHC by language
+all.data %>%
+  filter(!is.na(Language))%>%
+  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
+  distinct(SID, Age, Language, IHC, FHC)%>%
+  group_by(Language)%>%
+  summarise(n = n(),
+            mean_IHC = round(mean(IHC)), 
+            sd_IHC = round(sd(IHC), 2), 
+            median_IHC = round(median(IHC)), 
+            mean_FHC = round(mean(FHC)), 
+            sd_FHC = round(sd(FHC), 2), 
+            median_FHC = round(median(FHC)))%>%
+  kable()
+
+```
+
+###IHC, FHC by language and productivity
+```{r}
+#IHC, FHC by language, productiviity
+all.data %>%
+  filter(!is.na(Language))%>%
+  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
+  distinct(SID, Age, Productive, Language, IHC, FHC)%>%
+  group_by(Language, Productive)%>%
+  summarise(n = n(),
+            mean_IHC = round(mean(IHC)), 
+            sd_IHC = round(sd(IHC), 2), 
+            median_IHC = round(median(IHC)), 
+            mean_FHC = round(mean(FHC)), 
+            sd_FHC = round(sd(FHC), 2), 
+            median_FHC = round(median(FHC)))%>%
+  kable()
+```
+
+###What is the correlation between IHC and FHC in each language? 
 ```{r}
 ##make df
 distinct_counts <- all.data %>%
@@ -509,62 +537,6 @@ cor.test(subset(distinct_counts, Language == "Gujarati")$IHC,
          subset(distinct_counts, Language == "Gujarati")$FHC)
 ```
 
-##Productivity descriptives by language
-
-###IHC, FHC by language
-```{r}
-productivity.pal <- c("#666666","#00b8e6")
-#IHC, FHC by language, productiviity
-all.data %>%
-  filter(!is.na(Language))%>%
-  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
-  distinct(SID, Age, Language, IHC, FHC)%>%
-  group_by(Language)%>%
-  summarise(n = n(),
-            mean_IHC = round(mean(IHC)), 
-            sd_IHC = round(sd(IHC), 2), 
-            median_IHC = round(median(IHC)), 
-            mean_FHC = round(mean(FHC)), 
-            sd_FHC = round(sd(FHC), 2), 
-            median_FHC = round(median(FHC)))%>%
-  kable()
-
-```
-
-
-###IHC, FHC by language and productivity
-```{r}
-#IHC, FHC by language, productiviity
-all.data %>%
-  filter(!is.na(Language))%>%
-  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
-  distinct(SID, Age, Productive, Language, IHC, FHC)%>%
-  group_by(Language, Productive)%>%
-  summarise(n = n(),
-            mean_IHC = round(mean(IHC)), 
-            sd_IHC = round(sd(IHC), 2), 
-            median_IHC = round(median(IHC)), 
-            mean_FHC = round(mean(FHC)), 
-            sd_FHC = round(sd(FHC), 2), 
-            median_FHC = round(median(FHC)))%>%
-  kable()
-```
-
-
-###Productivity gradient by Language, productivity
-```{r}
-#what about productivity gradient?
-all.data %>%
-  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
-  distinct(SID, Age, Productive, Language, prod.gradient, delta.hc)%>%
-  group_by(Language, Productive)%>%
-  summarise(n =n(), 
-            mean_prod.gradient = mean(prod.gradient), 
-            sd_prod.gradient = sd(prod.gradient), 
-            mean_delta.hc = mean(delta.hc), 
-            sd_delta.hc = sd(delta.hc))%>%
-  kable()
-```
 
 ##Errors in HC
 ###Prompts by productivity and language
@@ -715,12 +687,12 @@ check <- error.freq.decade %>%
   summarise(n = n())%>%
   filter(n > 3)
 
-#4 participants, but these are language switches did not receive a prompt
+#4 participants, but these are language switches, did not receive a prompt
 ```
 
 ####How many participants used all 14 prompts?
 ```{r}
-#how many participants used at least 10 prompts?
+#how many participants used at least 5 prompts?
 hc.df %>%
   group_by(SID, Language)%>%
   filter(Last_successful != 140)%>% #filter out 140 because it's the last number reached, not a prompt
@@ -759,6 +731,7 @@ error.freq %>%
             sd_prompts = round(sd(n, na.rm = TRUE), 2))%>%
   kable()
 ```
+
 ###Prompts by language
 ```{r}
 error.freq %>%
@@ -771,7 +744,7 @@ error.freq %>%
   kable()
 ```
 
-###Analysis: What proportion of kids in highest proportion cluster (from GMM) are labeled as resilient in each language?
+###SOM Analysis: What proportion of kids in highest proportion cluster (from GMM) are labeled as resilient in each language?
 First, set up GMM
 ```{r}
 library(mclust)
