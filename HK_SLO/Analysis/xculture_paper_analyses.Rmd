@@ -21,6 +21,8 @@ library(memisc)
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
 productivity.pal <- c("#666666","#00b8e6")
+
+india.pal <- c("#E7298A","#66A61E","#E6AB02", "#D95F02")
 ```
 
 #Load data
@@ -913,7 +915,7 @@ summary(mod.ind.eng, parameters = TRUE)
 ---
 
 #Highest Contiguous Next Number
-##HCNN by each language
+##SOM: HCNN by each language
 ```{r}
 india.pal <- c("#E7298A","#66A61E","#E6AB02", "#7570B3")
 
@@ -954,7 +956,78 @@ all.data %>%
   kable()
 ```
 
-###Analysis: Do transparent languages allow nonproductive counters to generate higher HCNNs?
+###SOM Analysis: Do Resilient counters have higher HCNNs?
+####HK: Significant difference between groups (*p* = .004)
+```{r}
+sf.hk.mean.nn <- all.data %>%
+  filter(Language == "Cantonese")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
+
+t.test(subset(sf.hk.mean.nn, Productive == "Resilient")$mean_nn, 
+       subset(sf.hk.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
+```
+
+###SLO - sig, p < .0001
+```{r}
+sf.slo.mean.nn <- all.data %>%
+  filter(Language == "Slovenian")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
+
+t.test(subset(sf.slo.mean.nn, Productive == "Resilient")$mean_nn, 
+       subset(sf.slo.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
+```
+
+
+###US - sig, p < .0001
+```{r}
+sf.us.mean.nn <- all.data %>%
+  filter(Language == "English (US)")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
+
+t.test(subset(sf.us.mean.nn, Productive == "Resilient")$mean_nn, 
+       subset(sf.us.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
+```
+
+###India-Eng
+```{r}
+sf.ind.eng.mean.nn <- all.data %>%
+  filter(Language == "English (India)")%>%
+  distinct(SID, Productive, highest_contig)%>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
+
+t.test(subset(sf.ind.eng.mean.nn, Productive == "Resilient")$mean_nn, 
+       subset(sf.ind.eng.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
+```
+
+###Hindi
+```{r}
+sf.hindi.mean.nn <- all.data %>%
+  filter(Language == "Hindi")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
+
+t.test(subset(sf.hindi.mean.nn, Productive == "Resilient")$mean_nn, 
+       subset(sf.hindi.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
+```
+
+
+###Gujarati
+```{r}
+sf.gujarati.mean.nn <- all.data %>%
+  filter(Language == "Gujarati")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
+
+t.test(subset(sf.gujarati.mean.nn, Productive == "Resilient")$mean_nn, 
+       subset(sf.gujarati.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
+```
+
+
+###SOM Analysis: Do transparent languages allow nonproductive counters to generate higher HCNNs?
 No significant difference in HCNN for nonproductive counters for Cantonese in comparison to English or Slovenian. US English nonproductive counters have significantly higher HCNNs than Hindi or Gujarati. This difference holds for Indian English speakers.
 ```{r}
 #lm predicting hcnn from language for nonproductive counters
@@ -963,6 +1036,20 @@ hcnn.hk <- all.data %>%
   filter(Language == "English (US)" |
            Language == "Cantonese" |
            Language == "Slovenian")%>%
+  distinct(SID, highest_contig, Language, Age, sum_wppsi, Productive)%>%
+  filter(!is.na(highest_contig), 
+         Productive == "Non-Resilient")%>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))
+
+hcnn.nonprod.hk <- lm(highest_contig ~ Language + Age + wppsi.c, data = hcnn.hk)
+summary(hcnn.nonprod.hk)
+
+#now with slo as reference
+hcnn.hk <- all.data %>%
+  filter(Language == "English (US)" |
+           Language == "Cantonese" |
+           Language == "Slovenian")%>%
+  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))%>%
   distinct(SID, highest_contig, Language, Age, sum_wppsi, Productive)%>%
   filter(!is.na(highest_contig), 
          Productive == "Non-Resilient")%>%
@@ -1345,7 +1432,7 @@ all.data %>%
   kable()
 ```
 
-##Test of mean performance 
+##Test of mean performance between languages
 First HK/SLO/US
 ```{r}
 #hk and slo 
@@ -1370,7 +1457,7 @@ t.test(subset(sf.ms, Language == "Slovenian")$mean,
 
 ##Unit Task Models
 ###Make model analysis dfs
-Note that there is a lot more variability in highest counts and highest contiguous NN than in categorical variables. I am centering age, and centering and scaling FHC, IHC, and highest contiguous NN (which has the most variability).
+Note that there is a lot more variability in highest counts and highest contiguous NN than in categorical variables. I am centering & scaking age, and centering and scaling FHC, IHC, and highest contiguous NN (which has the most variability).
 ```{r, include = FALSE}
 ##HK##
 ###UNIT###
@@ -1883,27 +1970,27 @@ tab_model(sf.us.within.model4, transform = NULL)
 ```
 
 ##Model comparisons
-###Base v. Productivity - NS, Chisq(1) = 1.19, p = .27, AIC = 1514.6
+###Base v. Productivity - NS, Chisq(1) = 1.08, p = .27, AIC = 1511.2
 ```{r}
 anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 18.85, p < .0001, AIC = 1496.9
+###Base v. FHC - Sig, Chisq(1) = 18.17, p < .0001, AIC = 1494.1
 ```{r}
 anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 49.48, p < .0001, AIC = 1466.3
+###Base v. IHC - Sig, Chisq(1) = 48.78, p < .0001, AIC = 1463.5.3
 ```{r}
 anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')
 ````
 
-###Base v. Highest Contig. - Sig, Chisq(1) = 35.86, p < .0001, AIC = 1479.9
+###Base v. Highest Contig. - Sig, Chisq(1) = 35.66, p < .0001, AIC = 1476.7
 ```{r}
 anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')
 ```
 
-###Post-hoc: Prod.gradient - Sig, Chisq(1) = 4.3153, p = .04, AIC = 1526.8
+###Post-hoc: Prod.gradient - Sig, Chisq(1) = 4.4, p = .04, AIC = 1507
 ```{r}
 anova(sf.us.within.base, sf.us.within.model.gain, test = 'LRT')
 # anova(sf.us.within.base, sf.us.within.model.clust, test = 'LRT') 
@@ -1911,10 +1998,10 @@ anova(sf.us.within.base, sf.us.within.model.gain, test = 'LRT')
 ```
 
 ##Ranking of productivity predictors by AIC 
-1.  IHC - 1466.3 
-2.  HCNN - 1479.9
-3.  FHC - 1496.9
-4.  Productivity - 1514
+1.  IHC - 1463.5 
+2.  HCNN - 1476.7
+3.  FHC - 1494.1
+4.  Productivity - 1511.2
 
 ##Large model
 Base = IHC 
@@ -1942,13 +2029,13 @@ sf.us.within.plus3 <- glmer(Correct ~ fhc.c + highest_contig.c + ihc.c + count_r
 #compare 3, minus fhc
 anova(sf.us.within.plus1, sf.us.within.plus2.highest.contig, sf.us.within.plus3, test = 'LRT') #fhc does not add  
 #regression table
-mtable.sf.us.large <- mtable('IHC' = sf.us.within.plus1,
-            'FHC + IHC' = sf.us.within.plus2.fhc,
-            'Highest Contig + IHC' = sf.us.within.plus2.highest.contig,
-            # 'Prod. gradient + IHC' = sf.us.within.plus2.gain,
-            'Highest Contig + FHC + IHC' = sf.us.within.plus3,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.us.large
+# mtable.sf.us.large <- mtable('IHC' = sf.us.within.plus1,
+#             'FHC + IHC' = sf.us.within.plus2.fhc,
+#             'Highest Contig + IHC' = sf.us.within.plus2.highest.contig,
+#             # 'Prod. gradient + IHC' = sf.us.within.plus2.gain,
+#             'Highest Contig + FHC + IHC' = sf.us.within.plus3,
+#             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
+# mtable.sf.us.large
 
 #exp - prod.gradient + hcnn + ihc
 sf.us.within.plus3.pg <- glmer(Correct ~ prod.gradient + highest_contig.c + ihc.c + starting_num.c + count_range + age.c + (1|SID), 
@@ -1969,6 +2056,7 @@ tab_model(sf.us.within.plus2.highest.contig, transform = NULL)
 
 ***
 
+#Experiment 2: Within-language Unit Task models
 #Hindi: Within-language models, Unit Task
 ##Build the models
 ```{r}
@@ -2166,8 +2254,10 @@ tab_model(sf.gujarati.within.base, transform = NULL)
 ```
 
 
+---
+
 ##Productivity t-test of Unit Task performance
-Using the Productive/Non-Productive categorical classification outlined above, we will compare performance between both groups on the Unit task using t-tests. We may do this by considering average performance (averaging the 0’s and 1’s on each task for each participant); should doing so provide greater precision, we may also compare Highest Contiguous Number.
+Using the Resilient/Non-Resilient categorical classification outlined above, we will compare performance between both groups on the Unit task using t-tests. We may do this by considering average performance (averaging the 0’s and 1’s on each task for each participant); should doing so provide greater precision, we may also compare Highest Contiguous Number.
 
 ###HK: Marginally significant difference between groups (*p* = .06)
 ```{r}
@@ -2235,6 +2325,7 @@ t.test(subset(sf.gujarati.mean.ms, Productive == "Resilient")$mean,
 ```
 
 ---
+
 #Next Number
 ##Descriptive statistics  
 ```{r}
@@ -2251,6 +2342,7 @@ all.data %>%
 ```
 
 ##Do English US/India differ?
+No significant difference in mean NN performance
 ```{r}
 nn.ms <- all.data %>%
   filter(Task == "NN")%>%
@@ -2261,8 +2353,9 @@ t.test(subset(nn.ms, Language == "English (US)")$mean,
        subset(nn.ms, Language == "English (India)")$mean, var.equal = TRUE)
 ```
 
-##NN performance by HC
+##NN performance by HC: Figures 2 and 4
 ```{r}
+#Make df for all HC data
 unique.hc.data <- all.data %>%
   distinct(SID, IHC, FHC, Productive, Language, Dataset)%>%
   gather(IHC_FHC,highest_count, IHC:FHC)%>%
@@ -2270,6 +2363,7 @@ unique.hc.data <- all.data %>%
          IHC_FHC = factor(IHC_FHC, levels = c("IHC", "FHC"), 
                           labels = c("Initial Highest Count", "Final Highest Count")))
 
+#make df for mean NN score
 ms.nn <- all.data %>%
   filter(Task == "NN")%>%
   group_by(SID)%>%
@@ -2277,7 +2371,7 @@ ms.nn <- all.data %>%
 
 nn.full <- full_join(ms.nn, unique.hc.data, by = "SID")
 
-##HK/SLO/US
+##HK/SLO/US - Experiment 1
 nn.full %>%
   filter(Language == "Cantonese" |
            Language == "Slovenian" | 
@@ -2300,8 +2394,9 @@ nn.full %>%
   labs(x = "Highest Count", y = "Mean Next Number performance")
 ggsave("nn_by_hc_hkSloUS.png")
 
-india.pal <- c("#E7298A","#66A61E","#E6AB02", "#D95F02")
 
+
+##Experiment 2
 nn.full %>%
   filter(Language == "Hindi" |
            Language == "Gujarati" | 
@@ -2326,47 +2421,7 @@ nn.full %>%
 ggsave("nn_by_hc_india.png")
 ```
 
-##Analysis: Productivity Range, NN
-Do Productive counters have significantly more accurate performance for next number prompts outside their count range?
-```{r}
-ms <- all.data %>%
-  filter(Task == "NN")%>%
-  mutate(count_range = factor(count_range, levels = c("Within", "Outside")))%>%
- mutate(ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)),
-        Task_item = as.numeric(as.character(Task_item)),
-        starting_num.c = as.vector(scale(Task_item, center = TRUE, scale = TRUE)), 
-        age.c = as.vector(scale(Age, center = TRUE, scale = TRUE)))%>%
-  group_by(SID, Language, ihc.c, age.c, Productive, count_range)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))%>%
-  filter(count_range == "Outside")
-
-
-#t-test
-#Cantonese
-t.test(subset(ms, Language == "Cantonese" & Productive == "Resilient")$mean, 
-       subset(ms, Language == "Cantonese" & Productive == "Non-Resilient")$mean, var.equal = TRUE)
-
-#Slovenian
-t.test(subset(ms, Language == "Slovenian" & Productive == "Resilient")$mean, 
-       subset(ms, Language == "Slovenian" & Productive == "Non-Resilient")$mean, var.equal = TRUE)
-
-#English (US)
-t.test(subset(ms, Language == "English (US)" & Productive == "Resilient")$mean, 
-       subset(ms, Language == "English (US)" & Productive == "Non-Resilient")$mean, var.equal = TRUE)
-
-#Hindi
-t.test(subset(ms, Language == "Hindi" & Productive == "Resilient")$mean, 
-       subset(ms, Language == "Hindi" & Productive == "Non-Resilient")$mean, var.equal = TRUE)
-
-#Gujarati
-t.test(subset(ms, Language == "Gujarati" & Productive == "Resilient")$mean, 
-       subset(ms, Language == "Gujarati" & Productive == "Non-Resilient")$mean, var.equal = TRUE)
-
-#Indian English
-t.test(subset(ms, Language == "English (India)" & Productive == "Resilient")$mean, 
-       subset(ms, Language == "English (India)" & Productive == "Non-Resilient")$mean, var.equal = TRUE)
-
-```
+***
 
 #WCN Task- within-language analyses, simple models
 
@@ -2611,17 +2666,17 @@ tab_model(wcn.us.within.model3, transform = NULL)
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 14.8, p = .0001, AIC = 1042.3
+###Base v. Productivity - Sig, Chisq(1) = 14.74, p = .0001, AIC = 1041.8
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 44, p < .0001, AIC = 1013
+###Base v. FHC - Sig, Chisq(1) = 44.93, p < .0001, AIC = 1012.6
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 30.52, p < .0001, AIC = 1026.5
+###Base v. IHC - Sig, Chisq(1) = 30.49, p < .0001, AIC = 1026.1
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model3, test = 'LRT')
 ```
@@ -2973,78 +3028,6 @@ summary(wcn.gujarati.within.plus2.prod)
 tab_model(wcn.gujarati.within.plus2.prod, transform = NULL)
 ```
 
----
-
-#Next number T-tests
-##Productivity t-test of Highest contiguous NN
-###HK: Significant difference between groups (*p* = .002)
-```{r}
-sf.hk.mean.nn <- all.data %>%
-  filter(Language == "Cantonese")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
-
-t.test(subset(sf.hk.mean.nn, Productive == "Resilient")$mean_nn, 
-       subset(sf.hk.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
-```
-
-###SLO - sig, p < .0001
-```{r}
-sf.slo.mean.nn <- all.data %>%
-  filter(Language == "Slovenian")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
-
-t.test(subset(sf.slo.mean.nn, Productive == "Resilient")$mean_nn, 
-       subset(sf.slo.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
-```
-
-
-###US - sig, p < .0001
-```{r}
-sf.us.mean.nn <- all.data %>%
-  filter(Language == "English (US)")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
-
-t.test(subset(sf.us.mean.nn, Productive == "Resilient")$mean_nn, 
-       subset(sf.us.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
-```
-
-###India-Eng
-```{r}
-sf.ind.eng.mean.nn <- all.data %>%
-  filter(Language == "English (India)")%>%
-  distinct(SID, Productive, highest_contig)%>%
-  group_by(SID, Productive)%>%
-  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
-
-t.test(subset(sf.ind.eng.mean.nn, Productive == "Resilient")$mean_nn, 
-       subset(sf.ind.eng.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
-```
-
-###Hindi
-```{r}
-sf.hindi.mean.nn <- all.data %>%
-  filter(Language == "Hindi")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
-
-t.test(subset(sf.hindi.mean.nn, Productive == "Resilient")$mean_nn, 
-       subset(sf.hindi.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
-```
-
-
-###Gujarati
-```{r}
-sf.gujarati.mean.nn <- all.data %>%
-  filter(Language == "Gujarati")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean_nn = mean(highest_contig, na.rm = TRUE))
-
-t.test(subset(sf.gujarati.mean.nn, Productive == "Resilient")$mean_nn, 
-       subset(sf.gujarati.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
-```
 
 ---
 
@@ -3243,6 +3226,7 @@ wcn.df.cross.india.follow <- all.data %>%
 
 ---
 
+#Experiment 1
 #Unit Task: Cross linguistic models - HK/SLO/US (Cantonese as reference group)
 ##Build the models
 ```{r}
@@ -3293,17 +3277,17 @@ tab_model(sf.cross.model3, transform = NULL)
 ```
 
 ##Model Comparisons
-###Base v. productivity - NS, p = .21
+###Base v. productivity - NS, p = .22
 ```{r}
 anova(sf.cross.base, sf.cross.model1, test = 'LRT')
 ```
 
-###Base v. FHC - NS, p = .14
+###Base v. FHC - NS, p = .15
 ```{r}
 anova(sf.cross.base, sf.cross.model2, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 22.664, p < .0001, AIC = 4382.3.
+###Base v. Highest contig. - Sig, Chisq(1) = 22.695, p < .0001, AIC = 4379.3.
 ```{r}
 anova(sf.cross.base, sf.cross.model3, test = 'LRT')
 ```
@@ -3482,17 +3466,17 @@ tab_model(sf.cross.model3.india, transform = NULL)
 ```
 
 ##Model Comparisons
-###Base v. productivity - NS, p = .85
+###Base v. productivity - NS, p = .87
 ```{r}
 anova(sf.cross.base.india, sf.cross.model1.india, test = 'LRT')
 ```
 
-###Base v. FHC - NS, p = .99
+###Base v. FHC - NS, p = .95
 ```{r}
 anova(sf.cross.base.india, sf.cross.model2.india, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 13.11, p = .0003, AIC = 3943.9
+###Base v. Highest contig. - Sig, Chisq(1) = 13.18, p = .0003, AIC = 3940.5
 ```{r}
 anova(sf.cross.base.india, sf.cross.model3.india, test = 'LRT')
 ```
@@ -3563,6 +3547,7 @@ summary(lm.india)
 
 ---
 
+#Experiment 2
 ##WCN India
 ##Build the models
 ```{r}
@@ -3605,12 +3590,12 @@ tab_model(wcn.cross.model2.india, transform = NULL)
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 9.9, p = .002, AIC = 2550
+###Base v. Productivity - Sig, Chisq(1) = 9.9, p = .002, AIC = 2550.3
 ```{r}
 anova(wcn.cross.base.india, wcn.cross.model1.india, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 22.71, p < .0001, AIC = 2537.9
+###Base v. FHC - Sig, Chisq(1) = 22.68, p < .0001, AIC = 2537.6
 ```{r}
 anova(wcn.cross.base.india, wcn.cross.model2.india, test = 'LRT')
 ```
@@ -3718,6 +3703,7 @@ summary(lm.india)
 ```
 ---
 
+#Experiment 1
 #WCN - HK/SLO/US Cross linguistic
 
 ##Build the models
@@ -3762,12 +3748,12 @@ tab_model(wcn.cross.model2, transform = NULL)
 ```
 
 ##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 19.85, p = .0001, AIC = 2968.6
+###Base v. Productivity - Sig, Chisq(1) = 19.4, p < .0001, AIC = 2968.2
 ```{r}
 anova(wcn.cross.base, wcn.cross.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 38.99, p < .0001, AIC = 2949.5
+###Base v. FHC - Sig, Chisq(1) = 38.96, p < .0001, AIC = 2949.1
 ```{r}
 anova(wcn.cross.base, wcn.cross.model2, test = 'LRT')
 ```
@@ -3848,24 +3834,6 @@ wcn.cross.model.gain.slo <- glmer(Correct ~ prod.gradient + Language*ihc.c + cou
 
 ```
 
-```{r}
-#Cantonese as comparsion
-summary(wcn.cross.plus1)
-tab_model(wcn.cross.plus1, transform = NULL)
-
-#Slovenian as comparison
-tmp <- wcn.df.cross %>%
-  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
-         
-         
-wcn.cross.plus1.slo.comp <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                           (1|SID), family = "binomial", data = tmp, 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-summary(wcn.cross.plus1.slo.comp)
-tab_model(wcn.cross.plus1.slo.comp, transform = NULL)
-```
 
 #Test if effects of language are significant
 ```{r}
@@ -3908,6 +3876,7 @@ all.data %>%
 ```
 
 ---
+#Experiment 2
 #Followup with Indian English for NN
 ##Build the models
 ```{r}
