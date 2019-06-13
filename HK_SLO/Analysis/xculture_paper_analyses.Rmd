@@ -4017,7 +4017,7 @@ ihc.cross <- all.data %>%
   mutate(Language = factor(Language))%>%
   mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
          wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
-
+##Experiment 1
 ihc.cross.hk.slo <- ihc.cross %>%
   filter(Language == "Cantonese" | 
            Language == "Slovenian" | 
@@ -4026,6 +4026,7 @@ ihc.cross.hk.slo <- ihc.cross %>%
 ihc.cross.model.hk.slo <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.hk.slo)
 summary(ihc.cross.model.hk.slo)
 
+#Experiment 2
 ihc.cross.ind <- ihc.cross %>%
   filter(Language == "English (US)"|
            Language == "Hindi" |
@@ -4034,6 +4035,7 @@ ihc.cross.ind <- ihc.cross %>%
 ihc.cross.model.ind <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.ind)
 summary(ihc.cross.model.ind)
 
+#Experiment 2a.
 ihc.cross.ind <- ihc.cross %>%
   filter(Language == "English (India)"|
            Language == "Hindi" |
