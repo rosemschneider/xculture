@@ -1432,6 +1432,50 @@ all.data %>%
   kable()
 ```
 
+##Visualization of Unit performance by language
+```{r}
+#HK/SLO/US
+all.data %>%
+  filter(Task == "SF", 
+         Language != "English (India)")%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)", 
+                                                "Gujarati", "Hindi")))%>%
+  group_by(SID, Language)%>%
+  summarise(mean = mean(as.numeric(as.character(Correct)), na.rm=TRUE),
+            sd = sd(as.numeric(as.character(Correct)), na.rm=TRUE)) %>%
+  ggplot(aes(x = Language, y = mean, fill=factor(Language))) +
+  # stat_summary(fun.y = mean, position = position_dodge(width = .95), 
+  #                     geom="violin", width = 1, alpha = .5, colour = "black", 
+  #              show.legend = FALSE) +
+  geom_violin(aes(x = Language, y = mean), alpha = .1, size = .7,
+              show.legend = FALSE)  +
+  geom_point(aes(x = Language, y = mean, colour = Language),
+               position=position_jitter(width=0.15,height=0.02),
+               size=2,
+             alpha = .5,
+               show.legend=FALSE, 
+             inherit.aes = FALSE) +
+  guides(shape = "none") + 
+  stat_summary(fun.data = mean_se, geom="errorbar", 
+               position = position_dodge(width=0.90), width = 0.2, size = 1, 
+               show.legend = FALSE) +
+  ylab("Mean Unit Task performance") + 
+  xlab('Language') + 
+  theme_bw(base_size = 13) + 
+  theme(legend.position = "bottom") +
+  # ggtitle("Overall mean correct on Unit Task") +
+  theme(text = element_text(size = 12), 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank(), 
+        legend.title = element_blank()) +
+  ylim(0, 1.0) +
+  langcog::scale_fill_solarized() + 
+  langcog::scale_color_solarized("Language") + 
+  guides(size = "none")
+
+ggsave("~/Documents/Projects/xculture/HK_SLO/Analysis/Figures/Unit_by_language.png", width = 5.5, height = 2.8)
+```
+
 ##Test of mean performance between languages
 First HK/SLO/US
 ```{r}
@@ -2339,6 +2383,34 @@ all.data %>%
             sd = sd(mean_sub, na.rm = TRUE), 
             se = sd/sqrt(n))%>%
   kable()
+```
+
+##Unit Task by Highest Contiguous Next Number
+```{r}
+all.data %>%
+  filter(Task == "SF", 
+         Language != "English (India)", 
+         !is.na(highest_contig))%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)", 
+                                                "Gujarati", "Hindi")), 
+         highest_contig = factor(highest_contig))%>%
+  group_by(Language, highest_contig)%>%
+  langcog::multi_boot_standard("Correct", na.rm = TRUE) %>%
+    ggplot(aes(x = highest_contig, y= mean, color = Language, group = Language)) + 
+  geom_point(size = 2.5) + 
+  geom_line(show.legend = FALSE) + 
+  geom_linerange(aes(ymin = ci_lower, ymax = ci_upper)) + 
+  theme_bw(base_size = 13) + 
+  theme(panel.grid = element_blank(), 
+        legend.text = element_text(size = 6), 
+        legend.position = c(.4, 0.06), 
+        legend.direction = "horizontal",
+        legend.key.size = unit(.5, "cm"), 
+        legend.margin=margin(t=0, r=0, b=0, l=0, unit="cm")) + 
+  langcog::scale_color_solarized("") + 
+  labs(x = 'Highest Contiguous Next Number', y = 'Mean Unit Task performance')
+
+ggsave("~/Documents/Projects/xculture/HK_SLO/Analysis/Figures/Unit_by_HCNN.png", width = 5.5, height = 2.8)
 ```
 
 ##Do English US/India differ?
