@@ -30,7 +30,7 @@ Data is stored in separate CSVs; clean separately, and then bind together.
 ##Slovenian
 ```{r}
 #slo data
-slo.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/SLO_data.csv')%>%
+slo.full.data <- read.csv('../Data/Study1/SLO_data.csv')%>%
   filter(SID != "CopyPasteMe")%>%
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_1_double, 
@@ -49,7 +49,7 @@ slo.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_S
          Mem_check_2 = as.integer(as.character(Mem_check_2)))
 
 #slo highest count
-slo.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/SLO_HC.csv')%>%
+slo.hc <- read.csv('../Data/Study1/SLO_HC.csv')%>%
   dplyr::select(-Special_count, -IHC_single, -FHC_single)%>%
   dplyr::rename(IHC = IHC_final, 
                 FHC = FHC_final, 
@@ -73,7 +73,7 @@ if (length(sanity.slo.hc$SID) > 0) {
 ##Cantonese
 ```{r}
 #hk data
-hk.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/HK_Data.csv')%>%
+hk.full.data <- read.csv('../Data/Study1/HK_Data.csv')%>%
   filter(SID != "CopyPasteMe")%>%
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_1_double, 
@@ -92,7 +92,7 @@ hk.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SL
          Exclude_analysis_reason = ifelse(Exclude_analysis_reason == 0, "", as.character(Exclude_analysis_reason)))
 
 #hk highest count
-hk.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/HK_HC.csv')%>%
+hk.hc <- read.csv('../Data/Study1/HK_HC.csv')%>%
   dplyr::select(-Special_count, -IHC_single, -FHC_single, -hundred.syntax, 
                 -raw.count)%>%
   dplyr::rename(IHC = IHC_double, 
@@ -114,7 +114,7 @@ if (length(sanity.hk.hc$SID) > 0) {
 
 ##English - US
 ```{r}
-us.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/US_Data.csv') %>%
+us.full.data <- read.csv('../Data/Study1/US_Data.csv') %>%
   filter(SID != "CopyPasteMe")%>%
   droplevels()%>%
   dplyr::select(-Response_single, -Response_double, -Mem_check_1_single, -Mem_check_2_single, 
@@ -131,7 +131,7 @@ us.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SL
          Exclude_task = as.integer(Exclude_task))
 
 #highest count
-us.hc <- read.csv('/Users/roseschneider/Documents/Projects/xculture/HK_SLO/Data/US_HC.csv')%>%
+us.hc <- read.csv('../Data/Study1/US_HC.csv')%>%
   dplyr::rename(IHC = IHC_final, 
                 FHC = FHC_final)%>%
   filter(Exclude != 1)%>%
@@ -160,7 +160,7 @@ if (length(sanity.us.hc$SID) > 0) {
 
 ##India data
 ```{r}
-india.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/India/Data/India_Data.csv')%>%
+india.full.data <- read.csv('../Data/Study2/India_Data.csv')%>%
   filter(SID != "CopyPasteMe",
          Language != "ChangeMe")%>%
   droplevels()%>%
@@ -176,7 +176,7 @@ india.full.data <- read.csv('/Users/roseschneider/Documents/Projects/xculture/In
          Language = factor(Language))
 
 #hc
-india.hc <- read.csv("/Users/roseschneider/Documents/Projects/xculture/India/Data/India_HC.csv") %>%
+india.hc <- read.csv("../Data/Study2/India_HC.csv") %>%
   filter(Exclude != 1)%>%
   mutate(Last_successful = as.integer(as.character(Last_successful)))%>%
   dplyr::select(-Special_count, -IHC_single, -FHC_single, -Experimenter_missed, 
@@ -203,7 +203,7 @@ if (length(sanity.india.hc$SID) > 0) {
 #regular data
 all.data <- bind_rows(slo.full.data, hk.full.data, us.full.data, india.full.data)%>%
   mutate(Age = round(Age, 2), 
-         Agegroup = cut(Age, breaks = c(3.49, 4, 4.5, 5, 5.5, 6, 6.66), 
+         Agegroup = cut(Age, breaks = c(3.49, 4, 4.5, 5, 5.5, 6, 6.66), # 
                         labels = c("3.5-4", "4-4.5", "4.5-5", 
                                    "5-5.5", "5.5-6", "6-6.5")))%>%
   mutate(Language = factor(Language), 
@@ -496,7 +496,7 @@ all.data %>%
 ```
 
 ###Other sanity check
-Checking to make sure answers are correct
+Checking to make sure answers are correct. The length of both dfs are 0, so there are no issues here
 ```{r}
 sf.check <- all.data %>%
   filter(Task == "SF")%>%
@@ -517,6 +517,6 @@ nn.check <- all.data %>%
 
 ##Output all.data to .csv
 ```{r}
-write.csv(all.data, file = "~/Documents/Projects/xculture/HK_SLO/Data/cleaned_data.csv")
-write.csv(hc.df, file = "~/Documents/Projects/xculture/HK_SLO/Data/cleaned_hc_data.csv")
+write.csv(all.data, file = "../Data/Cleaned_data/cleaned_data.csv")
+write.csv(hc.df, file = "../Data/Cleaned_data/cleaned_hc_data.csv")
 ```
