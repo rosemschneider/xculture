@@ -1,0 +1,25 @@
+General,,,,
+Column name,Definition,Key,Additional info,Tasks
+SID,Subject ID,,,All
+DOB,Date of birth,,,All
+DOT,Date of test,,,All
+Age,Age at time of test,"To calculate: Subtract date of birth from date of test, divide by 365.25. To do this in excel: On demographics sheet, subtract birth date cell from test date cell, divide by 365.25, and then format that cell as a number (rather than a date).",,All
+Sex,Sex,M or F,,All
+Experimenter,Who ran the participant,Initials,,All
+Location,Where participant was run,Actual location name,,All
+Language,Language(s) of child,"List primary language first, then secondary (e.g., English/Spanish)",,All
+Exclude_analysis,Whether child should be excluded from analysis,"0 = no, 1 = yes",,All
+Exclude_analysis_reason,"Why child should be excluded from analysis (e.g., out of age range, does not know Hindi/Gujarati)",Text explanation,,All
+Exclude_task,Whether child should be excluded from particular task,"0 = no, 1 = yes",,All
+Excluded_task,Task from which child should be excluded,Text name of task,,All
+Exclude_task_reason,"Why child should be excluded from task (e.g., only completed 1 trial)",Text explanation,,All
+Note,Additional info,Text explanation,,All
+Exclude_trial,Whether trial should be excluded from analysis,"0 = no, 1 = yes",,All
+Exclude_trial_reason,Why trial should be excluded from analysis,Text explanation,,All
+Trial_number,Trial number,"Number of trial (e.g., 1, 2, 3, 4…)",Trial number of that particular task,All
+Double_coded,Person who double-coded data,Initials,,All
+Task_item,Number/Item queried on task,Number or text,,All
+Response,Number or answer given by child,Number or text,,"GiveN, SF, WCN"
+Mem_check_1,Whether child passed first memory check (in SF) OR needed an additional repetition in WCN,"1 = passed, 0 = failed",Meaning slightly different for SF vs. WCN,"SF, WCN"
+Mem_check_2,Whether child passed first memory check (in SF) OR needed an additional repetition in WCN,"1 = passed, 0 = failed",Meaning slightly different for SF vs. WCN,"SF, WCN"
+Did both Alterantives,"Whether the child stated both alternatives as a reponse (e.g., ""53 or 54"", ""53 and 54""",1 = stated both alternatives,,SF
