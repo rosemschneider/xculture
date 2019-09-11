@@ -9,7 +9,7 @@ output: html_document
 ```{r, include = FALSE}
 rm(list = ls())
 require("knitr")
-opts_knit$set(root.dir = "~/Documents/Projects/xculture/HK_SLO/") #this is specific to RMS, change accordingly
+# opts_knit$set(root.dir = "~/Documents/Projects/xculture/HK_SLO/") #this is specific to RMS, change accordingly
 library(tidyverse)
 library(magrittr)
 library(langcog)
@@ -39,14 +39,14 @@ source_rmd <- function(file, local = FALSE, ...){
   source(tempR, local = envir, ...)
 }
 
-source_rmd("~/Documents/Projects/xculture/HK_SLO/Analysis/xculture_data_cleaning.Rmd")
+source_rmd("xculture_data_cleaning.Rmd")
 #this results in a cleaned .csv, re-compiled every time from original data
 ```
 
 Now load the data as all.data and hc.df
 ```{r}
-all.data <- read.csv("~/Documents/Projects/xculture/HK_SLO/Data/cleaned_data.csv")
-hc.df <- read.csv("~/Documents/Projects/xculture/HK_SLO/Data/cleaned_hc_data.csv")
+all.data <- read.csv("../Data/Cleaned_data/cleaned_data.csv")
+hc.df <- read.csv("../Data/Cleaned_data/cleaned_hc_data.csv")
 ```
 
 ---
@@ -87,8 +87,8 @@ all.data <- full_join(all.data, wppsi.sid, by = "SID")
 ```
 
 
-##Productivity
-Children are classified as productive if they are able to count at least 2 decades higher than an error without making more than 3 errors along the way, OR if they are able to count to 140 without making an error.
+##Resilience
+Children are classified as Resilient if they are able to count at least 2 decades higher than an error without making more than 3 errors along the way, OR if they are able to count to 140 without making an error.
 ```{r}
 ##make a data frame for running prod. function on
 hc.df %<>%
