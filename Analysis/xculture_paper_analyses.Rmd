@@ -602,6 +602,99 @@ error.freq.decade %>%
         legend.title = element_text(size = 11)) +
   facet_grid(rows = vars(Productive))
 ggsave("Figures/errors.png")
+
+###Error by unit
+##overall, not split by resilience
+error.freq %>%
+  filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
+  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati","English (India)", "English (US)", "Slovenian", "Cantonese")), 
+         Exp = ifelse((Language == "Cantonese" | Language == "Slovenian" | Language == "English (US)"), 1, 2))%>%
+  group_by(Language, Exp, Error_type)%>%
+  summarise(n = n())%>% 
+  group_by(Language)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)%>%
+  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+  ggplot(aes(x = Language, y = prop, fill = Error_type)) +
+  geom_bar(stat = 'identity') +
+  theme_bw(base_size = 13)  +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.title = element_text(size = 11)) + 
+    facet_grid(~Exp, scale = "free_x")
+
+#finally, what are the distributions of prompts by language? 
+error.freq %>%
+  filter(IHC != 140)%>%
+  group_by(SID, Language)%>%
+  summarise(n = n()) %>%
+  ggplot(aes(n)) + 
+  geom_histogram() + 
+  facet_wrap(~Language, ncol = 3) + 
+  scale_x_continuous(breaks = seq(0, 12, 1))
+```
+
+##Plotting where IHCs appear by language
+```{r}
+ihc.dist <- all.data %>%
+  distinct(SID, Productive, Language, IHC, FHC)%>%
+   mutate(IHC_stop = ifelse((Language == "Cantonese" | 
+                                Language == "Slovenian" |
+                                Language == "English (India)" |
+                                Language == "English (US)") & IHC %% 10 == 9 , "Decade end", 
+                             ifelse(IHC %% 10 == 0, "Decade beginning",
+                                    ifelse(IHC %% 10 == 8 & (Language == "Hindi" | Language == "Gujarati"), "Hindi/Gujarati pre-decade transition", "Mid-decade"))))
+
+#plot
+ihc.dist %>%
+    mutate(Language = factor(Language, levels = c("Hindi", "Gujarati","English (India)", "English (US)", "Slovenian", "Cantonese")), 
+           Exp = ifelse((Language == "Cantonese" | Language == "Slovenian" | Language == "English (US)"), "Experiment 1", "Experiment 2"))%>%
+    group_by(Language, Exp, IHC_stop)%>%
+    summarise(n = n())%>% 
+    group_by(Language)%>%
+    mutate(total.n = sum(n), 
+           prop = n/total.n)%>%
+    mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+    ggplot(aes(x = Language, y = prop, fill = IHC_stop)) +
+    geom_bar(stat = 'identity', position = position_dodge()) +
+    theme_bw(base_size = 13)  +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "right",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          legend.title = element_text(size = 11)) + 
+      facet_grid(~Exp, scale = "free_x") + 
+  labs(y = "Proportion of IHC")
+
+ggsave("Figures/dist_IHC.png")
+
+
+
+##what are the deltas by IHC stopping type? 
+ihc.dist.mean <- ihc.dist %>%
+  mutate(delta = FHC-IHC)%>%
+  mutate(IHC_stop = factor(IHC_stop, levels = c("Decade end", "Decade beginning", "Mid-decade", 
+                              "Hindi/Gujarati pre-decade transition")))
+
+model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "Cantonese"))
+summary(model.test) #ns for Cantonese
+
+model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "English (US)"))
+summary(model.test) #significant for English (US)
+
+model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "Slovenian"))
+summary(model.test) #ns for Slovenian
+
+model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "Hindi"))
+summary(model.test) #ns for Hindi
+
+model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "Gujarati"))
+summary(model.test) #ns for Gujarati
+
+model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "English (India)"))
+summary(model.test) #ns for Indian English
 ```
 
 ####How many participants used all 14 prompts?
@@ -1523,7 +1616,7 @@ all.data %>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "Number queried", y = "Mean T=task performance")
+  labs(x = "Number queried", y = "Mean task performance")
 ggsave("Figures/unit_nn_item.png", width = 9, height = 5.3)
 
 ```
@@ -1596,16 +1689,6 @@ nn.full %>%
   labs(x = "Highest Count", y = "Mean Next Number performance")
 ggsave("Figures/nn_by_hc_india.png")
 ```
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1808,10 +1891,10 @@ wcn.gujarati.within <- all.data %>%
   filter(!is.na(highest_contig.c))
 ```
 
-#Hong Kong: Within-language models, Unit Task
-Build the models
+***
 
-##Build the models
+#UNIT TASK MODELS, WITHIN LANGUAGES
+##Hong Kong
 ```{r}
 #base
 sf.hk.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
@@ -1841,21 +1924,25 @@ sf.hk.within.model1.t <- glmer(Correct ~ Productive + count_range +  age.c +
                                (1|SID) + (1|starting_num.c), family = "binomial", 
                            data = sf.hk.within)
 #FHC
-sf.hk.within.model2.t <- glmer(Correct ~ fhc.c + count_range +  age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
+sf.hk.within.model2.t <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
                            data = sf.hk.within)
 #IHC
 sf.hk.within.model3.t <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
                              family = "binomial", 
                            data = sf.hk.within)
+
 #Highest contig.
 sf.hk.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range  + age.c + (1|SID) + (1|starting_num.c), 
                              family = "binomial", 
                            data = sf.hk.within)
 
 
+tab_model(sf.hk.within.model3.t)
+tab_model(sf.hk.within.model3)
+
 ```
 
-##Hong Kong: Unit task models
+##Table
 ```{r}
 library(sjPlot)
 mtable.sf.hk <- mtable('Base Model' = sf.hk.within.base,
@@ -1883,41 +1970,38 @@ mtable.sf.hk
 ```
 
 
-##Model comparisons
-###Base v. productivity - NS, Chisq(1) = 0.05. p = .82
+###Model comparisons
+####Base v. productivity - NS, Chisq(1) = 0.05. p = .82
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT') #ns
 anova(sf.hk.within.base.t, sf.hk.within.model1.t, test = 'LRT') #ns
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 11.65, p = 0.0006, AIC = 1616.5
+####Base v. FHC - Sig, Chisq(1) = 11.65, p = 0.0006, AIC = 1616.5
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model2, test = 'LRT')
 anova(sf.hk.within.base.t, sf.hk.within.model2.t, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 38.91, p < .0001, AIC = 1589.3
+####Base v. IHC - Sig, Chisq(1) = 38.91, p < .0001, AIC = 1589.3
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model3, test = 'LRT')
 anova(sf.hk.within.base.t, sf.hk.within.model3.t, test = 'LRT')
 ```
 
-###Base v. Highest Contiguous NN - Sig, Chisq(1) = 11.8251, p = .0002, AIC = 1616.3
+####Base v. Highest Contiguous NN - Sig, Chisq(1) = 11.8251, p = .0002, AIC = 1616.3
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model4, test = 'LRT')
 anova(sf.hk.within.base.t, sf.hk.within.model4.t, test = 'LRT')
 ```
 
-###Ranking of predictors from individual models 
+####Ranking of predictors from individual models 
 1.  IHC - AIC = 1589.3
 2.  HCNN - AIC = 1616.3
 3.  FHC - AIC = 1616.5
 4.  Productivity - 1624.3
 
-####Exploratory
-1. Productivity gradient - AIC = 1624.3
-
-##Large model
+###Large model
 We have three significant predictors of performance on the Unit task (FHC, IHC, and Highest Contiguous NN). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task.
 
 The simple model with the lowest AIC is IHC, so we will begin with that as our base term. 
@@ -2009,11 +2093,8 @@ library(sjPlot)
 tab_model(sf.hk.within.plus1, transform = NULL)
 ```
 
-***
+##Slovenian
 
-#SLO: Within-language models, Unit Task
-
-##Build the models
 ```{r}
 #base
 sf.slo.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c + (1|SID) , family = "binomial", 
@@ -2052,9 +2133,12 @@ sf.slo.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range + age.c
                              family = "binomial", 
                            data = sf.slo.within) 
 
+tab_model(sf.slo.within.model4.t)
+tab_model(sf.slo.within.model4)
+
 ```
 
-##SLO: Unit task models
+##Table
 ```{r}
 mtable.sf.slo <- mtable('Base Model' = sf.slo.within.base,
             'Model 1: Productivity' = sf.slo.within.model1,
@@ -2079,40 +2163,40 @@ mtable.sf.slo
 # tab_model(sf.slo.within.model4, transform = NULL)
 ```
 
-##Model Comparisons
-###Base v. Productivity - sig, Chis(1) = 15.967, p < .0001, AIC = 1422.7
+###Model Comparisons
+####Base v. Productivity - sig, Chis(1) = 15.967, p < .0001, AIC = 1422.7
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')
 anova(sf.slo.within.base.t, sf.slo.within.model1.t, test = 'LRT')
 ```
 
  
-###Base v. FHC - Sig, Chisq(1) = 25.132, p < .0001, AIC = 1413.6
+####Base v. FHC - Sig, Chisq(1) = 25.132, p < .0001, AIC = 1413.6
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')
 anova(sf.slo.within.base.t, sf.slo.within.model2.t, test = 'LRT')
 ```
 
-###Base v. IHC - Chisq(1) = 14.585, p = .0001, AIC = 1424.1
+####Base v. IHC - Chisq(1) = 14.585, p = .0001, AIC = 1424.1
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model3, test = 'LRT')
 anova(sf.slo.within.base.t, sf.slo.within.model3.t, test = 'LRT')
 ````
 
-###Base v. Highest Contiguous NN - Sig, Chisq(1) = 26.227, p < .0001, AIC = 1412.5
+####Base v. Highest Contiguous NN - Sig, Chisq(1) = 26.227, p < .0001, AIC = 1412.5
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')
 anova(sf.slo.within.base.t, sf.slo.within.model4.t, test = 'LRT')
 ```
 
-##Ranking of Productivity predictors from AIC 
+###Ranking of Productivity predictors from AIC 
 1.  HCNN - 1412.46
 2.  FHC - 1413.56
 3.  Productivity - 1422.72
 4.  IHC - 1424.10
 
 
-##Large model
+###Large model
 ```{r}
 #Base - HCNN
 sf.slo.within.plus1 <- glmer(Correct ~ highest_contig.c + count_range + starting_num.c + age.c + (1|SID), 
@@ -2190,9 +2274,8 @@ summary(sf.slo.within.plus2.fhc)
 tab_model(sf.slo.within.plus2.fhc, transform = NULL)
 ```
 
-#English (US): Within-language models, Unit Task
+##English (US)
 
-##Build the models
 ```{r}
 #base
 sf.us.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
@@ -2237,7 +2320,7 @@ sf.us.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range + age.c 
 
 ```
 
-##English (US): Unit task models
+###Table
 ```{r}
 mtable.sf.us <- mtable('Base Model' = sf.us.within.base,
             'Model 1: Productivity' = sf.us.within.model1,
@@ -2264,39 +2347,39 @@ mtable.sf.us
 
 ```
 
-##Model comparisons
-###Base v. Productivity - NS, Chisq(1) = 1.08, p = .27, AIC = 1511.2
+###Model comparisons
+####Base v. Productivity - NS, Chisq(1) = 1.08, p = .27, AIC = 1511.2
 ```{r}
 anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')
 anova(sf.us.within.base.t, sf.us.within.model1.t, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 18.17, p < .0001, AIC = 1494.1
+####Base v. FHC - Sig, Chisq(1) = 18.17, p < .0001, AIC = 1494.1
 ```{r}
 anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')
 anova(sf.us.within.base.t, sf.us.within.model2.t, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 48.78, p < .0001, AIC = 1463.5.3
+####Base v. IHC - Sig, Chisq(1) = 48.78, p < .0001, AIC = 1463.5.3
 ```{r}
 anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')
 anova(sf.us.within.base.t, sf.us.within.model3.t, test = 'LRT')
 ````
 
-###Base v. Highest Contig. - Sig, Chisq(1) = 35.66, p < .0001, AIC = 1476.7
+####Base v. Highest Contig. - Sig, Chisq(1) = 35.66, p < .0001, AIC = 1476.7
 ```{r}
 anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')
 anova(sf.us.within.base.t, sf.us.within.model4.t, test = 'LRT')
 ```
 
 
-##Ranking of productivity predictors by AIC 
+###Ranking of productivity predictors by AIC 
 1.  IHC - 1463.5 
 2.  HCNN - 1476.7
 3.  FHC - 1494.1
 4.  Productivity - 1511.2
 
-##Large model
+###Large model
 Base = IHC 
 ```{r}
 #IHC
@@ -2374,11 +2457,8 @@ summary(sf.us.within.plus2.highest.contig)
 tab_model(sf.us.within.plus2.highest.contig, transform = NULL)
 ```
 
-***
+##Hindi
 
-#Experiment 2: Within-language Unit Task models
-#Hindi: Within-language models, Unit Task
-##Build the models
 ```{r}
 #Base
 sf.hindi.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
@@ -2416,7 +2496,7 @@ sf.hindi.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range  + ag
 
 ```
 
-##Hindi: Unit task models
+##Table
 ```{r}
 mtable.sf.hindi <- mtable('Base Model' = sf.hindi.within.base,
             'Model 1: Productivity' = sf.hindi.within.model1,
@@ -2441,26 +2521,26 @@ mtable.sf.hindi
 # tab_model(sf.hindi.within.model4, transform = NULL)
 ```
 
-##Model comparisons
-###Base v. Productivity - marginal, p = .07
+###Model comparisons
+####Base v. Productivity - marginal, p = .07
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model1, test = 'LRT')
 anova(sf.hindi.within.base.t, sf.hindi.within.model1.t, test = 'LRT')
 ```
 
-###Base v. FHC - sig, Chisq(1) = 21.6, p < .0001, AIC = 1325.1
+####Base v. FHC - sig, Chisq(1) = 21.6, p < .0001, AIC = 1325.1
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model2, test = 'LRT')
 anova(sf.hindi.within.base.t, sf.hindi.within.model2.t, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, chisq(1) = 28.436, p < .0001, AIC = 1318.4
+####Base v. IHC - Sig, chisq(1) = 28.436, p < .0001, AIC = 1318.4
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model3, test = 'LRT')
 anova(sf.hindi.within.base.t, sf.hindi.within.model3.t, test = 'LRT')
 ```
 
-###Base v. Highest contig. - Sig, Chisq(1) = 27.63, p < .0001, AIC = 1319.1
+####Base v. Highest contig. - Sig, Chisq(1) = 27.63, p < .0001, AIC = 1319.1
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model4, test = 'LRT')
 anova(sf.hindi.within.base.t, sf.hindi.within.model4.t, test = 'LRT')
@@ -2535,10 +2615,9 @@ anova(sf.hindi.within.plus1, sf.hindi.within.plus2.hc, sf.hindi.within.plus3, te
 summary(sf.hindi.within.plus2.hc)
 tab_model(sf.hindi.within.plus2.hc, transform = NULL)
 ```
----
 
-#Gujarati: Within-language models, Unit Task
-##Build the models
+##Gujarati
+
 ```{r}
 #Base
 sf.gujarati.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c +  (1|SID), family = "binomial", 
@@ -2575,7 +2654,7 @@ sf.gujarati.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range + 
 
 ```
 
-##Gujarati: Unit task models
+###Table
 ```{r}
 mtable.sf.gujarati <- mtable('Base Model' = sf.gujarati.within.base,
             'Model 1: Productivity' = sf.gujarati.within.model1,
@@ -2600,335 +2679,37 @@ mtable.sf.gujarati
 # tab_model(sf.gujarati.within.model4, transform = NULL)
 ```
 
-##Model comparisons
-###Base v. productivity - NS, p = .4
+###Model comparisons
+####Base v. productivity - NS, p = .4
 ```{r}
 anova(sf.gujarati.within.base, sf.gujarati.within.model1, test = 'LRT')
 anova(sf.gujarati.within.base.t, sf.gujarati.within.model1.t, test = 'LRT')
 ```
 
-###Base v. FHC - NS, p = .3
+####Base v. FHC - NS, p = .3
 ```{r}
 anova(sf.gujarati.within.base, sf.gujarati.within.model2, test = 'LRT')
 anova(sf.gujarati.within.base.t, sf.gujarati.within.model2.t, test = 'LRT')
 ```
 
-###Base v. IHC - p = .19
+####Base v. IHC - p = .19
 ```{r}
 anova(sf.gujarati.within.base, sf.gujarati.within.model3, test = 'LRT')
 anova(sf.gujarati.within.base.t, sf.gujarati.within.model3.t, test = 'LRT')
 ```
 
-###Base v. Highest contig, NS p = .2
+####Base v. Highest contig, NS p = .2
 ```{r}
 anova(sf.gujarati.within.base, sf.gujarati.within.model4, test = 'LRT')
 anova(sf.gujarati.within.base.t, sf.gujarati.within.model4.t, test = 'LRT')
 ```
 
 
-#Large model - mean NN
-```{r}
-# summary(sf.gujarati.within.base)
-# summary(sf.gujarati.within.model.nn)
-```
-
+##Gujarati results: Nothing predicts Unit Task performance
 ```{r}
 summary(sf.gujarati.within.base)
 tab_model(sf.gujarati.within.base, transform = NULL)
 ```
-
-
----
-
-##Productivity t-test of Unit Task performance
-Using the Resilient/Non-Resilient categorical classification outlined above, we will compare performance between both groups on the Unit task using t-tests. We may do this by considering average performance (averaging the 0’s and 1’s on each task for each participant); should doing so provide greater precision, we may also compare Highest Contiguous Number.
-
-###HK: Marginally significant difference between groups (*p* = .06)
-```{r}
-#with mean performance
-sf.hk.mean.ms <- all.data %>%
-  filter(Language == "Cantonese", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.hk.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.hk.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #marginally significant difference between productive and nonproductive counters for performance on Unit Task
-
-t.test(subset(sf.hk.mean.ms)$mean, mu = .5, var.equal = TRUE)
-```
-
-###SLO
-```{r}
-#with mean performance
-sf.slo.mean.ms <- all.data %>%
-  filter(Language == "Slovenian", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.slo.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.slo.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
-
-#test against chance
-t.test(subset(sf.slo.mean.ms)$mean, mu = .5, var.equal = TRUE)
-```
-
-###US
-```{r}
-#with mean performance
-sf.us.mean.ms <- all.data %>%
-  filter(Language == "English (US)", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.us.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.us.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
-
-#test against chance
-t.test(subset(sf.us.mean.ms)$mean, mu = .5, var.equal = TRUE)
-```
-
-###Hindi
-```{r}
-#with mean performance
-sf.hindi.mean.ms <- all.data %>%
-  filter(Language == "Hindi", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.hindi.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.hindi.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
-
-#test against chance
-t.test(subset(sf.hindi.mean.ms)$mean, mu = .5, var.equal = TRUE)
-
-#follow up removing largest numbers
-sf.hindi.mean.ms <- all.data %>%
-  filter(Language == "Hindi", 
-         Task == "SF", 
-         Task_item != "224", 
-         Task_item != "252", 
-         Task_item != "271")%>%
-  group_by(SID)%>% 
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(sf.hindi.mean.ms$mean, mu = .5, var.equal = TRUE)
-
-##correlations 
-hindi.cor.dat <- all.data %>%
-  filter(Language == "Hindi", 
-         Task == "SF") %>%
-  mutate(Task_item = as.numeric(as.character(Task_item)))%>%
-  group_by(Task_item)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-cor.test(hindi.cor.dat$Task_item, hindi.cor.dat$mean)
-
-
-```
-
-###Gujarati
-```{r}
-#with mean performance
-sf.gujarati.mean.ms <- all.data %>%
-  filter(Language == "Gujarati", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>% 
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.gujarati.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.gujarati.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
-
-t.test(subset(sf.gujarati.mean.ms)$mean, mu = .5, var.equal = TRUE)
-
-#follow up removing largest numbers
-sf.gujarati.mean.ms <- all.data %>%
-  filter(Language == "Gujarati", 
-         Task == "SF", 
-         Task_item != "224", 
-         Task_item != "252", 
-         Task_item != "271")%>%
-  group_by(SID)%>% 
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(sf.gujarati.mean.ms$mean, mu = .5, var.equal = TRUE)
-```
-
-
-####FOLLOW UP: Do Hindi and Gujarati speakers have a bias for picking 1st or 2nd item? 
-```{r}
-bias.df <- all.data %>%
-  filter(Task == "SF")%>%
-  mutate(Task_item = as.numeric(as.character(Task_item)),
-         Response = as.numeric(as.character(Response)),
-         choice.order = ifelse(((Trial_number == "1" | Trial_number == "3" | 
-                                  Trial_number == "5" | Trial_number == "7" |
-                                  Trial_number == "9" | Trial_number == "11") & Response == Task_item + 1), "Second", 
-                               ifelse(((Trial_number == "1" | Trial_number == "3" | 
-                                  Trial_number == "5" | Trial_number == "7" |
-                                  Trial_number == "9" | Trial_number == "11") & Response == Task_item + 2), "First", 
-                               ifelse(((Trial_number == "2" | Trial_number == "4" | 
-                                  Trial_number == "6" | Trial_number == "8" |
-                                  Trial_number == "10" | Trial_number == "12") & Response == Task_item + 1), "First", 
-                               ifelse(((Trial_number == "2" | Trial_number == "4" | 
-                                  Trial_number == "6" | Trial_number == "8" |
-                                  Trial_number == "10" | Trial_number == "12") & Response == Task_item + 2), "Second", NA)))))
-
-##how frequently do these kids select each option? 
-bias.df %>%
-  filter(!is.na(choice.order), 
-         Language == "Hindi" |
-           Language == "Gujarati")%>%
-  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", 
-                                                  "24", "52", "71", 
-                                                  "105", "107",
-                                                  "116", "224", "252", 
-                                                  "271")))%>%
-  group_by(Language, Task_item, choice.order)%>%
-  summarise(n = n()) %>%
-  group_by(Language)%>%
-  mutate(prop = n/sum(n))%>%
-  ggplot(aes(x = Task_item, y= prop, fill = choice.order)) + 
-  geom_bar(stat='identity', position = position_dodge()) + 
-  facet_grid(~Language)
-
-#within language, are they biased to pick the first alternative more than chance? 
-bias.df %<>%
-  mutate(choice.first = ifelse(choice.order == "First", 1, 0), 
-         choice.second = ifelse(choice.order == "Second",1, 0))
-
-hindi.bias <- matrix(c(sum(subset(bias.df, Language == "Hindi")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df, Language == "Hindi")$choice.second, na.rm = TRUE)))
-chisq.test(hindi.bias)
-
-gujarati.bias <- matrix(c(sum(subset(bias.df, Language == "Gujarati")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df, Language == "Gujarati")$choice.second, na.rm = TRUE)))
-chisq.test(gujarati.bias)
-
-hk.bias <- matrix(c(sum(subset(bias.df, Language == "Cantonese")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df, Language == "Cantonese")$choice.second, na.rm = TRUE)))
-chisq.test(hk.bias)
-
-slo.bias <- matrix(c(sum(subset(bias.df, Language == "Slovenian")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df, Language == "Slovenian")$choice.second, na.rm = TRUE)))
-chisq.test(slo.bias)
-
-
-###Re-run, filter out large numbers
-bias.df.small <- bias.df %>%
-  filter(Task_item < 100)
-
-hindi.bias <- matrix(c(sum(subset(bias.df.small, Language == "Hindi")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df.small, Language == "Hindi")$choice.second, na.rm = TRUE)))
-chisq.test(hindi.bias)
-
-gujarati.bias <- matrix(c(sum(subset(bias.df.small, Language == "Gujarati")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df.small, Language == "Gujarati")$choice.second, na.rm = TRUE)))
-chisq.test(gujarati.bias)
-
-
-####If we remove the large numbers, what are the descriptives? 
-bias.df %>%
-  filter(Task_item < 200)%>%
-  group_by(Language)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE), 
-            sd = sd(Correct, na.rm = TRUE))
-
-#do children perform below chance for smaller ns? 
-lang.small.ms <- bias.df.small %>%
-  group_by(SID, Language)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(lang.small.ms, Language == "Hindi")$mean, mu = .5, var.equal = TRUE)
-
-t.test(subset(lang.small.ms, Language == "Gujarati")$mean, mu = .5, var.equal = TRUE)
-
-#finally, what if we filter out subset-knowers?
-bias.df %>%
-  filter(Knower.level == "CP-knower")%>%
-  group_by(Language)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE), 
-            sd = sd(Correct, na.rm = TRUE))
-```
-
-###Cheung-style analysis
-```{r}
-#Classify children based on counting quartile within language 
-us.cheung <- all.data %>%
-  filter(Language == "English (US)")%>%
-  mutate(counting.classification = ifelse(IHC < 20, "Low", 
-                                          ifelse((IHC >= 20 & IHC < 40), "Medium", 
-                                                 ifelse((IHC >= 40 & IHC < 80), "High", "Very High"))),
-         counting.classification = factor(counting.classification, levels = c("Low", "Medium", "High", "Very High")),
-         number.magnitude = ifelse((Task_item == "5" | Task_item == "7"), "Small", 
-                                   ifelse(Task_item == "16", "Medium", 
-                                          ifelse(Task_item == "24", "Large", 
-                                                 ifelse((Task_item == "52" | Task_item == "71"), "Very Large", "Super-large")))), 
-         number.magnitude = factor(number.magnitude, levels = c("Small", "Medium", "Large", "Very Large", "Super-large")))
-
-#cheung style accuracy
-us.cheung %>%
-  group_by(SID, counting.classification, number.magnitude)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))%>%
-  mutate(mean.factor = cut(mean, breaks = c(0, .33, .5, .67, .83, 1), include.lowest = TRUE))%>%
-  group_by(counting.classification, number.magnitude, mean.factor)%>%
-  summarise(n = n())%>%
-  group_by(counting.classification)%>%
-  mutate(prop = n/sum(n)) %>%
-  ggplot(aes(x = mean.factor, y= prop, fill = number.magnitude)) + 
-  geom_bar(stat = "identity", position = position_dodge()) + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_wrap(~counting.classification, ncol = 2)
-
-##model with cheung analysis 
-cheung.model <- us.cheung %>%
-  filter(Task == "SF")
-
-main.effects.cheung <- lmer(Correct ~ counting.classification + number.magnitude + Age + (1|SID), 
-                            data = cheung.model)
-
-summary(main.effects.cheung)
-  ##overall descriptives by counting classification
-cheung.model %>%
-  group_by(counting.classification)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-```
-
----
-
-#Next Number
-##Descriptive statistics  
-```{r}
-all.data %>%
-  filter(Task == "NN")%>%
-  group_by(SID, Language)%>%
-  summarise(mean_sub = mean(Correct, na.rm = TRUE))%>%
-  group_by(Language)%>%
-  summarise(n = n(),
-            mean = mean(mean_sub, na.rm = TRUE), 
-            sd = sd(mean_sub, na.rm = TRUE), 
-            se = sd/sqrt(n))%>%
-  kable()
-```
-
-
-
-##Do English US/India differ?
-No significant difference in mean NN performance
-```{r}
-nn.ms <- all.data %>%
-  filter(Task == "NN")%>%
-  group_by(SID,Language)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(nn.ms, Language == "English (US)")$mean, 
-       subset(nn.ms, Language == "English (India)")$mean, var.equal = TRUE)
-```
-
 
 ***
 
@@ -3557,6 +3338,311 @@ summary(wcn.gujarati.within.plus.gain)
 summary(wcn.gujarati.within.plus2.prod)
 tab_model(wcn.gujarati.within.plus2.prod, transform = NULL)
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+---
+
+##Productivity t-test of Unit Task performance
+Using the Resilient/Non-Resilient categorical classification outlined above, we will compare performance between both groups on the Unit task using t-tests. We may do this by considering average performance (averaging the 0’s and 1’s on each task for each participant); should doing so provide greater precision, we may also compare Highest Contiguous Number.
+
+###HK: Marginally significant difference between groups (*p* = .06)
+```{r}
+#with mean performance
+sf.hk.mean.ms <- all.data %>%
+  filter(Language == "Cantonese", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.hk.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.hk.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #marginally significant difference between productive and nonproductive counters for performance on Unit Task
+
+t.test(subset(sf.hk.mean.ms)$mean, mu = .5, var.equal = TRUE)
+```
+
+###SLO
+```{r}
+#with mean performance
+sf.slo.mean.ms <- all.data %>%
+  filter(Language == "Slovenian", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.slo.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.slo.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
+
+#test against chance
+t.test(subset(sf.slo.mean.ms)$mean, mu = .5, var.equal = TRUE)
+```
+
+###US
+```{r}
+#with mean performance
+sf.us.mean.ms <- all.data %>%
+  filter(Language == "English (US)", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.us.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.us.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
+
+#test against chance
+t.test(subset(sf.us.mean.ms)$mean, mu = .5, var.equal = TRUE)
+```
+
+###Hindi
+```{r}
+#with mean performance
+sf.hindi.mean.ms <- all.data %>%
+  filter(Language == "Hindi", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.hindi.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.hindi.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
+
+#test against chance
+t.test(subset(sf.hindi.mean.ms)$mean, mu = .5, var.equal = TRUE)
+
+#follow up removing largest numbers
+sf.hindi.mean.ms <- all.data %>%
+  filter(Language == "Hindi", 
+         Task == "SF", 
+         Task_item != "224", 
+         Task_item != "252", 
+         Task_item != "271")%>%
+  group_by(SID)%>% 
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(sf.hindi.mean.ms$mean, mu = .5, var.equal = TRUE)
+
+##correlations 
+hindi.cor.dat <- all.data %>%
+  filter(Language == "Hindi", 
+         Task == "SF") %>%
+  mutate(Task_item = as.numeric(as.character(Task_item)))%>%
+  group_by(Task_item)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+cor.test(hindi.cor.dat$Task_item, hindi.cor.dat$mean)
+
+
+```
+
+###Gujarati
+```{r}
+#with mean performance
+sf.gujarati.mean.ms <- all.data %>%
+  filter(Language == "Gujarati", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>% 
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.gujarati.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.gujarati.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
+
+t.test(subset(sf.gujarati.mean.ms)$mean, mu = .5, var.equal = TRUE)
+
+#follow up removing largest numbers
+sf.gujarati.mean.ms <- all.data %>%
+  filter(Language == "Gujarati", 
+         Task == "SF", 
+         Task_item != "224", 
+         Task_item != "252", 
+         Task_item != "271")%>%
+  group_by(SID)%>% 
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(sf.gujarati.mean.ms$mean, mu = .5, var.equal = TRUE)
+```
+
+
+####FOLLOW UP: Do Hindi and Gujarati speakers have a bias for picking 1st or 2nd item? 
+```{r}
+bias.df <- all.data %>%
+  filter(Task == "SF")%>%
+  mutate(Task_item = as.numeric(as.character(Task_item)),
+         Response = as.numeric(as.character(Response)),
+         choice.order = ifelse(((Trial_number == "1" | Trial_number == "3" | 
+                                  Trial_number == "5" | Trial_number == "7" |
+                                  Trial_number == "9" | Trial_number == "11") & Response == Task_item + 1), "Second", 
+                               ifelse(((Trial_number == "1" | Trial_number == "3" | 
+                                  Trial_number == "5" | Trial_number == "7" |
+                                  Trial_number == "9" | Trial_number == "11") & Response == Task_item + 2), "First", 
+                               ifelse(((Trial_number == "2" | Trial_number == "4" | 
+                                  Trial_number == "6" | Trial_number == "8" |
+                                  Trial_number == "10" | Trial_number == "12") & Response == Task_item + 1), "First", 
+                               ifelse(((Trial_number == "2" | Trial_number == "4" | 
+                                  Trial_number == "6" | Trial_number == "8" |
+                                  Trial_number == "10" | Trial_number == "12") & Response == Task_item + 2), "Second", NA)))))
+
+##how frequently do these kids select each option? 
+bias.df %>%
+  filter(!is.na(choice.order), 
+         Language == "Hindi" |
+           Language == "Gujarati")%>%
+  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", 
+                                                  "24", "52", "71", 
+                                                  "105", "107",
+                                                  "116", "224", "252", 
+                                                  "271")))%>%
+  group_by(Language, Task_item, choice.order)%>%
+  summarise(n = n()) %>%
+  group_by(Language)%>%
+  mutate(prop = n/sum(n))%>%
+  ggplot(aes(x = Task_item, y= prop, fill = choice.order)) + 
+  geom_bar(stat='identity', position = position_dodge()) + 
+  facet_grid(~Language)
+
+#within language, are they biased to pick the first alternative more than chance? 
+bias.df %<>%
+  mutate(choice.first = ifelse(choice.order == "First", 1, 0), 
+         choice.second = ifelse(choice.order == "Second",1, 0))
+
+hindi.bias <- matrix(c(sum(subset(bias.df, Language == "Hindi")$choice.first, na.rm =TRUE), 
+              sum(subset(bias.df, Language == "Hindi")$choice.second, na.rm = TRUE)))
+chisq.test(hindi.bias)
+
+gujarati.bias <- matrix(c(sum(subset(bias.df, Language == "Gujarati")$choice.first, na.rm =TRUE), 
+              sum(subset(bias.df, Language == "Gujarati")$choice.second, na.rm = TRUE)))
+chisq.test(gujarati.bias)
+
+hk.bias <- matrix(c(sum(subset(bias.df, Language == "Cantonese")$choice.first, na.rm =TRUE), 
+              sum(subset(bias.df, Language == "Cantonese")$choice.second, na.rm = TRUE)))
+chisq.test(hk.bias)
+
+slo.bias <- matrix(c(sum(subset(bias.df, Language == "Slovenian")$choice.first, na.rm =TRUE), 
+              sum(subset(bias.df, Language == "Slovenian")$choice.second, na.rm = TRUE)))
+chisq.test(slo.bias)
+
+
+###Re-run, filter out large numbers
+bias.df.small <- bias.df %>%
+  filter(Task_item < 100)
+
+hindi.bias <- matrix(c(sum(subset(bias.df.small, Language == "Hindi")$choice.first, na.rm =TRUE), 
+              sum(subset(bias.df.small, Language == "Hindi")$choice.second, na.rm = TRUE)))
+chisq.test(hindi.bias)
+
+gujarati.bias <- matrix(c(sum(subset(bias.df.small, Language == "Gujarati")$choice.first, na.rm =TRUE), 
+              sum(subset(bias.df.small, Language == "Gujarati")$choice.second, na.rm = TRUE)))
+chisq.test(gujarati.bias)
+
+
+####If we remove the large numbers, what are the descriptives? 
+bias.df %>%
+  filter(Task_item < 200)%>%
+  group_by(Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE), 
+            sd = sd(Correct, na.rm = TRUE))
+
+#do children perform below chance for smaller ns? 
+lang.small.ms <- bias.df.small %>%
+  group_by(SID, Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(lang.small.ms, Language == "Hindi")$mean, mu = .5, var.equal = TRUE)
+
+t.test(subset(lang.small.ms, Language == "Gujarati")$mean, mu = .5, var.equal = TRUE)
+
+#finally, what if we filter out subset-knowers?
+bias.df %>%
+  filter(Knower.level == "CP-knower")%>%
+  group_by(Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE), 
+            sd = sd(Correct, na.rm = TRUE))
+```
+
+###Cheung-style analysis
+```{r}
+#Classify children based on counting quartile within language 
+us.cheung <- all.data %>%
+  filter(Language == "English (US)")%>%
+  mutate(counting.classification = ifelse(IHC < 20, "Low", 
+                                          ifelse((IHC >= 20 & IHC < 40), "Medium", 
+                                                 ifelse((IHC >= 40 & IHC < 80), "High", "Very High"))),
+         counting.classification = factor(counting.classification, levels = c("Low", "Medium", "High", "Very High")),
+         number.magnitude = ifelse((Task_item == "5" | Task_item == "7"), "Small", 
+                                   ifelse(Task_item == "16", "Medium", 
+                                          ifelse(Task_item == "24", "Large", 
+                                                 ifelse((Task_item == "52" | Task_item == "71"), "Very Large", "Super-large")))), 
+         number.magnitude = factor(number.magnitude, levels = c("Small", "Medium", "Large", "Very Large", "Super-large")))
+
+#cheung style accuracy
+us.cheung %>%
+  group_by(SID, counting.classification, number.magnitude)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))%>%
+  mutate(mean.factor = cut(mean, breaks = c(0, .33, .5, .67, .83, 1), include.lowest = TRUE))%>%
+  group_by(counting.classification, number.magnitude, mean.factor)%>%
+  summarise(n = n())%>%
+  group_by(counting.classification)%>%
+  mutate(prop = n/sum(n)) %>%
+  ggplot(aes(x = mean.factor, y= prop, fill = number.magnitude)) + 
+  geom_bar(stat = "identity", position = position_dodge()) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~counting.classification, ncol = 2)
+
+##model with cheung analysis 
+cheung.model <- us.cheung %>%
+  filter(Task == "SF")
+
+main.effects.cheung <- lmer(Correct ~ counting.classification + number.magnitude + Age + (1|SID), 
+                            data = cheung.model)
+
+summary(main.effects.cheung)
+  ##overall descriptives by counting classification
+cheung.model %>%
+  group_by(counting.classification)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+```
+
+---
+
+#Next Number
+##Descriptive statistics  
+```{r}
+all.data %>%
+  filter(Task == "NN")%>%
+  group_by(SID, Language)%>%
+  summarise(mean_sub = mean(Correct, na.rm = TRUE))%>%
+  group_by(Language)%>%
+  summarise(n = n(),
+            mean = mean(mean_sub, na.rm = TRUE), 
+            sd = sd(mean_sub, na.rm = TRUE), 
+            se = sd/sqrt(n))%>%
+  kable()
+```
+
+
+
+##Do English US/India differ?
+No significant difference in mean NN performance
+```{r}
+nn.ms <- all.data %>%
+  filter(Task == "NN")%>%
+  group_by(SID,Language)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(nn.ms, Language == "English (US)")$mean, 
+       subset(nn.ms, Language == "English (India)")$mean, var.equal = TRUE)
+```
+
+
+***
 
 
 ---
