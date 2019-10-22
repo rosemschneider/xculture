@@ -230,12 +230,6 @@ all.data %<>%
 # 
 # tmp <- unique.hc %>%
 #   filter(SID %in% unique.sid$SID)
-
-
-  
-
-
-
 ```
 
 ###Sanity check for Productivity
@@ -346,7 +340,6 @@ all.data %<>%
 
 
 ---
-
 ##Memory checks - NAs to 1
 Some participants have NAs rather than 1 for their first memory check. Also, if first mem check is a 0, and second is NA, change that second one to 1.
 ```{r}
@@ -434,10 +427,8 @@ all.data %>%
   summarise(n = n(),
             mean_IHC = round(mean(IHC)), 
             sd_IHC = round(sd(IHC), 2), 
-            median_IHC = round(median(IHC)), 
             mean_FHC = round(mean(FHC)), 
-            sd_FHC = round(sd(FHC), 2), 
-            median_FHC = round(median(FHC)))%>%
+            sd_FHC = round(sd(FHC), 2))%>%
   kable()
 
 ```
@@ -454,14 +445,55 @@ all.data %>%
   summarise(n = n(),
             mean_IHC = round(mean(IHC)), 
             sd_IHC = round(sd(IHC), 2), 
-            median_IHC = round(median(IHC)), 
             mean_FHC = round(mean(FHC)), 
-            sd_FHC = round(sd(FHC), 2), 
-            median_FHC = round(median(FHC)))%>%
+            sd_FHC = round(sd(FHC), 2))%>%
   kable()
 ```
 
-###Descriptive: How many children counted at least a little past their IHC?
+####Testing for differences in IHC between US and Indian English
+Response to reviewer
+```{r}
+english.counts <- all.data %>%
+  filter(Language == "English (US)" | 
+           Language == "English (India)")%>%
+  distinct(SID, Language, Productive, IHC)
+
+#overall
+t.test(subset(english.counts, Language == "English (US)")$IHC, 
+       subset(english.counts, Language == "English (India)")$IHC, var.equal = TRUE)
+
+#Resilient
+t.test(subset(english.counts, Language == "English (US)" & Productive == "Resilient")$IHC, 
+       subset(english.counts, Language == "English (India)" & Productive == "Resilient")$IHC, var.equal = TRUE)
+
+#Non-resilient
+t.test(subset(english.counts, Language == "English (US)" & Productive == "Non-Resilient")$IHC, 
+       subset(english.counts, Language == "English (India)" & Productive == "Non-Resilient")$IHC, var.equal = TRUE)
+```
+
+#### What is the relationship between age, productivity, and highest counts? 
+Response to reviewer
+```{r}
+#by language
+ms.cor <- all.data %>%
+  distinct(SID, Language, IHC, FHC, Productive, Age)%>%
+  mutate(Productive.num = ifelse(Productive == "Resilient", 1, 0))
+
+#overall 
+model.prod <- glm(Productive.num ~ Age, data = subset(ms.cor, Language == "Gujarati"), 
+                  family = "binomial")
+summary(model.prod)
+
+#interaction with language
+model.prod.lang <- glm(Productive.num ~ Language*Age, data = ms.cor, 
+                       family = "binomial")
+summary(model.prod.lang)
+
+#IHC by age
+model.ihc <- lm(IHC ~ Age, data = ms.cor)
+summary(model.ihc)
+```
+#### Descriptive: How many children counted at least a little past their IHC?
 ```{r}
 ##make df
 distinct_counts <- all.data %>%
@@ -482,7 +514,7 @@ distinct_counts %>%
   mutate(prop = total.n/sum(total.n))
 ```
 
-###Analysis: What is the correlation between IHC and FHC in all languages?
+### Analysis: What is the correlation between IHC and FHC in all languages?
 ```{r}
 ##Correlation between FHC and IHC in all languages
 
@@ -512,8 +544,8 @@ cor.test(subset(distinct_counts, Language == "Gujarati")$IHC,
 ```
 
 
-##Errors in HC
-###Prompts by productivity and language
+## Errors in HC
+### Prompts by productivity and language
 How many prompts do productive and nonproductive counters need? And what kind of errors do they make?
 Tables 3 and 9 (Prompts)
 ```{r}
@@ -538,105 +570,10 @@ error.freq <- full_join(hc.df, productive, by = "SID")%>%
                                     ifelse(Last_successful %% 10 == 8 & (Language == "Hindi" | Language == "Gujarati"), "Hindi/Gujarati pre-decade transition", "Mid-decade"))))
 ```
 
-####Mean number of prompts by Language, productivity
-SOM, descriptive analysis of number of errors by Resilience
-```{r}
-error.freq %>%
-  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
-  group_by(Productive, Language, Error_type)%>%
-  summarise(n = n())%>%
-  group_by(Language, Productive)%>%
-  mutate(total.n = sum(n), 
-            prop = n/total.n)
-```
-
-###Where are errors happening?
-Visualization of units
-```{r}
-error.freq.decade <- error.freq %>%
-  filter(Last_successful != 140)%>%
-  mutate(error.decade = ifelse(Last_successful < 10, 0, 
-                               ifelse(Last_successful >= 10 & Last_successful < 20, 10, 
-                                      ifelse(Last_successful >= 20 & Last_successful < 30, 20, 
-                                             ifelse(Last_successful >= 30 & Last_successful < 40, 30, 
-                                                    ifelse(Last_successful >=40 & Last_successful < 50, 40, 
-                                                           ifelse(Last_successful >= 50 & Last_successful < 60, 50, 
-                                                                  ifelse(Last_successful >= 60 & Last_successful < 70, 60, 
-                                                                         ifelse(Last_successful >= 70 & Last_successful < 80, 70, 
-                                                                                ifelse(Last_successful >= 80 & Last_successful < 90, 80, 
-                                                                                       ifelse(Last_successful >= 90 & Last_successful < 100, 90, 
-                                                                                              ifelse(Last_successful >= 100 & Last_successful < 110, 100, 
-                                                                                                     ifelse(Last_successful >= 110 & Last_successful < 120, 110, 
-                                                                                                            ifelse(Last_successful >= 120 & Last_successful < 130, 120,130)))))))))))))) %>%
-  mutate(error.base = (error.decade - Last_successful) * -1, 
-         error.base = ifelse(Last_successful == 140, 0, as.numeric(error.base)))
 
 
-
-###Error by unit
-##all
-error.freq.decade %>%
-  filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
-  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati","English (India)", "English (US)", "Slovenian", "Cantonese")), 
-         Productive = factor(Productive, levels = c("Resilient", "Non-Resilient"))) %>%
-  mutate(error.base = factor(error.base))%>%
-  mutate(Lang.prod = paste0(as.character(Language), " ", as.character(Productive), collapse = NULL))%>%
-  group_by(Language, Productive, error.base)%>%
-  summarise(n = n())%>% 
-  group_by(Language, Productive)%>%
-  mutate(total.n = sum(n), 
-         prop = n/total.n)%>%
-  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
-  ggplot(aes(x = error.base, y = Language)) +
-  geom_tile(aes(fill = round(prop, 2))) +
-  geom_text(aes(label = as.character(round(prop, 2))), 
-            size = 2.5) +
-  coord_equal() +
-  scale_fill_gradient2(low = "white", high = "red", "Proportion") + 
-  theme_bw(base_size = 13) + 
-  labs(x = "Unit of error") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        legend.position = "right", 
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        legend.title = element_text(size = 11)) +
-  facet_grid(rows = vars(Productive))
-ggsave("Figures/errors.png")
-
-###Error by unit
-##overall, not split by resilience
-error.freq %>%
-  filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
-  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati","English (India)", "English (US)", "Slovenian", "Cantonese")), 
-         Exp = ifelse((Language == "Cantonese" | Language == "Slovenian" | Language == "English (US)"), 1, 2))%>%
-  group_by(Language, Exp, Error_type)%>%
-  summarise(n = n())%>% 
-  group_by(Language)%>%
-  mutate(total.n = sum(n), 
-         prop = n/total.n)%>%
-  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
-  ggplot(aes(x = Language, y = prop, fill = Error_type)) +
-  geom_bar(stat = 'identity') +
-  theme_bw(base_size = 13)  +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = "right",
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.title = element_text(size = 11)) + 
-    facet_grid(~Exp, scale = "free_x")
-
-#finally, what are the distributions of prompts by language? 
-error.freq %>%
-  filter(IHC != 140)%>%
-  group_by(SID, Language)%>%
-  summarise(n = n()) %>%
-  ggplot(aes(n)) + 
-  geom_histogram() + 
-  facet_wrap(~Language, ncol = 3) + 
-  scale_x_continuous(breaks = seq(0, 12, 1))
-```
-
-##Plotting where IHCs appear by language
+#### Plotting where IHCs appear by language
+Response to reviewer
 ```{r}
 ihc.dist <- all.data %>%
   distinct(SID, Productive, Language, IHC, FHC)%>%
@@ -669,35 +606,9 @@ ihc.dist %>%
   labs(y = "Proportion of IHC")
 
 ggsave("Figures/dist_IHC.png")
-
-
-
-##what are the deltas by IHC stopping type? 
-ihc.dist.mean <- ihc.dist %>%
-  mutate(delta = FHC-IHC)%>%
-  mutate(IHC_stop = factor(IHC_stop, levels = c("Decade end", "Decade beginning", "Mid-decade", 
-                              "Hindi/Gujarati pre-decade transition")))
-
-model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "Cantonese"))
-summary(model.test) #ns for Cantonese
-
-model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "English (US)"))
-summary(model.test) #significant for English (US)
-
-model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "Slovenian"))
-summary(model.test) #ns for Slovenian
-
-model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "Hindi"))
-summary(model.test) #ns for Hindi
-
-model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "Gujarati"))
-summary(model.test) #ns for Gujarati
-
-model.test <- lm(delta ~ IHC_stop, data = subset(ihc.dist.mean, Language == "English (India)"))
-summary(model.test) #ns for Indian English
 ```
 
-####How many participants used all 14 prompts?
+#### How many participants used all 14 prompts?
 ```{r}
 #how many participants used at least 5 prompts?
 hc.df %>%
@@ -726,7 +637,7 @@ hc.df %>%
             mode = getmode(n))
 ```
 
-###How many prompts on average by language, productivity?
+### How many prompts on average by language, productivity?
 Tables 3 and 9
 ```{r}
 #by productivity
@@ -750,78 +661,11 @@ error.freq %>%
             sd_prompts = round(sd(n, na.rm = TRUE), 2))
 ```
 
-###SOM Analysis: What proportion of kids in highest proportion cluster (from GMM) are labeled as resilient in each language?
-First, set up GMM
+
+
+## Initial Highest Count
 ```{r}
-library(mclust)
-
-#make a function to identify cluster membership for Initial Highest Count
-prod.clust <- function(df) {
-  languages <- c("English (US)", "English (India)", "Hindi", "Gujarati", "Slovenian", "Cantonese")
-  
-  all.clust <- data.frame()
-  for (lang in languages) {
-    #filter down to correct language
-    tmp.df <- df %>%
-      filter(Language == lang)%>%
-      distinct(SID, IHC)%>%
-      dplyr::select(-SID)
-    
-    #run cluster analysis
-    BIC <- mclustBIC(tmp.df)
-    tmp.mclust <- Mclust(tmp.df, x = BIC)
-    tmp.df$CLUST <- tmp.mclust$classification
-    tmp.df$id <- row.names(tmp.df)
-    
-    #add SIDs back in
-    tmp.sids <- df %>%
-      filter(Language == lang)%>%
-      distinct(SID, IHC)
-    
-    tmp.sids$id <- row.names(tmp.sids)
-    
-    tmp.all <- right_join(tmp.sids, tmp.df, by = "id")
-    tmp.all$Language <- lang
-    
-    #add to large df to get back at end
-    all.clust <- bind_rows(all.clust, tmp.all)
-  }
-  return(all.clust)
-}
-
-clusters <- prod.clust(all.data)%>%
-  dplyr::select(SID, IHC.x, CLUST, Language)%>%
-  dplyr::rename(IHC = IHC.x)
-
-#add clusters to all.data
-all.data <- full_join(all.data, clusters, by = "SID")
-
-check <- all.data %>%
-  filter(IHC.x != IHC.y) # all good
-
-all.data %<>%
-  dplyr::select(-IHC.y, -Language.y)%>%
-  dplyr::rename(IHC = IHC.x,
-                Language = Language.x)
-
-```
-
-####What percentage of each mode turned out to be productive?
-```{r}
-##Pull out only these clusters 
-all.data %>%
-  distinct(SID, Language, Productive, CLUST)%>%
-  group_by(Language, CLUST, Productive)%>%
-  summarise(n = n())%>%
-  group_by(Language, CLUST)%>%
-  mutate(total.n = sum(n), 
-         prop = n/total.n)
-```
-
-##Initial Highest Count
-###Analysis: Do IHCs differ by language? - Gaussian Mixture Modeling
-```{r}
-#make a df for IHC
+#make a df for IHC and FHC
 initial_final <- all.data %>%
   filter(!is.na(Productive))%>%
   distinct(SID, Language, IHC, FHC, Productive, Dataset)%>%
@@ -829,118 +673,14 @@ initial_final <- all.data %>%
          FHC = as.numeric(FHC))
 ```
 
-Now fit GMM on IHC for every language
 
-###Cantonese
-```{r}
-#Cantonese
-cant.df <- initial_final %>%
-  filter(Language == "Cantonese")%>%
-  dplyr::select(IHC)
 
-BIC <- mclustBIC(cant.df)
 
-mod.cant <- Mclust(cant.df, x = BIC)
-summary(mod.cant, parameters = TRUE)
-
-```
-
-###Slovenian
-```{r}
-#Slovenian
-slo.df <- initial_final %>%
-  filter(Language == "Slovenian")%>%
-  dplyr::select(IHC)
-
-BIC <- mclustBIC(slo.df)
-
-mod.slo <- Mclust(slo.df, x = BIC)
-summary(mod.slo, parameters = TRUE)
-
-```
-
-###US English
-```{r}
-#English
-us.df <- initial_final %>%
-  filter(Language == "English (US)")%>%
-  dplyr::select(IHC)
-
-BIC <- mclustBIC(us.df)
-
-mod.us <- Mclust(us.df, x = BIC)
-summary(mod.us, parameters = TRUE)
-
-```
-
-###Hindi
-```{r}
-#Hindi
-hindi.df <- initial_final %>%
-  filter(Language == "Hindi")%>%
-  dplyr::select(IHC)
-
-BIC <- mclustBIC(hindi.df)
-
-mod.hindi <- Mclust(hindi.df, x = BIC)
-summary(mod.hindi, parameters = TRUE)
-
-```
-
-###Gujarati
-```{r}
-#Gujarati
-gujarati.df <- initial_final %>%
-  filter(Language == "Gujarati")%>%
-  dplyr::select(IHC)
-
-BIC <- mclustBIC(gujarati.df)
-
-mod.gujarati <- Mclust(gujarati.df, x = BIC)
-summary(mod.gujarati, parameters = TRUE)
-
-```
-
-###Indian English
-```{r}
-#Indian English
-ind.eng.df <- initial_final %>%
-  filter(Language == "English (India)")%>%
-  dplyr::select(IHC)
-
-BIC <- mclustBIC(ind.eng.df)
-
-mod.ind.eng <- Mclust(ind.eng.df, x = BIC)
-summary(mod.ind.eng, parameters = TRUE)
-
-```
-
-##IHC cluster visualization 
-```{r}
-initial_final %>%
-  mutate(Experiment = ifelse((Language == "Hindi" | Language == "Gujarati" | Language == "English (India)"), "Experiment 2", "Experiment 1"))%>%
-  dplyr::select(IHC, Experiment, Language)%>%
-  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)", "Hindi", "Gujarati", "English (India)")))%>%
-  ggplot(aes(x = IHC, colour= Language)) + geom_density(adjust = .5, size = 1.5) +
-  scale_x_continuous(breaks = seq(0, 140, 10)) +
-  theme_bw(base_size = 13) +
-  theme(legend.position = "right",
-        panel.grid.minor = element_blank(), 
-        legend.title = element_blank()) +
-  scale_colour_brewer(palette = "Dark2") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        legend.position = "bottom") +
-  labs(x = "Initial Highest Count", y = "Density") + 
-  facet_grid(~Experiment)
-ggsave("Figures/ihc_density_language.png", height = 5)
-```
 
 ---
 
-#Highest Contiguous Next Number
-##SOM: HCNN by each language
+# Highest Contiguous Next Number
+### SOM: HCNN by each language
 ```{r}
 #how many children have 0s
 all.data %>%
@@ -962,8 +702,8 @@ all.data %>%
 all.data %>%
   distinct(SID, highest_contig, Language)%>%
   group_by(Language)%>%
-  summarise(mean_hcnn = mean(highest_contig, na.rm = TRUE),
-            sd_hcnn = sd(highest_contig, na.rm = TRUE), 
+  summarise(mean_hcnn = round(mean(highest_contig, na.rm = TRUE)),
+            sd_hcnn = round(sd(highest_contig, na.rm = TRUE), 2), 
             median_hcnn = median(highest_contig, na.rm = TRUE))
 
 #by productivity
@@ -972,13 +712,13 @@ all.data %>%
   mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
   distinct(SID, highest_contig, Language, Productive)%>% 
   group_by(Language, Productive)%>%
-  summarise(mean_hcnn = mean(highest_contig, na.rm = TRUE),
-            sd_hcnn = sd(highest_contig, na.rm = TRUE), 
+  summarise(mean_hcnn = round(mean(highest_contig, na.rm = TRUE)),
+            sd_hcnn = round(sd(highest_contig, na.rm = TRUE), 2), 
             median_hcnn = median(highest_contig, na.rm = TRUE))
 ```
 
-###SOM Analysis: Do Resilient counters have higher HCNNs?
-####HK: Significant difference between groups (*p* = .004)
+### SOM Analysis: Do Resilient counters have higher HCNNs?
+#### HK: Significant difference between groups (*p* = .004)
 ```{r}
 sf.hk.mean.nn <- all.data %>%
   filter(Language == "Cantonese")%>%
@@ -989,7 +729,7 @@ t.test(subset(sf.hk.mean.nn, Productive == "Resilient")$mean_nn,
        subset(sf.hk.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
 ```
 
-###SLO - sig, *p* < .0001
+#### SLO - sig, *p* < .0001
 ```{r}
 sf.slo.mean.nn <- all.data %>%
   filter(Language == "Slovenian")%>%
@@ -1001,7 +741,7 @@ t.test(subset(sf.slo.mean.nn, Productive == "Resilient")$mean_nn,
 ```
 
 
-###US - sig, p < .0001
+#### US - sig, p < .0001
 ```{r}
 sf.us.mean.nn <- all.data %>%
   filter(Language == "English (US)")%>%
@@ -1012,7 +752,7 @@ t.test(subset(sf.us.mean.nn, Productive == "Resilient")$mean_nn,
        subset(sf.us.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
 ```
 
-###India-Eng, *p* = .02
+#### India-Eng, *p* = .02
 ```{r}
 sf.ind.eng.mean.nn <- all.data %>%
   filter(Language == "English (India)")%>%
@@ -1024,7 +764,7 @@ t.test(subset(sf.ind.eng.mean.nn, Productive == "Resilient")$mean_nn,
        subset(sf.ind.eng.mean.nn, Productive == "Non-Resilient")$mean_nn, var.equal = TRUE)
 ```
 
-###Hindi - *p* = .03
+#### Hindi - *p* = .03
 ```{r}
 sf.hindi.mean.nn <- all.data %>%
   filter(Language == "Hindi")%>%
@@ -1036,7 +776,7 @@ t.test(subset(sf.hindi.mean.nn, Productive == "Resilient")$mean_nn,
 ```
 
 
-###Gujarati - *p* < .0001
+#### Gujarati - *p* < .0001
 ```{r}
 sf.gujarati.mean.nn <- all.data %>%
   filter(Language == "Gujarati")%>%
@@ -1048,7 +788,7 @@ t.test(subset(sf.gujarati.mean.nn, Productive == "Resilient")$mean_nn,
 ```
 
 
-###SOM Analysis: Do transparent languages allow nonproductive counters to generate higher HCNNs?
+### SOM Analysis: Do transparent languages allow nonproductive counters to generate higher HCNNs?
 No significant difference in HCNN for nonproductive counters for Cantonese in comparison to English or Slovenian. US English nonproductive counters have significantly higher HCNNs than Hindi or Gujarati. This difference holds for Indian English speakers.
 ```{r}
 #lm predicting hcnn from language for nonproductive counters
@@ -1057,16 +797,6 @@ hcnn.hk <- all.data %>%
            Language == "Cantonese" |
            Language == "Slovenian")%>%
   droplevels()%>%
-  distinct(SID, highest_contig, Language, Age, sum_wppsi, Productive)%>%
-  filter(!is.na(highest_contig), 
-         Productive == "Non-Resilient")%>%
-  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))
-
-#HK/SLO/US
-hcnn.hk <- all.data %>%
-  filter(Language == "English (US)" |
-           Language == "Cantonese" |
-           Language == "Slovenian")%>%
   distinct(SID, highest_contig, Language, Age, sum_wppsi, Productive)%>%
   filter(!is.na(highest_contig), 
          Productive == "Non-Resilient")%>%
@@ -3574,26 +3304,42 @@ us.cheung <- all.data %>%
   mutate(counting.classification = ifelse(IHC < 20, "Low", 
                                           ifelse((IHC >= 20 & IHC < 40), "Medium", 
                                                  ifelse((IHC >= 40 & IHC < 80), "High", "Very High"))),
-         counting.classification = factor(counting.classification, levels = c("Low", "Medium", "High", "Very High")),
+         counting.classification = factor(counting.classification, 
+                                          levels = c("Low", "Medium", "High", "Very High"), 
+                                          labels = c("Low Counters (IHC < 20)", 
+                                                     "Medium Counters (20 \u2264 IHC < 40)", 
+                                                     "High Counters (40 \u2264 IHC < 80)", 
+                                                     "Very High Counters (IHC \u2265 80)")),
          number.magnitude = ifelse((Task_item == "5" | Task_item == "7"), "Small", 
                                    ifelse(Task_item == "16", "Medium", 
                                           ifelse(Task_item == "24", "Large", 
-                                                 ifelse((Task_item == "52" | Task_item == "71"), "Very Large", "Super-large")))), 
-         number.magnitude = factor(number.magnitude, levels = c("Small", "Medium", "Large", "Very Large", "Super-large")))
+                                                 ifelse((Task_item == "52" | Task_item == "71"), 
+                                                        "Very Large", "Extremely Large")))), 
+         number.magnitude = factor(number.magnitude, levels = c("Small", "Medium", "Large", "Very Large", 
+                                                                "Extremely Large"), 
+                                   labels = c("Small (5, 7)", "Medium (16)", "Large (24)",
+                                              "Very Large (52, 71)", "Extremely Large (>100)")))
 
 #cheung style accuracy
 us.cheung %>%
-  group_by(SID, counting.classification, number.magnitude)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))%>%
-  mutate(mean.factor = cut(mean, breaks = c(0, .33, .5, .67, .83, 1), include.lowest = TRUE))%>%
-  group_by(counting.classification, number.magnitude, mean.factor)%>%
-  summarise(n = n())%>%
-  group_by(counting.classification)%>%
-  mutate(prop = n/sum(n)) %>%
-  ggplot(aes(x = mean.factor, y= prop, fill = number.magnitude)) + 
-  geom_bar(stat = "identity", position = position_dodge()) + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_wrap(~counting.classification, ncol = 2)
+  group_by(counting.classification, number.magnitude)%>%
+  langcog::multi_boot_standard("Correct", na.rm = TRUE)%>%
+  ggplot(aes(x = number.magnitude, y= mean, color = counting.classification, group = counting.classification)) + 
+  geom_point(size = 2) + 
+  geom_line() +
+  geom_linerange(aes(ymin = ci_lower, ymax = ci_upper)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  scale_color_brewer(palette = "Set1") +
+  labs(y = "Mean Unit Task Performance", x = "Number Range", 
+       color = "Counting Classification") +
+  theme_bw(base_size = 13) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        panel.grid = element_blank(), 
+        legend.title = element_text(size = 10), 
+        legend.text = element_text(size = 9)) +
+  scale_y_continuous(breaks = seq(0, 1, .25))
+
+ggsave("Figures/cheung_graph.png")
 
 ##model with cheung analysis 
 cheung.model <- us.cheung %>%
@@ -4819,139 +4565,9 @@ summary(wcn.cross.model2.india.follow)
 tab_model(wcn.cross.model2.india.follow, transform = NULL)
 ```
 
-###Are the effects of language significant?
-```{r}
-ind.eng.lang <- wcn.cross.model2.india.follow
-ind.eng.nolang <- glmer(Correct ~ fhc.c + ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross.india.follow, family = "binomial", 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(ind.eng.nolang, ind.eng.lang, test = 'LRT')
-```
-
 ---
-
-#Cross-linguistic comparison for mean performance on NN task (India)
-```{r}
-nn.ms <- all.data %>%
-  filter(Task == "NN", 
-         Language == "English (India)" | 
-           Language == "Gujarati" | 
-           Language == "Hindi")%>%
-  group_by(SID)%>%
-  mutate(mean_nn = mean(Correct, na.rm = TRUE))
-
-lm1 <- lm(mean_nn ~ Language*Age + sum_wppsi, data = nn.ms)
-summary(lm1)
-```
-
----
-
-#Cross-linguistic comparison for mean performance on Unit task (US)
-```{r}
-sf.ms <- all.data %>%
-  filter(Task == "SF", 
-         Language == "English (India)" | 
-           Language == "Gujarati" | 
-           Language == "Hindi")%>%
-  group_by(SID)%>%
-  mutate(mean_sf = mean(Correct, na.rm = TRUE))
-
-lm2 <- lm(mean_sf ~ Language*Age + sum_wppsi, data = sf.ms)
-summary(lm2)
-```
-
----
-
-#Counting distribution
-We plan to conduct descriptive analyses to describe the ways in which Initial Highest Count differs across
-languages.
-```{r}
-hc.df %>%
-  group_by(Language)%>%
-  summarise(mean = mean(IHC, na.rm = TRUE), 
-            sd = sd(IHC, na.rm = TRUE), 
-            median = median(IHC, na.rm = TRUE))
-```
-
-In addition, we plan to test whether children in transparent languages can become productive with less counting experience. To test this, we will consider non-productive counters (those who were labeled as non-Productive). We will then ask whether IHC for these non-productive counters differs across languages. We will only conduct these analyses if we have at least 30 non-productive counters in each language. If count-list transparency allows children to converge on a productive count rule more quickly, then children who learn a system with a transparent-count list should move to the “productive counter” category on the basis of relatively less experience than children who learn a system with an opaque- count list. This predicts that, when considering non-Productive counters, initial highest count should be higher for opaque languages (like English) than for Slovenian, and higher for Slovenian than for Cantonese. The model would like this: 
-
-Model 1: IHC ~ Language + Age + WM, data = NonProductiveCounters
-
-###Model
-```{r}
-ihc.cross <- all.data %>%
-   filter(!is.na(Productive))%>%
-  distinct(SID, Language, Age, sum_wppsi, Productive, IHC, Dataset)%>%
-  filter(Productive == "Non-Resilient")%>%
-  mutate(Language = factor(Language))%>%
-  mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
-##Experiment 1
-ihc.cross.hk.slo <- ihc.cross %>%
-  filter(Language == "Cantonese" | 
-           Language == "Slovenian" | 
-           Language == "English (US)")
-
-ihc.cross.model.hk.slo <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.hk.slo)
-summary(ihc.cross.model.hk.slo)
-
-#Experiment 2
-ihc.cross.ind <- ihc.cross %>%
-  filter(Language == "English (US)"|
-           Language == "Hindi" |
-           Language == "Gujarati")
-
-ihc.cross.model.ind <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.ind)
-summary(ihc.cross.model.ind)
-
-#Experiment 2a.
-ihc.cross.ind <- ihc.cross %>%
-  filter(Language == "English (India)"|
-           Language == "Hindi" |
-           Language == "Gujarati")
-
-ihc.cross.model.ind <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.ind)
-summary(ihc.cross.model.ind)
-```
-
-In addition, we will test whether count-list transparency allows children to acquire some degree of productivity, even before they are labeled productive counters based on their overall counting performance. To test this, we will predict Highest Contiguous Next Number from Language. If transparent languages allow children to generate a productive counting rule, speakers of these transparent languages may perform better on the Next Number task than speakers of non- transparent languages, even when only considering non-productive counters. Model 2: Highest.Contiguous.NextNumber ~ Language + Age + WM + (1|subject), data = NonProductiveCounters
-
-###Model: No effect of Language here
-```{r}
-wcn.model <- all.data %>%
-  mutate(Dataset = ifelse(Language == "English (US)" | Language == "Cantonese" |
-                            Language == "Slovenian", "HK/SLO/US", "India"))%>%
-  distinct(SID, Language, Age, sum_wppsi, Productive, highest_contig, Dataset)%>%
-  filter(Productive == "Non-Resilient")%>%
-  mutate(Language = factor(Language))%>%
-  mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
-
-wcn.model.hk.slo <- wcn.model %>%
-  filter(Dataset == "HK/SLO/US")
-
-highest_contig.model.hk.slo <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model.hk.slo)
-summary(highest_contig.model.hk.slo)
-
-#flip reference group
-wcn.model.hk.slo <- wcn.model %>%
-  filter(Dataset == "HK/SLO/US")%>%
-  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
-
-highest_contig.model.hk.slo <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model.hk.slo)
-summary(highest_contig.model.hk.slo)
-
-wcn.model.ind <- wcn.model %>%
-  filter(Dataset == "India")
-
-highest_contig.model.ind <- lm(highest_contig ~ Language + age.c + wppsi.c, data = wcn.model.ind)
-summary(highest_contig.model.ind)
-
-```
----
-
-##Post-hoc: Analysis of >100 and <100 items
+# SOM 4: Analyses of <100 and >100 items
+## Unit Task
 Unit task first
 ```{r}
 ##first create a variable for whether items are above or below 100
@@ -5031,6 +4647,7 @@ anova(gujarati.sf.100.base, gujarati.sf.100.full, test = 'LRT')
 summary(gujarati.sf.100.full)
 ```
 
+## Next Number
 Now Next Number
 ```{r}
 ##first create a variable for whether items are above or below 100
@@ -5109,6 +4726,319 @@ gujarati.wcn.100.full <- glmer(Correct ~ above.100 +fhc.c + count_range+ age.c +
 anova(gujarati.wcn.100.base, gujarati.wcn.100.full, test = 'LRT')
 summary(gujarati.wcn.100.full)
 ```
+
+
+Now fit GMM on IHC for every language
+
+#### Cantonese
+```{r}
+#Cantonese
+cant.df <- initial_final %>%
+  filter(Language == "Cantonese")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(cant.df)
+
+mod.cant <- Mclust(cant.df, x = BIC)
+summary(mod.cant, parameters = TRUE)
+
+```
+
+#### Slovenian
+```{r}
+#Slovenian
+slo.df <- initial_final %>%
+  filter(Language == "Slovenian")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(slo.df)
+
+mod.slo <- Mclust(slo.df, x = BIC)
+summary(mod.slo, parameters = TRUE)
+
+```
+
+#### US English
+```{r}
+#English
+us.df <- initial_final %>%
+  filter(Language == "English (US)")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(us.df)
+
+mod.us <- Mclust(us.df, x = BIC)
+summary(mod.us, parameters = TRUE)
+
+```
+
+#### Hindi
+```{r}
+#Hindi
+hindi.df <- initial_final %>%
+  filter(Language == "Hindi")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(hindi.df)
+
+mod.hindi <- Mclust(hindi.df, x = BIC)
+summary(mod.hindi, parameters = TRUE)
+
+```
+
+#### Gujarati
+```{r}
+#Gujarati
+gujarati.df <- initial_final %>%
+  filter(Language == "Gujarati")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(gujarati.df)
+
+mod.gujarati <- Mclust(gujarati.df, x = BIC)
+summary(mod.gujarati, parameters = TRUE)
+
+```
+
+#### Indian English
+```{r}
+#Indian English
+ind.eng.df <- initial_final %>%
+  filter(Language == "English (India)")%>%
+  dplyr::select(IHC)
+
+BIC <- mclustBIC(ind.eng.df)
+
+mod.ind.eng <- Mclust(ind.eng.df, x = BIC)
+summary(mod.ind.eng, parameters = TRUE)
+
+```
+
+### SOM: IHC cluster visualization 
+```{r}
+initial_final %>%
+  mutate(Experiment = ifelse((Language == "Hindi" | Language == "Gujarati" | Language == "English (India)"), "Experiment 2", "Experiment 1"))%>%
+  dplyr::select(IHC, Experiment, Language)%>%
+  mutate(Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)", "Hindi", "Gujarati", "English (India)")))%>%
+  ggplot(aes(x = IHC, colour= Language)) + geom_density(adjust = .5, size = 1.5) +
+  scale_x_continuous(breaks = seq(0, 140, 10)) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "right",
+        panel.grid.minor = element_blank(), 
+        legend.title = element_blank()) +
+  scale_colour_brewer(palette = "Dark2") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.position = "bottom") +
+  labs(x = "Initial Highest Count", y = "Density") + 
+  facet_grid(~Experiment)
+ggsave("Figures/ihc_density_language.png", height = 5)
+```
+---
+
+# SOM 7: Initial Highest Count
+## SOM Analysis: What proportion of kids in highest proportion cluster (from GMM) are labeled as resilient in each language?
+First, set up GMM
+```{r}
+library(mclust)
+
+#make a function to identify cluster membership for Initial Highest Count
+
+prod.clust <- function(df) {
+  languages <- c("English (US)", "English (India)", "Hindi", "Gujarati", "Slovenian", "Cantonese")
+  
+  all.clust <- data.frame()
+  for (lang in languages) {
+    #filter down to correct language
+    tmp.df <- df %>%
+      filter(Language == lang)%>%
+      distinct(SID, IHC)%>%
+      dplyr::select(-SID)
+    
+    #run cluster analysis
+    BIC <- mclustBIC(tmp.df)
+    tmp.mclust <- Mclust(tmp.df, x = BIC)
+    tmp.df$CLUST <- tmp.mclust$classification
+    tmp.df$id <- row.names(tmp.df)
+    
+    #add SIDs back in
+    tmp.sids <- df %>%
+      filter(Language == lang)%>%
+      distinct(SID, IHC)
+    
+    tmp.sids$id <- row.names(tmp.sids)
+    
+    tmp.all <- right_join(tmp.sids, tmp.df, by = "id")
+    tmp.all$Language <- lang
+    
+    #add to large df to get back at end
+    all.clust <- bind_rows(all.clust, tmp.all)
+  }
+  return(all.clust)
+}
+
+clusters <- prod.clust(all.data)%>%
+  dplyr::select(SID, IHC.x, CLUST, Language)%>%
+  dplyr::rename(IHC = IHC.x)
+
+#add clusters to all.data
+all.data <- full_join(all.data, clusters, by = "SID")
+
+check <- all.data %>%
+  filter(IHC.x != IHC.y) # all good
+
+all.data %<>%
+  dplyr::select(-IHC.y, -Language.y)%>%
+  dplyr::rename(IHC = IHC.x,
+                Language = Language.x)
+
+```
+
+#### What percentage of each mode turned out to be productive?
+```{r}
+##Pull out only these clusters 
+all.data %>%
+  distinct(SID, Language, Productive, CLUST)%>%
+  group_by(Language, CLUST, Productive)%>%
+  summarise(n = n())%>%
+  group_by(Language, CLUST)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)%>%
+  filter(Productive == "Resilient")%>%
+  kable()
+```
+
+#### SOM: Do Non-Resilient counters have lower IHCs in languages with more transparent count lists?
+```{r}
+ihc.cross <- all.data %>%
+   filter(!is.na(Productive))%>%
+  distinct(SID, Language, Age, sum_wppsi, Productive, IHC, Dataset)%>%
+  filter(Productive == "Non-Resilient")%>%
+  mutate(Language = factor(Language))%>%
+  mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale = TRUE)))
+##Experiment 1
+ihc.cross.hk.slo <- ihc.cross %>%
+  filter(Language == "Cantonese" | 
+           Language == "Slovenian" | 
+           Language == "English (US)")
+
+ihc.cross.model.hk.slo <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.hk.slo)
+summary(ihc.cross.model.hk.slo)
+
+#Experiment 2
+ihc.cross.ind <- ihc.cross %>%
+  filter(Language == "English (US)"|
+           Language == "Hindi" |
+           Language == "Gujarati")
+
+ihc.cross.model.ind <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.ind)
+summary(ihc.cross.model.ind)
+
+#Experiment 2a.
+ihc.cross.ind <- ihc.cross %>%
+  filter(Language == "English (India)"|
+           Language == "Hindi" |
+           Language == "Gujarati")
+
+ihc.cross.model.ind <- lm(IHC ~ Language + age.c + wppsi.c, data = ihc.cross.ind)
+summary(ihc.cross.model.ind)
+```
+
+---
+
+#SOM 8: Types/Frequencies of counting errors
+
+
+### Mean number of prompts by Language, productivity
+SOM, descriptive analysis of number of errors by Resilience
+```{r}
+error.freq %>%
+  mutate(Productive = factor(Productive, levels = c("Resilient", "Non-Resilient")))%>%
+  group_by(Productive, Language, Error_type)%>%
+  summarise(n = n())%>%
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+            prop = n/total.n)
+```
+
+### Where are errors happening?
+Visualization of units
+```{r}
+error.freq.decade <- error.freq %>%
+  filter(Last_successful != 140)%>%
+  mutate(error.decade = ifelse(Last_successful < 10, 0, 
+                               ifelse(Last_successful >= 10 & Last_successful < 20, 10, 
+                                      ifelse(Last_successful >= 20 & Last_successful < 30, 20, 
+                                             ifelse(Last_successful >= 30 & Last_successful < 40, 30, 
+                                                    ifelse(Last_successful >=40 & Last_successful < 50, 40, 
+                                                           ifelse(Last_successful >= 50 & Last_successful < 60, 50, 
+                                                                  ifelse(Last_successful >= 60 & Last_successful < 70, 60, 
+                                                                         ifelse(Last_successful >= 70 & Last_successful < 80, 70, 
+                                                                                ifelse(Last_successful >= 80 & Last_successful < 90, 80, 
+                                                                                       ifelse(Last_successful >= 90 & Last_successful < 100, 90, 
+                                                                                              ifelse(Last_successful >= 100 & Last_successful < 110, 100, 
+                                                                                                     ifelse(Last_successful >= 110 & Last_successful < 120, 110, 
+                                                                                                            ifelse(Last_successful >= 120 & Last_successful < 130, 120,130)))))))))))))) %>%
+  mutate(error.base = (error.decade - Last_successful) * -1, 
+         error.base = ifelse(Last_successful == 140, 0, as.numeric(error.base)))
+
+
+
+###Error by unit
+##all
+error.freq.decade %>%
+  filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
+  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati","English (India)", "English (US)", "Slovenian", "Cantonese")), 
+         Productive = factor(Productive, levels = c("Resilient", "Non-Resilient"))) %>%
+  mutate(error.base = factor(error.base))%>%
+  mutate(Lang.prod = paste0(as.character(Language), " ", as.character(Productive), collapse = NULL))%>%
+  group_by(Language, Productive, error.base)%>%
+  summarise(n = n())%>% 
+  group_by(Language, Productive)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)%>%
+  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+  ggplot(aes(x = error.base, y = Language)) +
+  geom_tile(aes(fill = round(prop, 2))) +
+  geom_text(aes(label = as.character(round(prop, 2))), 
+            size = 2.5) +
+  coord_equal() +
+  scale_fill_gradient2(low = "white", high = "red", "Proportion") + 
+  theme_bw(base_size = 13) + 
+  labs(x = "Unit of error") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "right", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        legend.title = element_text(size = 11)) +
+  facet_grid(rows = vars(Productive))
+ggsave("Figures/errors.png")
+
+###Error by unit
+##overall, not split by resilience
+error.freq %>%
+  filter(Last_successful <= 140)%>% #filter out trials where kid kept going beyond 140
+  mutate(Language = factor(Language, levels = c("Hindi", "Gujarati","English (India)", "English (US)", "Slovenian", "Cantonese")), 
+         Exp = ifelse((Language == "Cantonese" | Language == "Slovenian" | Language == "English (US)"), 1, 2))%>%
+  group_by(Language, Exp, Error_type)%>%
+  summarise(n = n())%>% 
+  group_by(Language)%>%
+  mutate(total.n = sum(n), 
+         prop = n/total.n)%>%
+  mutate(n = ifelse(is.na(n), 0, as.numeric(n)))%>%
+  ggplot(aes(x = Language, y = prop, fill = Error_type)) +
+  geom_bar(stat = 'identity') +
+  theme_bw(base_size = 13)  +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.title = element_text(size = 11)) + 
+    facet_grid(~Exp, scale = "free_x")
+```
+
 
 
 
