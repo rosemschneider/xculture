@@ -1387,35 +1387,9 @@ sf.hk.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + starting
                              family = "binomial", 
                            data = sf.hk.within)
 
-
-##### TEST WITH RANDOM EFFECT OF STARTING NUMBER ####
-#base
-sf.hk.within.base.t <- glmer(Correct ~ count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.hk.within)
-#Productivity
-sf.hk.within.model1.t <- glmer(Correct ~ Productive + count_range +  age.c + 
-                               (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.hk.within)
-#FHC
-sf.hk.within.model2.t <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.hk.within)
-#IHC
-sf.hk.within.model3.t <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                             family = "binomial", 
-                           data = sf.hk.within)
-
-#Highest contig.
-sf.hk.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range  + age.c + (1|SID) + (1|starting_num.c), 
-                             family = "binomial", 
-                           data = sf.hk.within)
-
-
-tab_model(sf.hk.within.model3.t)
-tab_model(sf.hk.within.model3)
-
 ```
 
-##Table
+### Table
 ```{r}
 library(sjPlot)
 mtable.sf.hk <- mtable('Base Model' = sf.hk.within.base,
@@ -1426,55 +1400,42 @@ mtable.sf.hk <- mtable('Base Model' = sf.hk.within.base,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.hk
 
-##test
-mtable.sf.hk <- mtable('Base Model' = sf.hk.within.base.t,
-            'Model 1: Productivity' = sf.hk.within.model1.t,
-            'Model 2: FHC' = sf.hk.within.model2.t,
-            'Model 3: IHC' = sf.hk.within.model3.t,
-            'Model 4: Highest Contig.' = sf.hk.within.model4.t,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.hk
-
-# tab_model(sf.hk.within.base, transform = NULL)
-# tab_model(sf.hk.within.model1, transform= NULL)
-# tab_model(sf.hk.within.model2, transform = NULL)
-# tab_model(sf.hk.within.model3, transform = NULL)
-# tab_model(sf.hk.within.model4, transform = NULL)
+tab_model(sf.hk.within.base, transform = NULL)
+tab_model(sf.hk.within.model1, transform= NULL)
+tab_model(sf.hk.within.model2, transform = NULL)
+tab_model(sf.hk.within.model3, transform = NULL)
+tab_model(sf.hk.within.model4, transform = NULL)
 ```
 
 
-###Model comparisons
-####Base v. productivity - NS, Chisq(1) = 0.05. p = .82
+### Model comparisons
+#### Base v. productivity - NS, Chisq(1) = 0.05. p = .82
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model1, test = 'LRT') #ns
-anova(sf.hk.within.base.t, sf.hk.within.model1.t, test = 'LRT') #ns
 ```
 
-####Base v. FHC - Sig, Chisq(1) = 11.65, p = 0.0006, AIC = 1616.5
+#### Base v. FHC - Sig, Chisq(1) = 11.65, p = 0.0006, AIC = 1616.5
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model2, test = 'LRT')
-anova(sf.hk.within.base.t, sf.hk.within.model2.t, test = 'LRT')
 ```
 
-####Base v. IHC - Sig, Chisq(1) = 38.91, p < .0001, AIC = 1589.3
+#### Base v. IHC - Sig, Chisq(1) = 38.91, p < .0001, AIC = 1589.3
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model3, test = 'LRT')
-anova(sf.hk.within.base.t, sf.hk.within.model3.t, test = 'LRT')
 ```
 
-####Base v. Highest Contiguous NN - Sig, Chisq(1) = 11.8251, p = .0002, AIC = 1616.3
+#### Base v. Highest Contiguous NN - Sig, Chisq(1) = 11.8251, p = .0002, AIC = 1616.3
 ```{r}
 anova(sf.hk.within.base, sf.hk.within.model4, test = 'LRT')
-anova(sf.hk.within.base.t, sf.hk.within.model4.t, test = 'LRT')
 ```
 
-####Ranking of predictors from individual models 
+#### Ranking of predictors from individual models 
 1.  IHC - AIC = 1589.3
 2.  HCNN - AIC = 1616.3
 3.  FHC - AIC = 1616.5
 4.  Productivity - 1624.3
 
-###Large model
+### Large model
 We have three significant predictors of performance on the Unit task (FHC, IHC, and Highest Contiguous NN). Now, we need to create our 'large' Model 5 which will contain the best predictors of performance on the Unit Task.
 
 The simple model with the lowest AIC is IHC, so we will begin with that as our base term. 
@@ -1514,48 +1475,9 @@ mtable.sf.hk.large <- mtable('IHC alone' = sf.hk.within.plus1,
             'Highest Contig. + FHC + IHC' = sf.hk.within.plus3,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.hk.large
-
-
-
-#####TEST with RANDOM EFFECT ####
-#Base = IHC
-sf.hk.within.plus1 <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                             family = "binomial", 
-                           data = sf.hk.within)
-
-#IHC and Highest Contiguous
-sf.hk.within.plus2.hc <- glmer(Correct ~ highest_contig.c + ihc.c+ count_range + age.c + (1|SID) + (1|starting_num.c), 
-                            family = "binomial", data = sf.hk.within)
-
-#compare
-anova(sf.hk.within.plus1, sf.hk.within.plus2.hc, test = 'LRT')# HCNN ns
-
-#IHC and FHC
-sf.hk.within.plus2.fhc <- glmer(Correct ~ fhc.c + ihc.c + count_range  + age.c + (1|SID) + (1|starting_num.c), 
-                            family = "binomial", data = sf.hk.within)
-
-#compare
-anova(sf.hk.within.plus1, sf.hk.within.plus2.fhc, test = 'LRT') #fhc ns
-
-#IHC and FHC and HCNN
-sf.hk.within.plus3 <- glmer(Correct ~ highest_contig.c + fhc.c + ihc.c + count_range + age.c + 
-                              (1|SID) + (1|starting_num.c), family = "binomial", data = sf.hk.within)
-
-
-#comparison of 3 (minus HCNN)
-anova(sf.hk.within.plus1, sf.hk.within.plus2.fhc, sf.hk.within.plus3, test = 'LRT') 
-#comparison of 3 (minus FHC)
-anova(sf.hk.within.plus1, sf.hk.within.plus2.hc, sf.hk.within.plus3, test = 'LRT') 
-
-mtable.sf.hk.large <- mtable('IHC alone' = sf.hk.within.plus1,
-            'Highest Contig + IHC' = sf.hk.within.plus2.hc,
-            'FHC + IHC' = sf.hk.within.plus2.fhc,
-            'Highest Contig. + FHC + IHC' = sf.hk.within.plus3,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.hk.large
 ```
 
-##HK Unit Task within-language results: IHC emerges as best predictor of performance on Unit Task
+### HK Unit Task within-language results: IHC emerges as best predictor of performance on Unit Task
 ```{r}
 summary(sf.hk.within.plus1)
 
@@ -1566,7 +1488,7 @@ library(sjPlot)
 tab_model(sf.hk.within.plus1, transform = NULL)
 ```
 
-##Slovenian
+## Slovenian
 
 ```{r}
 #base
@@ -1587,31 +1509,9 @@ sf.slo.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + startin
                              family = "binomial", 
                            data = sf.slo.within) 
 
-####TEST WITH RANDOM EFFECT ####
-#base
-sf.slo.within.base.t <- glmer(Correct ~ count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.slo.within)
-#productivity
-sf.slo.within.model1.t <- glmer(Correct ~ Productive + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.slo.within)
-#FHC
-sf.slo.within.model2.t <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.slo.within)
-#IHC
-sf.slo.within.model3.t <- glmer(Correct ~ ihc.c + count_range +  age.c + (1|SID) + (1|starting_num.c), 
-                             family = "binomial", 
-                           data = sf.slo.within)
-#highest contiguous NN
-sf.slo.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                             family = "binomial", 
-                           data = sf.slo.within) 
-
-tab_model(sf.slo.within.model4.t)
-tab_model(sf.slo.within.model4)
-
 ```
 
-##Table
+### Table
 ```{r}
 mtable.sf.slo <- mtable('Base Model' = sf.slo.within.base,
             'Model 1: Productivity' = sf.slo.within.model1,
@@ -1621,55 +1521,43 @@ mtable.sf.slo <- mtable('Base Model' = sf.slo.within.base,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.slo
 
-mtable.sf.slo <- mtable('Base Model' = sf.slo.within.base.t,
-            'Model 1: Productivity' = sf.slo.within.model1.t,
-            'Model 2: FHC' = sf.slo.within.model2.t,
-            'Model 3: IHC' = sf.slo.within.model3.t,
-            'Model 4: Highest Contig.' = sf.slo.within.model4.t,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.slo
-
-# tab_model(sf.slo.within.base, transform = NULL)
-# tab_model(sf.slo.within.model1, transform = NULL)
-# tab_model(sf.slo.within.model2, transform = NULL)
-# tab_model(sf.slo.within.model3, transform = NULL)
-# tab_model(sf.slo.within.model4, transform = NULL)
+tab_model(sf.slo.within.base, transform = NULL)
+tab_model(sf.slo.within.model1, transform = NULL)
+tab_model(sf.slo.within.model2, transform = NULL)
+tab_model(sf.slo.within.model3, transform = NULL)
+tab_model(sf.slo.within.model4, transform = NULL)
 ```
 
-###Model Comparisons
-####Base v. Productivity - sig, Chis(1) = 15.967, p < .0001, AIC = 1422.7
+### Model Comparisons
+#### Base v. Productivity - sig, Chis(1) = 15.967, p < .0001, AIC = 1422.7
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model1, test = 'LRT')
-anova(sf.slo.within.base.t, sf.slo.within.model1.t, test = 'LRT')
 ```
 
  
-####Base v. FHC - Sig, Chisq(1) = 25.132, p < .0001, AIC = 1413.6
+#### Base v. FHC - Sig, Chisq(1) = 25.132, p < .0001, AIC = 1413.6
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model2, test = 'LRT')
-anova(sf.slo.within.base.t, sf.slo.within.model2.t, test = 'LRT')
 ```
 
-####Base v. IHC - Chisq(1) = 14.585, p = .0001, AIC = 1424.1
+#### Base v. IHC - Chisq(1) = 14.585, p = .0001, AIC = 1424.1
 ```{r}
 anova(sf.slo.within.base, sf.slo.within.model3, test = 'LRT')
-anova(sf.slo.within.base.t, sf.slo.within.model3.t, test = 'LRT')
-````
-
-####Base v. Highest Contiguous NN - Sig, Chisq(1) = 26.227, p < .0001, AIC = 1412.5
-```{r}
-anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')
-anova(sf.slo.within.base.t, sf.slo.within.model4.t, test = 'LRT')
 ```
 
-###Ranking of Productivity predictors from AIC 
+#### Base v. Highest Contiguous NN - Sig, Chisq(1) = 26.227, p < .0001, AIC = 1412.5
+```{r}
+anova(sf.slo.within.base, sf.slo.within.model4, test = 'LRT')
+```
+
+#### Ranking of Productivity predictors from AIC 
 1.  HCNN - 1412.46
 2.  FHC - 1413.56
 3.  Productivity - 1422.72
 4.  IHC - 1424.10
 
 
-###Large model
+### Large model
 ```{r}
 #Base - HCNN
 sf.slo.within.plus1 <- glmer(Correct ~ highest_contig.c + count_range + starting_num.c + age.c + (1|SID), 
@@ -1707,47 +1595,15 @@ anova(sf.slo.within.plus1, sf.slo.within.plus.gain, test = 'LRT')
 summary(sf.slo.within.plus1)
 # summary(sf.slo.within.plus.nn)
 
-
-
-###TESTING WITH RANDOM EFFECT ####
-
-#Base - HCNN
-sf.slo.within.plus1 <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                             data = sf.slo.within, family = "binomial")
-
-#Now add second-lowest AIC
-#HCNN + FHC
-sf.slo.within.plus2.fhc <- glmer(Correct ~ fhc.c + highest_contig.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                             data = sf.slo.within, family = "binomial")
-
-#now compare
-anova(sf.slo.within.plus1, sf.slo.within.plus2.fhc, test = 'LRT') ###FHC is significant
-
-
-##Now add Productivity
-#Productive + FHC + HCNN
-sf.slo.within.plus3 <- glmer(Correct ~ Productive + fhc.c + highest_contig.c + count_range + age.c + 
-                               (1|SID) + (1|starting_num.c), family = "binomial", data = sf.slo.within)
-#Compare
-anova(sf.slo.within.plus2.fhc, sf.slo.within.plus3, test = 'LRT')#NS
-
-##FHC and HCNN best predictors, Productivity does not add anything. Now add IHC
-#IHC + FHC + HCNN
-sf.slo.within.plus3.ihc <- glmer(Correct ~ ihc.c + fhc.c + highest_contig.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                             data = sf.slo.within, family = "binomial")
-
-#HCNN and FHC best predictors - now add IHC
-anova(sf.slo.within.plus2.fhc, sf.slo.within.plus3.ihc, test = 'LRT') #NS
-
 ```
 
-##Summary, SLO Unit: HCNN + FHC is best predictor
+### Summary, SLO Unit: HCNN + FHC is best predictor
 ```{r}
 summary(sf.slo.within.plus2.fhc)
 tab_model(sf.slo.within.plus2.fhc, transform = NULL)
 ```
 
-##English (US)
+## English (US)
 
 ```{r}
 #base
@@ -1769,28 +1625,6 @@ sf.us.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + starting
                              family = "binomial", 
                            data = sf.us.within) 
 
-
-### TESTING WITH RANDOM EFFECT ####
-
-#base
-sf.us.within.base.t <- glmer(Correct ~ count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.us.within)
-#productivity
-sf.us.within.model1.t <- glmer(Correct ~ Productive + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.us.within)
-#FHC
-sf.us.within.model2.t <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.us.within)
-#IHC
-sf.us.within.model3.t <- glmer(Correct ~ ihc.c + count_range +  age.c + (1|SID) + (1|starting_num.c), 
-                             family = "binomial", 
-                           data = sf.us.within, control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#Highest contiguous
-sf.us.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                             family = "binomial", 
-                           data = sf.us.within) 
-
 ```
 
 ###Table
@@ -1803,46 +1637,33 @@ mtable.sf.us <- mtable('Base Model' = sf.us.within.base,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.us
 
-mtable.sf.us <- mtable('Base Model' = sf.us.within.base.t,
-            'Model 1: Productivity' = sf.us.within.model1.t,
-            'Model 2: FHC' = sf.us.within.model2.t,
-            'Model 3: IHC' = sf.us.within.model3.t,
-            'Model 4: Highest Contig.' = sf.us.within.model4.t,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.us
-
-
-# tab_model(sf.us.within.base, transform = NULL)
-# tab_model(sf.us.within.model1, transform = NULL)
-# tab_model(sf.us.within.model2, transform = NULL)
-# tab_model(sf.us.within.model3, transform = NULL)
-# tab_model(sf.us.within.model4, transform = NULL)
+tab_model(sf.us.within.base, transform = NULL)
+tab_model(sf.us.within.model1, transform = NULL)
+tab_model(sf.us.within.model2, transform = NULL)
+tab_model(sf.us.within.model3, transform = NULL)
+tab_model(sf.us.within.model4, transform = NULL)
 
 ```
 
-###Model comparisons
-####Base v. Productivity - NS, Chisq(1) = 1.08, p = .27, AIC = 1511.2
+### Model comparisons
+#### Base v. Productivity - NS, Chisq(1) = 1.08, p = .27, AIC = 1511.2
 ```{r}
 anova(sf.us.within.base, sf.us.within.model1, test = 'LRT')
-anova(sf.us.within.base.t, sf.us.within.model1.t, test = 'LRT')
 ```
 
-####Base v. FHC - Sig, Chisq(1) = 18.17, p < .0001, AIC = 1494.1
+#### Base v. FHC - Sig, Chisq(1) = 18.17, p < .0001, AIC = 1494.1
 ```{r}
 anova(sf.us.within.base, sf.us.within.model2, test = 'LRT')
-anova(sf.us.within.base.t, sf.us.within.model2.t, test = 'LRT')
 ```
 
-####Base v. IHC - Sig, Chisq(1) = 48.78, p < .0001, AIC = 1463.5.3
+#### Base v. IHC - Sig, Chisq(1) = 48.78, p < .0001, AIC = 1463.5.3
 ```{r}
 anova(sf.us.within.base, sf.us.within.model3, test = 'LRT')
-anova(sf.us.within.base.t, sf.us.within.model3.t, test = 'LRT')
-````
+```
 
-####Base v. Highest Contig. - Sig, Chisq(1) = 35.66, p < .0001, AIC = 1476.7
+#### Base v. Highest Contig. - Sig, Chisq(1) = 35.66, p < .0001, AIC = 1476.7
 ```{r}
 anova(sf.us.within.base, sf.us.within.model4, test = 'LRT')
-anova(sf.us.within.base.t, sf.us.within.model4.t, test = 'LRT')
 ```
 
 
@@ -1895,42 +1716,15 @@ sf.us.within.plus3.pg <- glmer(Correct ~ prod.gradient + highest_contig.c + ihc.
 anova(sf.us.within.plus2.highest.contig, sf.us.within.plus3.pg, test = 'LRT')#ns
 
 summary(sf.us.within.plus2.highest.contig)
-
-
-
-####Testing with random effect #####
-IHC
-sf.us.within.plus1 <- glmer(Correct ~ ihc.c + count_range  + age.c + (1|SID) + (1|starting_num.c), 
-                             data = sf.us.within, family = "binomial", 
-                            control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#IHC + HCNN
-sf.us.within.plus2.highest.contig <- glmer(Correct ~ highest_contig.c + ihc.c + count_range +  age.c + (1|SID) + (1|starting_num.c), 
-                             data = sf.us.within, family = "binomial", 
-                             control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#compare 
-anova(sf.us.within.plus1, sf.us.within.plus2.highest.contig, test = 'LRT') #hcnn significant
-
-#IHC + FHC + HCNN
-sf.us.within.plus3 <- glmer(Correct ~ fhc.c + highest_contig.c + ihc.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                             data = sf.us.within, family = "binomial", 
-                            control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#compare 3, minus fhc
-anova(sf.us.within.plus1, sf.us.within.plus2.highest.contig, sf.us.within.plus3, test = 'LRT') #fhc does not add  
-
 ```
 
-##US Unit Task within-language results: IHC and HCNN best predictor of performance on Unit Task
+### US Unit Task within-language results: IHC and HCNN best predictor of performance on Unit Task
 ```{r}
 summary(sf.us.within.plus2.highest.contig)
 tab_model(sf.us.within.plus2.highest.contig, transform = NULL)
 ```
 
-##Hindi
+## Hindi
 
 ```{r}
 #Base
@@ -1948,25 +1742,6 @@ sf.hindi.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.c +
 #Highest contig
 sf.hindi.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
                            data = sf.hindi.within)
-
-
-#### TESTING WITH RANDOM EFFECT ####
-#Base
-sf.hindi.within.base.t <- glmer(Correct ~ count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.hindi.within)
-#Productivity
-sf.hindi.within.model1.t <- glmer(Correct ~ Productive + count_range + age.c  + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.hindi.within)
-#FHC
-sf.hindi.within.model2.t <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.hindi.within)
-#IHC
-sf.hindi.within.model3.t <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.hindi.within)
-#Highest contig
-sf.hindi.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range  + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.hindi.within)
-
 ```
 
 ##Table
@@ -1979,55 +1754,43 @@ mtable.sf.hindi <- mtable('Base Model' = sf.hindi.within.base,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.hindi
 
-mtable.sf.hindi <- mtable('Base Model' = sf.hindi.within.base.t,
-            'Model 1: Productivity' = sf.hindi.within.model1.t,
-            'Model 2: FHC' = sf.hindi.within.model2.t,
-            'Model 3: IHC' = sf.hindi.within.model3.t,
-            'Model 4: Highest Contig.' = sf.hindi.within.model4.t,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.hindi
-
-# tab_model(sf.hindi.within.base, transform = NULL)
-# tab_model(sf.hindi.within.model1, transform = NULL)
-# tab_model(sf.hindi.within.model2, transform = NULL)
-# tab_model(sf.hindi.within.model3, transform = NULL)
-# tab_model(sf.hindi.within.model4, transform = NULL)
+tab_model(sf.hindi.within.base, transform = NULL)
+tab_model(sf.hindi.within.model1, transform = NULL)
+tab_model(sf.hindi.within.model2, transform = NULL)
+tab_model(sf.hindi.within.model3, transform = NULL)
+tab_model(sf.hindi.within.model4, transform = NULL)
 ```
 
-###Model comparisons
-####Base v. Productivity - marginal, p = .07
+### Model comparisons
+#### Base v. Productivity - marginal, p = .07
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model1, test = 'LRT')
-anova(sf.hindi.within.base.t, sf.hindi.within.model1.t, test = 'LRT')
 ```
 
-####Base v. FHC - sig, Chisq(1) = 21.6, p < .0001, AIC = 1325.1
+#### Base v. FHC - sig, Chisq(1) = 21.6, p < .0001, AIC = 1325.1
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model2, test = 'LRT')
-anova(sf.hindi.within.base.t, sf.hindi.within.model2.t, test = 'LRT')
 ```
 
-####Base v. IHC - Sig, chisq(1) = 28.436, p < .0001, AIC = 1318.4
+#### Base v. IHC - Sig, chisq(1) = 28.436, p < .0001, AIC = 1318.4
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model3, test = 'LRT')
-anova(sf.hindi.within.base.t, sf.hindi.within.model3.t, test = 'LRT')
 ```
 
-####Base v. Highest contig. - Sig, Chisq(1) = 27.63, p < .0001, AIC = 1319.1
+#### Base v. Highest contig. - Sig, Chisq(1) = 27.63, p < .0001, AIC = 1319.1
 ```{r}
 anova(sf.hindi.within.base, sf.hindi.within.model4, test = 'LRT')
-anova(sf.hindi.within.base.t, sf.hindi.within.model4.t, test = 'LRT')
 ```
 
 
-###Ranking of productivity predictors by AIC
+### Ranking of productivity predictors by AIC
 1.  IHC = 1318.4
 2.  HCNN = 1319.1
 3.  FHC = 1325.1
 4.  Productivity = 1343
 
 
-##Large model
+## Large model
 
 IHC v. FHC v. Highest Contig
 ```{r}
@@ -2059,37 +1822,15 @@ summary(sf.hindi.within.plus2.hc)
 # #summary of mean nn model
 # summary(sf.hindi.within.plus1.nn)
 
-
-
-###TESTING WITH RANDOM EFFECT ####
-##NB THAT HCNN IS NOW STRONGER THAN IHC. IHC STILL SIG.
-#IHC
-sf.hindi.within.plus1 <- glmer(Correct ~ highest_contig.c + count_range + age.c  + (1|SID) + (1|starting_num.c), 
-                             family = "binomial", 
-                           data = sf.hindi.within)
-#HCNN + IHC 
-sf.hindi.within.plus2.hc <- glmer(Correct ~ ihc.c + highest_contig.c + count_range + age.c +  (1|SID) + (1|starting_num.c), 
-                            family = "binomial", data = sf.hindi.within)
-
-##compare
-anova(sf.hindi.within.plus1, sf.hindi.within.plus2.hc, test = 'LRT') #ihc significantly adds to the model
-
-#HCNN + FHC + IHC
-sf.hindi.within.plus3 <- glmer(Correct ~ fhc.c + ihc.c + highest_contig.c + count_range + age.c + (1|SID) + (1|starting_num.c), 
-                            family = "binomial", data = sf.hindi.within)
-#Comparison of 3 minus fhc
-anova(sf.hindi.within.plus1, sf.hindi.within.plus2.hc, sf.hindi.within.plus3, test = 'LRT') #FHC does not
-
-
 ```
 
-##Hindi Unit Task  within-language results: IHC, and Highest Contig. emerge as best predictor of performance on Unit Task
+### Hindi Unit Task  within-language results: IHC, and Highest Contig. emerge as best predictor of performance on Unit Task
 ```{r}
 summary(sf.hindi.within.plus2.hc)
 tab_model(sf.hindi.within.plus2.hc, transform = NULL)
 ```
 
-##Gujarati
+## Gujarati
 
 ```{r}
 #Base
@@ -2108,26 +1849,9 @@ sf.gujarati.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.
 sf.gujarati.within.model4 <- glmer(Correct ~ highest_contig.c + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
                            data = sf.gujarati.within)
 
-####TESTING WITH RANDOM EFFECT ###
-#Base
-sf.gujarati.within.base.t <- glmer(Correct ~ count_range + age.c +  (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.gujarati.within)
-#Productivity
-sf.gujarati.within.model1.t <- glmer(Correct ~ Productive + count_range  + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.gujarati.within)
-#FHC
-sf.gujarati.within.model2.t <- glmer(Correct ~ fhc.c + count_range + age.c +  (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.gujarati.within)
-#IHC
-sf.gujarati.within.model3.t <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.gujarati.within)
-#Highest contig.
-sf.gujarati.within.model4.t <- glmer(Correct ~ highest_contig.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                           data = sf.gujarati.within)
-
 ```
 
-###Table
+### Table
 ```{r}
 mtable.sf.gujarati <- mtable('Base Model' = sf.gujarati.within.base,
             'Model 1: Productivity' = sf.gujarati.within.model1,
@@ -2137,48 +1861,36 @@ mtable.sf.gujarati <- mtable('Base Model' = sf.gujarati.within.base,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.sf.gujarati
 
-mtable.sf.gujarati <- mtable('Base Model' = sf.gujarati.within.base.t,
-            'Model 1: Productivity' = sf.gujarati.within.model1.t,
-            'Model 2: FHC' = sf.gujarati.within.model2.t,
-            'Model 3: IHC' = sf.gujarati.within.model3.t,
-            'Model 4: Highest Contig.' = sf.gujarati.within.model4.t,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.gujarati
-
-# tab_model(sf.gujarati.within.base, transform = NULL)
-# tab_model(sf.gujarati.within.model1, transform = NULL)
-# tab_model(sf.gujarati.within.model2, transform = NULL)
-# tab_model(sf.gujarati.within.model3, transform= NULL)
-# tab_model(sf.gujarati.within.model4, transform = NULL)
+tab_model(sf.gujarati.within.base, transform = NULL)
+tab_model(sf.gujarati.within.model1, transform = NULL)
+tab_model(sf.gujarati.within.model2, transform = NULL)
+tab_model(sf.gujarati.within.model3, transform= NULL)
+tab_model(sf.gujarati.within.model4, transform = NULL)
 ```
 
-###Model comparisons
-####Base v. productivity - NS, p = .4
+### Model comparisons
+#### Base v. productivity - NS, p = .4
 ```{r}
 anova(sf.gujarati.within.base, sf.gujarati.within.model1, test = 'LRT')
-anova(sf.gujarati.within.base.t, sf.gujarati.within.model1.t, test = 'LRT')
 ```
 
-####Base v. FHC - NS, p = .3
+### Base v. FHC - NS, p = .3
 ```{r}
 anova(sf.gujarati.within.base, sf.gujarati.within.model2, test = 'LRT')
-anova(sf.gujarati.within.base.t, sf.gujarati.within.model2.t, test = 'LRT')
 ```
 
-####Base v. IHC - p = .19
+#### Base v. IHC - p = .19
 ```{r}
-anova(sf.gujarati.within.base, sf.gujarati.within.model3, test = 'LRT')
-anova(sf.gujarati.within.base.t, sf.gujarati.within.model3.t, test = 'LRT')
+anova(sf.gujarati.within.base, sf.gujarati.within.model3, test = 'LRT') 
 ```
 
-####Base v. Highest contig, NS p = .2
+#### Base v. Highest contig, NS p = .2
 ```{r}
 anova(sf.gujarati.within.base, sf.gujarati.within.model4, test = 'LRT')
-anova(sf.gujarati.within.base.t, sf.gujarati.within.model4.t, test = 'LRT')
 ```
 
 
-##Gujarati results: Nothing predicts Unit Task performance
+## Gujarati results: Nothing predicts Unit Task performance
 ```{r}
 summary(sf.gujarati.within.base)
 tab_model(sf.gujarati.within.base, transform = NULL)
@@ -2186,19 +1898,10 @@ tab_model(sf.gujarati.within.base, transform = NULL)
 
 ***
 
-#WCN Task- within-language analyses, simple models
+# WCN Task- within-language analyses, simple models
 
-All models will be logistic mixed effects models, predicting next number performance (0 or 1) on a trial as a function of the following predictors, with a random intercept for subject. In R, the formula will be glmer(predictedSF_correct ~ (predictor) + age + within/outside range + (1|subject), family = binomial).
-
--  Model 0 (null model): NextNumber.Performance ~ Within/Outside range + Age + (1|subject)
--  Model 1: Next.Number.Performance ~ Productivity + Within/Outside range + Age + (1|subject)
--  Model 2: Next.Number.Performance ~ Final.Count + Within/Outside range + Age + (1|subject)
--  Model 3: Next.Number.Performance ~ Initial.Count + Within/Outside range + Age + (1|subject)
-
-In each language, after running these first three models, any predictor that significantly (p <.05) predicted Next Number Performance (as assessed by running a likelihood ratio test on the Null Model (Model 0) and Models 1, 2, and 3) will be added into Model 6, which will be our “Large” model (containing all predictors that significantly predicted Next Number Task Performance in the simple models). We will construct model 6 hierarchically. Model comparisons will be performed at each stage by running a likelihood ratio test between reduced and full models, with significant effects retained in the full model (Model 6). Model selection will be done on the basis of AIC evaluation and significant Chi-square statistic.
-
-#HK: Within-language analyses, Next Number Task
-##Build the models
+## HK: Within-language analyses, Next Number Task
+### Build the models
 ```{r}
 #base
 wcn.hk.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
@@ -2212,26 +1915,9 @@ wcn.hk.within.model2 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + a
 #IHC
 wcn.hk.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
                             data = wcn.hk.within)
-
-
-#### TESTING WITH RANDOM EFFECT ####
-
-#base
-wcn.hk.within.base.t <- glmer(Correct ~ count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                            data = wcn.hk.within)
-#productivity
-wcn.hk.within.model1.t <- glmer(Correct ~ Productive + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                            data = wcn.hk.within)
-#FHC
-wcn.hk.within.model2.t <- glmer(Correct ~ fhc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                            data = wcn.hk.within)
-#IHC
-wcn.hk.within.model3.t <- glmer(Correct ~ ihc.c + count_range + age.c + (1|SID) + (1|starting_num.c), family = "binomial", 
-                            data = wcn.hk.within)
-
 ```
 
-##Hong Kong: NN task models
+### Hong Kong: NN task models
 ```{r}
 mtable.wcn.hk <- mtable('Base Model' = wcn.hk.within.base,
             'Model 1: Productivity' = wcn.hk.within.model1,
@@ -2240,49 +1926,41 @@ mtable.wcn.hk <- mtable('Base Model' = wcn.hk.within.base,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.wcn.hk
 
-mtable.wcn.hk <- mtable('Base Model' = wcn.hk.within.base.t,
-            'Model 1: Productivity' = wcn.hk.within.model1.t,
-            'Model 2: FHC' = wcn.hk.within.model2.t,
-            'Model 3: IHC' = wcn.hk.within.model3.t,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.wcn.hk
+tab_model(wcn.hk.within.base, transform = NULL)
+tab_model(wcn.hk.within.model1, transform = NULL)
+tab_model(wcn.hk.within.model2, transform = NULL)
+tab_model(wcn.hk.within.model3, transform = NULL)
 
-# tab_model(wcn.hk.within.base, transform = NULL)
-# tab_model(wcn.hk.within.model1, transform = NULL)
-# tab_model(wcn.hk.within.model2, transform = NULL)
-# tab_model(wcn.hk.within.model3, transform = NULL)
-tab_model(wcn.hk.within.model3)
-tab_model(wcn.hk.within.model3.t)
 ```
 
-##Model comparisons
-###Base v. Productivity - NS, p = .36
+### Model comparisons
+#### Base v. Productivity - NS, p = .36
 ```{r}
 anova(wcn.hk.within.base, wcn.hk.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 34.33, p < .0001, AIC = 1171.2
+#### Base v. FHC - Sig, Chisq(1) = 34.33, p < .0001, AIC = 1171.2
 ````{r}
 anova(wcn.hk.within.base, wcn.hk.within.model2, test = 'LRT')
 ````
 
-###Base v. IHC = Sig, Chisq(1) = 68.63, p < .0001, AIC = 1136.9
+#### Base v. IHC = Sig, Chisq(1) = 68.63, p < .0001, AIC = 1136.9
 ```{r}
 anova(wcn.hk.within.base, wcn.hk.within.model3, test = 'LRT')
 ```
 
-###Exploratory - prod. gradient - Sig, Prod. 
+#### Exploratory - prod. gradient - Sig, Prod. 
 ```{r}
 anova(wcn.hk.within.base, wcn.hk.within.model.gain, test = 'LRT')
 ```
 
-##Ranking of HK prod. predictors - WCN by AIC
+### Ranking of HK prod. predictors - WCN by AIC
 1.  IHC - 1136.9
 2.  FHC - 1171.2
 3.  Productivity - 1206.7 (NS)
 
 
-##Large Model
+## Large Model
 ```{r}
 #IHC
 wcn.hk.within.plus1 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), 
@@ -2311,16 +1989,15 @@ mtable.wcn.hk.large
 summary(wcn.hk.within.plus1)
 ```
 
-##HK NN Task within-language results: IHC emerge as best predictor of performance on Unit Task
+### HK NN Task within-language results: IHC emerge as best predictor of performance on Unit Task
 ```{r}
 summary(wcn.hk.within.plus1)
 tab_model(wcn.hk.within.plus1, transform = NULL)
 ```
 
----
 
-#SLO: Within-language analyses, NN Task
-##Build the models
+## SLO: Within-language analyses, NN Task
+### Build the models
 ```{r}
 #Base
 wcn.slo.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
@@ -2334,19 +2011,14 @@ wcn.slo.within.model2 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + 
 #IHC
 wcn.slo.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
                             data = wcn.slo.within)
-
-#Explore - prod gradient
-wcn.slo.within.model.gain <- glmer(Correct ~ prod.gradient + count_range + starting_num.c + age.c + (1|SID), 
-                                   family = "binomial", data = wcn.slo.within)
 ```
 
-##SLO: NN task models
+### Table
 ```{r}
 mtable.wcn.slo <- mtable('Base Model' = wcn.slo.within.base,
             'Model 1: Productivity' = wcn.slo.within.model1,
             'Model 2: FHC' = wcn.slo.within.model2,
             'Model 3: IHC' = wcn.slo.within.model3,
-            'Exp: Prod. gradient' = wcn.slo.within.model.gain,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.wcn.slo
 
@@ -2356,33 +2028,29 @@ tab_model(wcn.slo.within.model2, transform = NULL)
 tab_model(wcn.slo.within.model3, transform = NULL)
 ```
 
-##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 40.26, p < .0001, AIC = 863.31
+### Model comparisons
+#### Base v. Productivity - Sig, Chisq(1) = 40.26, p < .0001, AIC = 863.31
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 72.93, p < .0001, AIC = 830.63
+#### Base v. FHC - Sig, Chisq(1) = 72.93, p < .0001, AIC = 830.63
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 36.19 p < .0001, AIC = 867.38
+#### Base v. IHC - Sig, Chisq(1) = 36.19 p < .0001, AIC = 867.38
 ```{r}
 anova(wcn.slo.within.base, wcn.slo.within.model3, test = 'LRT')
 ```
 
-###Productivity gradient - Sig, Chisq(1) = 43.52, p < .0001, AIC = 860.04
-```{r}
-anova(wcn.slo.within.base, wcn.slo.within.model.gain, test = 'LRT')
-```
-##Ranking of prod predictors - WCN by AIC
+### Ranking of prod predictors - WCN by AIC
 1.  FHC - 830.64
 2.  Productivity - 863.01
 3.  IHC - 8567.38
 
 
-##Large Model comparison
+### Large Model comparison
 ```{r}
 #FHC
 wcn.slo.within.plus1 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + age.c + (1|SID), 
@@ -2405,15 +2073,14 @@ anova(wcn.slo.within.plus1, wcn.slo.within.plus2, test = 'LRT')# IHC NS
 summary(wcn.slo.within.plus1)
 ```
 
-##SLO NN Task (interim) within-language results: FHC emerges as best predictors of performance on Unit Task
+### SLO NN Task (interim) within-language results: FHC emerges as best predictors of performance on Unit Task
 ```{r}
 summary(wcn.slo.within.plus1)
 tab_model(wcn.slo.within.plus1, transform = NULL)
 ```
----
 
-#US: Within-language analyses, NN Task
-##Build the models
+## US: Within-language analyses, NN Task
+### Build the models
 ```{r}
 #base
 wcn.us.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
@@ -2428,18 +2095,14 @@ wcn.us.within.model2 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + a
 wcn.us.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
                             data = wcn.us.within)
 
-#Explore - prod gradient
-wcn.us.within.model.gain <- glmer(Correct ~ prod.gradient + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
-                            data = wcn.us.within)
 ```
 
-##English (US): NN Task models
+### English (US): NN Task models
 ```{r}
 mtable.wcn.us <- mtable('Base Model' = wcn.us.within.base,
             'Model 1: Productivity' = wcn.us.within.model1,
             'Model 2: FHC' = wcn.us.within.model2,
             'Model 3: IHC' = wcn.us.within.model3,
-            'Exp: Prod. gradient' = wcn.us.within.model.gain,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.wcn.us
 
@@ -2449,33 +2112,28 @@ tab_model(wcn.us.within.model2, transform = NULL)
 tab_model(wcn.us.within.model3, transform = NULL)
 ```
 
-##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 14.74, p = .0001, AIC = 1041.8
+### Model comparisons
+#### Base v. Productivity - Sig, Chisq(1) = 14.74, p = .0001, AIC = 1041.8
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 44.93, p < .0001, AIC = 1012.6
+#### Base v. FHC - Sig, Chisq(1) = 43.93, p < .0001, AIC = 1012.6
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 30.49, p < .0001, AIC = 1026.1
+#### Base v. IHC - Sig, Chisq(1) = 30.49, p < .0001, AIC = 1026.1
 ```{r}
 anova(wcn.us.within.base, wcn.us.within.model3, test = 'LRT')
 ```
 
-###Prod gradient
-```{r}
-anova(wcn.us.within.base, wcn.us.within.model.gain, test = 'LRT')
-```
-
-##Ranking of prod predictors - WCN by AIC
+### Ranking of prod predictors - WCN by AIC
 1.  FHC - 1013
 2.  IHC - 1026.5
 3.  Productivity - 1042.3
 
-##Large Model comparison
+### Large Model comparison
 ```{r}
 #FHC
 wcn.us.within.plus1 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + age.c + (1|SID), 
@@ -2494,116 +2152,17 @@ wcn.us.within.plus2.prod <- glmer(Correct ~ Productive + fhc.c + count_range + s
                             family = "binomial", data = wcn.us.within)
 #compare
 anova(wcn.us.within.plus1, wcn.us.within.plus2.prod, test = 'LRT') #Prod NS
-
-
-
-# #add prod. gradient, compare
-# wcn.us.within.plus.gain <- glmer(Correct ~ prod.gradient + fhc.c + count_range + starting_num.c + age.c + (1|SID), 
-#                              family = "binomial", 
-#                            data = wcn.us.within)
-# anova(wcn.us.within.plus1, wcn.us.within.plus.gain, test = 'LRT')
 ```
 
-##US NN Task (interim) within-language results: FHC emerges as best predictor of performance on Unit Task
+### US NN Task (interim) within-language results: FHC emerges as best predictor of performance on Unit Task
 ```{r}
 summary(wcn.us.within.plus1)
 tab_model(wcn.us.within.plus1, transform = NULL)
 ```
 
----
 
-#India English: Within-language analyses, NN task
-
-Build the models
-```{r}
-#Base Model
-wcn.ind.eng.within.base <- glmer(Correct ~ count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
-                            data = wcn.ind.eng.within)
-#Productivity
-wcn.ind.eng.within.model1 <- glmer(Correct ~ Productive + count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
-                            data = wcn.ind.eng.within)
-#FHC
-wcn.ind.eng.within.model2 <- glmer(Correct ~ fhc.c + count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
-                            data = wcn.ind.eng.within)
-#IHC
-wcn.ind.eng.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
-                            data = wcn.ind.eng.within)
-
-#prod.gradient
-wcn.ind.eng.within.model.gain <- glmer(Correct ~ prod.gradient + count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
-                            data = wcn.ind.eng.within)
-```
-
----
-
-##English (India) WCN Models 
-Summary
-```{r}
-mtable.ind.eng <- mtable('Base Model' = wcn.ind.eng.within.base,
-            'Model 1: Productivity' = wcn.ind.eng.within.model1,
-            'Model 2: FHC' = wcn.ind.eng.within.model2,
-            'Model 3: IHC' = wcn.ind.eng.within.model3,
-            # 'Exp: Prod. gradient' = wcn.ind.eng.within.model.gain,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.ind.eng
-
-tab_model(wcn.ind.eng.within.base, transform = NULL)
-tab_model(wcn.ind.eng.within.model1, transform = NULL)
-tab_model(wcn.ind.eng.within.model2, transform = NULL)
-tab_model(wcn.ind.eng.within.model3, transform = NULL)
-```
-
-##Model comparisons
-###Base v. Productivity - NS
-```{r}
-anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model1, test = 'LRT')
-```
-
-###Base v. FHC - Sig, Chisq(1) = 21.1, p < .0001, AIC = 678.7
-```{r}
-anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model2, test = 'LRT')
-```
-
-###Base v. IHC - Sig, Chisq(1) = 19.49, p < .0001, AIC = 680.30
-```{r}
-anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model3, test = 'LRT')
-```
-
-###Base v. prod. gradient - marginal
-```{r}
-anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model.gain, test = 'LRT')
-```
-
-##Large Model
-
-```{r}
-#FHC
-wcn.ind.eng.within.plus1 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + age.c +  (1|SID), 
-                             family = "binomial", 
-                           data = wcn.ind.eng.within)
-#IHC + FHC
-wcn.ind.eng.within.plus2 <- glmer(Correct ~ ihc.c + fhc.c + count_range + starting_num.c + age.c +  (1|SID), 
-                            family = "binomial", data = wcn.ind.eng.within)
-
-anova(wcn.ind.eng.within.plus1, wcn.ind.eng.within.plus2,test = 'LRT') #IHC sig
-
-# mtable.wcn.ind.eng.large <- mtable('FHC alone' = wcn.ind.eng.within.plus1,
-#             'IHC + FHC' = wcn.ind.eng.within.plus2,
-#             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-# mtable.wcn.ind.eng.large
-
-summary(wcn.ind.eng.within.plus2)
-```
-
-##English (India) NN Task within-language results: IHC and FHC emerge as best predictors of performance on Unit Task
-```{r}
-summary(wcn.ind.eng.within.plus2)
-tab_model(wcn.ind.eng.within.plus2, transform = NULL)
-```
----
-
-#Hindi: Within-language analyses, NN
-##Build the models
+## Hindi: Within-language analyses, NN
+### Build the models
 ```{r}
 #Base Model
 wcn.hindi.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c  + (1|SID), family = "binomial", 
@@ -2617,11 +2176,6 @@ wcn.hindi.within.model2 <- glmer(Correct ~ fhc.c + count_range + starting_num.c 
 #IHC
 wcn.hindi.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
                             data = wcn.hindi.within)
-
-#Exp- prod.gradient
-wcn.hindi.within.model.gain <- glmer(Correct ~ prod.gradient + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
-                            data = wcn.hindi.within)
-
 ```
 
 ##Hindi: NN Task models 
@@ -2631,7 +2185,6 @@ mtable.hindi <- mtable('Base Model' = wcn.hindi.within.base,
             'Model 1: Productivity' = wcn.hindi.within.model1,
             'Model 2: FHC' = wcn.hindi.within.model2,
             'Model 3: IHC' = wcn.hindi.within.model3,
-            'Exp: Prod. gradient' = wcn.hindi.within.model.gain,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.hindi
 
@@ -2641,34 +2194,34 @@ tab_model(wcn.hindi.within.model2, transform = NULL)
 tab_model(wcn.hindi.within.model3, transform = NULL)
 ```
 
-##Model comparisons
-###Base v. Productivity - sig, Chisq(1) = 4.5, p = .03, AIC = 850.45
+### Model comparisons
+#### Base v. Productivity - sig, Chisq(1) = 4.5, p = .03, AIC = 850.45
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - sig, Chisq(1) = 27.4, p < .0001, AIC = 827.62
+#### Base v. FHC - sig, Chisq(1) = 27.4, p < .0001, AIC = 827.62
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC - Sig, Chisq(1) = 33.41, p < .0001, AIC = 821.6
+#### Base v. IHC - Sig, Chisq(1) = 33.41, p < .0001, AIC = 821.6
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model3, test = 'LRT')
 ```
 
-###Base v. Prod. gradient - Sig, Chisq(1) = 10.03, p = .001, AIC = 844.97
+#### Base v. Prod. gradient - Sig, Chisq(1) = 10.03, p = .001, AIC = 844.97
 ```{r}
 anova(wcn.hindi.within.base, wcn.hindi.within.model.gain, test = 'LRT')
 ```
 
-##Ranking of NN predictors, HIndi, by AIC
+### Ranking of NN predictors, HIndi, by AIC
 1.  IHC - 821.6
 2.  FHC - 827.6
 3.  Productivity - 850
 
 
-##Large Model
+### Large Model
 ```{r}
 #IHC
 wcn.hindi.within.plus1 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), 
@@ -2693,24 +2246,16 @@ anova(wcn.hindi.within.plus1, wcn.hindi.within.plus2.prod, test = 'LRT')# prod n
 # #IHC v. Prod + FHC
 # anova(wcn.hindi.within.plus1, wcn.hindi.within.plus2.prod, test = 'LRT') 
 
-#Add Prod. gradient, test
-wcn.hindi.within.plus.gain <- glmer(Correct ~ prod.gradient + ihc.c + count_range + starting_num.c + age.c + (1|SID), 
-                             family = "binomial", 
-                           data = wcn.hindi.within)
-anova(wcn.hindi.within.plus1, wcn.hindi.within.plus.gain, test = 'LRT')
-
-summary(wcn.hindi.within.plus1)
 ```
 
-##Hindi NN Task within-language results: IHC emerges as best predictor of performance on Unit Task
+### Hindi NN Task within-language results: IHC emerges as best predictor of performance on Unit Task
 ```{r}
 summary(wcn.hindi.within.plus1)
 tab_model(wcn.hindi.within.plus1, transform = NULL)
 ```
----
 
-#Gujarati: Within-language analyses, NN
-##Build the models
+## Gujarati: Within-language analyses, NN
+### Build the models
 ```{r}
 #Base Model
 wcn.gujarati.within.base <- glmer(Correct ~ count_range + starting_num.c + age.c +  (1|SID), family = "binomial", 
@@ -2724,13 +2269,9 @@ wcn.gujarati.within.model2 <- glmer(Correct ~ fhc.c + count_range + starting_num
 #IHC
 wcn.gujarati.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
                             data = wcn.gujarati.within)
-
-#Exp. - prod. gradient
-wcn.gujarati.within.model.gain <- glmer(Correct ~ prod.gradient + count_range + starting_num.c + age.c + (1|SID), family = "binomial", 
-                            data = wcn.gujarati.within)
 ```
 
-##Gujarati: NN Task models 
+### Gujarati: NN Task models 
 Summary
 ```{r}
 mtable.gujarati <- mtable('Base Model' = wcn.gujarati.within.base,
@@ -2747,33 +2288,28 @@ tab_model(wcn.gujarati.within.model2, transform = NULL)
 tab_model(wcn.gujarati.within.model3, transform= NULL)
 ```
 
-##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 10.06, p = .002, AIC = 787.41
+### Model comparisons
+#### Base v. Productivity - Sig, Chisq(1) = 10.06, p = .002, AIC = 787.41
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model1, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 36.25, p < .0001, AIC  761.2
+#### Base v. FHC - Sig, Chisq(1) = 36.25, p < .0001, AIC  761.2
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model2, test = 'LRT')
 ```
 
-###Base v. IHC = Sig, Chisq(1) = 33.45, p < .0001, AIC = 764.02
+#### Base v. IHC = Sig, Chisq(1) = 33.45, p < .0001, AIC = 764.02
 ```{r}
 anova(wcn.gujarati.within.base, wcn.gujarati.within.model3, test = 'LRT')
 ```
 
-###Base v. Prod. gradient
-```{r}
-anova(wcn.gujarati.within.base, wcn.gujarati.within.model.gain, test = 'LRT')
-```
-
-##Ranking of NN Predictors, Gujarati, by AIC 
+### Ranking of NN Predictors, Gujarati, by AIC 
 1.  FHC - 761.2
 2.  IHC - 764.02
 3.  Productivity - 787
 
-##Large Model
+### Large Model
 ```{r}
 #FHC
 wcn.gujarati.within.plus1 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + age.c +  (1|SID), 
@@ -2796,21 +2332,385 @@ wcn.gujarati.within.plus3 <- glmer(Correct ~ ihc.c + Productive + fhc.c + count_
                             family = "binomial", data = wcn.gujarati.within)
 anova(wcn.gujarati.within.plus2.prod, wcn.gujarati.within.plus3, test = 'LRT') #IHC NS
 
-
-#add prod.gradient, compare
-wcn.gujarati.within.plus.gain <- glmer(Correct ~ prod.gradient + Productive + fhc.c + count_range + starting_num.c + age.c +  (1|SID), 
-                             family = "binomial", 
-                           data = wcn.gujarati.within)
-
-summary(wcn.gujarati.within.plus2.prod)
-summary(wcn.gujarati.within.plus.gain)
 ```
 
-##Gujarati NN Task within-language results: FHC and Productivity emerge as best predictor of performance on Unit Task
+### Gujarati NN Task within-language results: FHC and Productivity emerge as best predictor of performance on Unit Task
 ```{r}
 summary(wcn.gujarati.within.plus2.prod)
 tab_model(wcn.gujarati.within.plus2.prod, transform = NULL)
 ```
+
+## India English: Within-language analyses, NN task
+
+Build the models
+```{r}
+#Base Model
+wcn.ind.eng.within.base <- glmer(Correct ~ count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
+                            data = wcn.ind.eng.within)
+#Productivity
+wcn.ind.eng.within.model1 <- glmer(Correct ~ Productive + count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
+                            data = wcn.ind.eng.within)
+#FHC
+wcn.ind.eng.within.model2 <- glmer(Correct ~ fhc.c + count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
+                            data = wcn.ind.eng.within)
+#IHC
+wcn.ind.eng.within.model3 <- glmer(Correct ~ ihc.c + count_range + starting_num.c +age.c +  (1|SID), family = "binomial", 
+                            data = wcn.ind.eng.within)
+```
+
+### English (India) WCN Models 
+Summary
+```{r}
+mtable.ind.eng <- mtable('Base Model' = wcn.ind.eng.within.base,
+            'Model 1: Productivity' = wcn.ind.eng.within.model1,
+            'Model 2: FHC' = wcn.ind.eng.within.model2,
+            'Model 3: IHC' = wcn.ind.eng.within.model3,
+            # 'Exp: Prod. gradient' = wcn.ind.eng.within.model.gain,
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
+mtable.ind.eng
+
+tab_model(wcn.ind.eng.within.base, transform = NULL)
+tab_model(wcn.ind.eng.within.model1, transform = NULL)
+tab_model(wcn.ind.eng.within.model2, transform = NULL)
+tab_model(wcn.ind.eng.within.model3, transform = NULL)
+```
+
+### Model comparisons
+#### Base v. Productivity - NS
+```{r}
+anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model1, test = 'LRT')
+```
+
+#### Base v. FHC - Sig, Chisq(1) = 21.1, p < .0001, AIC = 678.7
+```{r}
+anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model2, test = 'LRT')
+```
+
+#### Base v. IHC - Sig, Chisq(1) = 19.49, p < .0001, AIC = 680.30
+```{r}
+anova(wcn.ind.eng.within.base, wcn.ind.eng.within.model3, test = 'LRT')
+```
+
+### Large Model
+
+```{r}
+#FHC
+wcn.ind.eng.within.plus1 <- glmer(Correct ~ fhc.c + count_range + starting_num.c + age.c +  (1|SID), 
+                             family = "binomial", 
+                           data = wcn.ind.eng.within)
+#IHC + FHC
+wcn.ind.eng.within.plus2 <- glmer(Correct ~ ihc.c + fhc.c + count_range + starting_num.c + age.c +  (1|SID), 
+                            family = "binomial", data = wcn.ind.eng.within)
+
+anova(wcn.ind.eng.within.plus1, wcn.ind.eng.within.plus2,test = 'LRT') #IHC sig
+
+summary(wcn.ind.eng.within.plus2)
+```
+
+### English (India) NN Task within-language results: IHC and FHC emerge as best predictors of performance on Unit Task
+```{r}
+summary(wcn.ind.eng.within.plus2)
+tab_model(wcn.ind.eng.within.plus2, transform = NULL)
+```
+---
+
+# Cross-linguistic comparisons
+
+## Make model dfs
+```{r, include = FALSE}
+#currently for Exp 1
+sf.df.cross <- all.data %>%
+  filter(Task == "SF", 
+         Language == "Cantonese" |
+           Language == "Slovenian" | 
+           Language == "English (US)")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)"))) %>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
+  mutate(Language = factor(Language))%>%
+  filter(!is.na(highest_contig.c)) #filter out kids who do not have HCNN
+  
+wcn.df.cross <- all.data %>%
+  filter(Task == "NN",
+         Language == "Cantonese" |
+           Language == "Slovenian" | 
+           Language == "English (US)")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)),
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE))) %>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
+  mutate(Language = factor(Language))
+
+##For India
+sf.df.cross.india <- all.data %>%
+  filter(Task == "SF", 
+         Language == "English (US)" |
+           Language == "Hindi" | 
+           Language == "Gujarati")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Language = factor(Language, levels = c("English (US)", "Hindi", "Gujarati"))) %>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
+  mutate(Language = factor(Language))%>%
+  filter(!is.na(highest_contig.c)) #filter out kids who do not have HCNN
+
+wcn.df.cross.india <- all.data %>%
+  filter(Task == "NN", 
+         Language == "English (US)" |
+           Language == "Hindi" | 
+           Language == "Gujarati")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Language = factor(Language, levels = c("English (US)", "Hindi", "Gujarati"))) %>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
+  mutate(Language = factor(Language))%>%
+  filter(!is.na(highest_contig.c)) #filter out kids who do not have HCNN
+
+#followup with Indian English 
+wcn.df.cross.india.follow <- all.data %>%
+  filter(Task == "NN", 
+         Language == "English (India)" |
+           Language == "Hindi" | 
+           Language == "Gujarati")%>%
+  mutate(SID = factor(SID), 
+         Productive = factor(Productive), 
+         count_range = factor(count_range), 
+         highest_contig = as.integer(highest_contig), 
+         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
+         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
+         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
+         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
+         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
+         Language = factor(Language, levels = c("English (India)", "Hindi", "Gujarati"))) %>%
+  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
+  mutate(Language = factor(Language))%>%
+  filter(!is.na(highest_contig.c)) #filter out kids who do not have HCNN
+```
+
+## Experiment 1
+### Unit Task: Cross linguistic models - HK/SLO/US (Cantonese as reference group)
+#### Build the models
+```{r}
+#base
+sf.cross.base <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#productivity
+sf.cross.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c +age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#fhc
+sf.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#highest contig.
+sf.cross.model3 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
+                           (1|SID), 
+                       family = "binomial", data = sf.df.cross, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+```
+
+##Cross-linguistic model comparison
+```{r}
+mtable.sf.cross <- mtable('Base Model' = sf.cross.base,
+            'Model 1: Productivity' = sf.cross.model1,
+            'Model 2: FHC' = sf.cross.model2,
+            'Model 3: Highest Contig.' = sf.cross.model3, 
+            # 'Exp: Prod. gradient' = sf.cross.model.gain,
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
+mtable.sf.cross
+
+tab_model(sf.cross.base, transform = NULL)
+tab_model(sf.cross.model1, transform = NULL)
+tab_model(sf.cross.model2, transform = NULL)
+```
+
+#### Model Comparisons
+##### Base v. productivity - NS, p = .22
+```{r}
+anova(sf.cross.base, sf.cross.model1, test = 'LRT')
+```
+
+##### Base v. FHC - NS, p = .15
+```{r}
+anova(sf.cross.base, sf.cross.model2, test = 'LRT')
+```
+
+##### Base v. Highest contig. - Sig, Chisq(1) = 22.695, p < .0001, AIC = 4379.3.
+```{r}
+anova(sf.cross.base, sf.cross.model3, test = 'LRT')
+```
+
+### HCNN emerges as best cross-linguistic predictor
+```{r}
+tab_model(sf.cross.model3, transform = NULL)
+```
+
+#### Do the same process with Slovenian as the reference group
+```{r}
+slo.ref <- sf.df.cross %>%
+  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
+
+#base
+sf.cross.base.slo <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = slo.ref, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+
+#model output
+tab_model(sf.cross.base.slo, transform = NULL)
+#productivity
+sf.cross.model1.slo <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c +age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = slo.ref, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+
+
+#model output
+tab_model(sf.cross.model1.slo, transform = NULL)
+#fhc
+sf.cross.model2.slo <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = slo.ref, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+tab_model(sf.cross.model2.slo, transform = NULL)
+#highest contig.
+sf.cross.model3.slo <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
+                           (1|SID), 
+                       family = "binomial", data = slo.ref, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+
+tab_model(sf.cross.model3.slo, transform = NULL)
+
+```
+
+##Large model - no model comparison needed, only sig. predictor above is HCNN
+```{r}
+#cantonese as comparison
+summary(sf.cross.model3)
+tab_model(sf.cross.model3, transform = NULL)
+
+#slovenian as comparison
+tmp <- sf.df.cross %>%
+  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
+
+sf.cross.model3.slo.comp <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
+                           (1|SID), 
+                       family = "binomial", data = tmp, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+tab_model(sf.cross.model3.slo.comp, transform = NULL)
+```
+
+## Experiment 2
+#### Unit Task: Cross linguistic models - India (English/Hindi/Gujarati)
+##### Build the models
+```{r}
+#base
+sf.cross.base.india <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross.india, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#productivity
+sf.cross.model1.india <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c +age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross.india, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#fhc
+sf.cross.model2.india <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                       family = "binomial", data = sf.df.cross.india, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#highest contig.
+sf.cross.model3.india <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
+                           (1|SID), 
+                       family = "binomial", data = sf.df.cross.india, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+```
+
+##Cross-linguistic model comparison
+```{r}
+mtable.sf.cross.india <- mtable('Base Model' = sf.cross.base.india,
+            'Model 1: Productivity' = sf.cross.model1.india,
+            'Model 2: FHC' = sf.cross.model2.india,
+            'Model 3: Highest Contig.' = sf.cross.model3.india,
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
+mtable.sf.cross.india
+
+tab_model(sf.cross.base.india, transform = NULL)
+tab_model(sf.cross.model1.india, transform = NULL)
+tab_model(sf.cross.model2.india, transform = NULL)
+tab_model(sf.cross.model3.india, transform = NULL)
+```
+
+#### Model Comparisons
+##### Base v. productivity - NS, p = .87
+```{r}
+anova(sf.cross.base.india, sf.cross.model1.india, test = 'LRT')
+```
+
+##### Base v. FHC - NS, p = .95
+```{r}
+anova(sf.cross.base.india, sf.cross.model2.india, test = 'LRT')
+```
+
+##### Base v. Highest contig. - Sig, Chisq(1) = 13.18, p = .0003, AIC = 3940.5
+```{r}
+anova(sf.cross.base.india, sf.cross.model3.india, test = 'LRT')
+```
+
+#### Large model - no model comparison needed, only sig. predictor above is HCNN
+```{r}
+#Summary of final model - hcnn
+summary(sf.cross.model3.india)
+tab_model(sf.cross.model3.india, transform = NULL)
+
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2942,108 +2842,141 @@ sf.gujarati.mean.ms <- all.data %>%
 t.test(sf.gujarati.mean.ms$mean, mu = .5, var.equal = TRUE)
 ```
 
+--- 
+# Next Number Cross-linguistic models
+## Experiment 1
 
-####FOLLOW UP: Do Hindi and Gujarati speakers have a bias for picking 1st or 2nd item? 
+### Build the models
 ```{r}
-bias.df <- all.data %>%
-  filter(Task == "SF")%>%
-  mutate(Task_item = as.numeric(as.character(Task_item)),
-         Response = as.numeric(as.character(Response)),
-         choice.order = ifelse(((Trial_number == "1" | Trial_number == "3" | 
-                                  Trial_number == "5" | Trial_number == "7" |
-                                  Trial_number == "9" | Trial_number == "11") & Response == Task_item + 1), "Second", 
-                               ifelse(((Trial_number == "1" | Trial_number == "3" | 
-                                  Trial_number == "5" | Trial_number == "7" |
-                                  Trial_number == "9" | Trial_number == "11") & Response == Task_item + 2), "First", 
-                               ifelse(((Trial_number == "2" | Trial_number == "4" | 
-                                  Trial_number == "6" | Trial_number == "8" |
-                                  Trial_number == "10" | Trial_number == "12") & Response == Task_item + 1), "First", 
-                               ifelse(((Trial_number == "2" | Trial_number == "4" | 
-                                  Trial_number == "6" | Trial_number == "8" |
-                                  Trial_number == "10" | Trial_number == "12") & Response == Task_item + 2), "Second", NA)))))
+#base
+wcn.cross.base <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#Productivity
+wcn.cross.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+#FHC
+wcn.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
+                            (1|SID), data = wcn.df.cross, family = "binomial", 
+                          control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
 
-##how frequently do these kids select each option? 
-bias.df %>%
-  filter(!is.na(choice.order), 
-         Language == "Hindi" |
-           Language == "Gujarati")%>%
-  mutate(Task_item = factor(Task_item, levels = c("5", "7", "16", 
-                                                  "24", "52", "71", 
-                                                  "105", "107",
-                                                  "116", "224", "252", 
-                                                  "271")))%>%
-  group_by(Language, Task_item, choice.order)%>%
-  summarise(n = n()) %>%
-  group_by(Language)%>%
-  mutate(prop = n/sum(n))%>%
-  ggplot(aes(x = Task_item, y= prop, fill = choice.order)) + 
-  geom_bar(stat='identity', position = position_dodge()) + 
-  facet_grid(~Language)
+```
 
-#within language, are they biased to pick the first alternative more than chance? 
-bias.df %<>%
-  mutate(choice.first = ifelse(choice.order == "First", 1, 0), 
-         choice.second = ifelse(choice.order == "Second",1, 0))
+##Cross-linguistic model comparison
+```{r}
+mtable.wcn.cross <- mtable('Base Model' = wcn.cross.base,
+            'Model 1: Productivity' = wcn.cross.model1,
+            'Model 2: FHC' = wcn.cross.model2,
+            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
+mtable.wcn.cross
 
-hindi.bias <- matrix(c(sum(subset(bias.df, Language == "Hindi")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df, Language == "Hindi")$choice.second, na.rm = TRUE)))
-chisq.test(hindi.bias)
+tab_model(wcn.cross.base, transform = NULL)
+tab_model(wcn.cross.model1, transform = NULL)
+tab_model(wcn.cross.model2, transform = NULL)
 
-gujarati.bias <- matrix(c(sum(subset(bias.df, Language == "Gujarati")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df, Language == "Gujarati")$choice.second, na.rm = TRUE)))
-chisq.test(gujarati.bias)
+```
 
-hk.bias <- matrix(c(sum(subset(bias.df, Language == "Cantonese")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df, Language == "Cantonese")$choice.second, na.rm = TRUE)))
-chisq.test(hk.bias)
+### Model comparisons
+#### Base v. Productivity - Sig, Chisq(1) = 19.4, p < .0001, AIC = 2968.2
+```{r}
+anova(wcn.cross.base, wcn.cross.model1, test = 'LRT')
+```
 
-slo.bias <- matrix(c(sum(subset(bias.df, Language == "Slovenian")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df, Language == "Slovenian")$choice.second, na.rm = TRUE)))
-chisq.test(slo.bias)
-
-
-###Re-run, filter out large numbers
-bias.df.small <- bias.df %>%
-  filter(Task_item < 100)
-
-hindi.bias <- matrix(c(sum(subset(bias.df.small, Language == "Hindi")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df.small, Language == "Hindi")$choice.second, na.rm = TRUE)))
-chisq.test(hindi.bias)
-
-gujarati.bias <- matrix(c(sum(subset(bias.df.small, Language == "Gujarati")$choice.first, na.rm =TRUE), 
-              sum(subset(bias.df.small, Language == "Gujarati")$choice.second, na.rm = TRUE)))
-chisq.test(gujarati.bias)
-
-
-####If we remove the large numbers, what are the descriptives? 
-bias.df %>%
-  filter(Task_item < 200)%>%
-  group_by(Language)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE), 
-            sd = sd(Correct, na.rm = TRUE))
-
-#do children perform below chance for smaller ns? 
-lang.small.ms <- bias.df.small %>%
-  group_by(SID, Language)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(lang.small.ms, Language == "Hindi")$mean, mu = .5, var.equal = TRUE)
-
-t.test(subset(lang.small.ms, Language == "Gujarati")$mean, mu = .5, var.equal = TRUE)
-
-#finally, what if we filter out subset-knowers?
-bias.df %>%
-  filter(Knower.level == "CP-knower")%>%
-  group_by(Language)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE), 
-            sd = sd(Correct, na.rm = TRUE))
+#### Base v. FHC - Sig, Chisq(1) = 38.96, p < .0001, AIC = 2949.1
+```{r}
+anova(wcn.cross.base, wcn.cross.model2, test = 'LRT')
 ```
 
 
+##Ranking of productivity predictors - WCN by AIC
+1.  FHC - 2949.5
+2.  Productivity - 2968.6
 
----
+##Large model
+```{r}
+wcn.cross.plus1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
+                           (1|SID), family = "binomial", data = wcn.df.cross, 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+wcn.cross.plus2 <- glmer(Correct ~ Productive + fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
+                           (1|SID), family = "binomial", data = wcn.df.cross, 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
 
-#Next Number
+anova(wcn.cross.plus1, wcn.cross.plus2, test = 'LRT')#Prod is NS
+
+#what about productivity gradient? 
+wcn.cross.plus.gain <- glmer(Correct ~ prod.gradient + fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
+                           (1|SID), family = "binomial", data = wcn.df.cross, 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+anova(wcn.cross.plus1, wcn.cross.plus.gain, test = 'LRT')
+
+# mtable.wcn.cross.large <- mtable('FHC alone' = wcn.cross.plus1,
+#             'Productive + FHC.' = wcn.cross.plus2,
+#             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
+# mtable.wcn.cross.large
+
+#summary of final model
+summary(wcn.cross.plus1)
+tab_model(wcn.cross.plus1, transform = NULL)
+# summary(wcn.cross.plus.gain)
+
+```
+
+##Slovenian as comparison 
+```{r}
+wcn.df.cross.slo <- wcn.df.cross %>%
+  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
+
+###BUILD THE MODELS
+#base
+wcn.cross.base.slo <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross.slo, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+
+tab_model(wcn.cross.base.slo, transform = NULL)
+#Productivity
+wcn.cross.model1.slo <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                        family = "binomial", data = wcn.df.cross.slo, 
+                        control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+
+tab_model(wcn.cross.model1.slo, transform = NULL)
+#FHC
+wcn.cross.model2.slo <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
+                            (1|SID), data = wcn.df.cross.slo, family = "binomial", 
+                          control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+tab_model(wcn.cross.model2.slo, transform = NULL)
+
+#Exp - prod. gradient
+wcn.cross.model.gain.slo <- glmer(Correct ~ prod.gradient + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
+                            (1|SID), data = wcn.df.cross.slo, family = "binomial", 
+                          control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+
+```
+
+
+#Test if effects of language are significant
+```{r}
+wcn.nolang.base <- glmer(Correct ~ fhc.c + ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                         data = wcn.df.cross, family = "binomial", 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+wcn.nolang.model1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
+                         data = wcn.df.cross, family = "binomial", 
+                         control=glmerControl(optimizer="bobyqa",
+                         optCtrl=list(maxfun=2e4)))
+anova(wcn.nolang.base, wcn.nolang.model1, test = 'LRT') 
+```
+
 
 
 
@@ -3147,644 +3080,11 @@ t.test(subset(wcn.ind.eng.mean.ms, Productive == "Resilient")$mean,
 
 ---
 
-#Cross-linguistic comparisons
-Our second set of analyses is aimed at understanding cross-linguistic differences in performance on the Unit and Next Number Tasks. To do this, we will analyze all participants, from all language groups, in a single model. We will then construct our models from above, but will add (a) a measure of Working Memory and (b) the interaction of Initial Highest Count and Language group to each model. These models therefore allow us to test whether (a) language; (b) counting ability; or (c) some interaction between the two predict unit performance. We include Working Memory in all cross-linguistic models with the intention of taking into account baseline differences in processing across samples.
 
-##Make model dfs
-```{r, include = FALSE}
-#currently for Exp 1
-sf.df.cross <- all.data %>%
-  filter(Task == "SF", 
-         Language == "Cantonese" |
-           Language == "Slovenian" | 
-           Language == "English (US)")%>%
-  mutate(SID = factor(SID), 
-         Productive = factor(Productive), 
-         count_range = factor(count_range), 
-         highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
-         Language = factor(Language, levels = c("Cantonese", "Slovenian", "English (US)"))) %>%
-  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
-  mutate(Language = factor(Language))%>%
-  filter(!is.na(highest_contig.c)) #filter out kids who do not have HCNN
-  
-wcn.df.cross <- all.data %>%
-  filter(Task == "NN",
-         Language == "Cantonese" |
-           Language == "Slovenian" | 
-           Language == "English (US)")%>%
-  mutate(SID = factor(SID), 
-         Productive = factor(Productive), 
-         count_range = factor(count_range), 
-         highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)),
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE))) %>%
-  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
-  mutate(Language = factor(Language))
-
-##For India
-sf.df.cross.india <- all.data %>%
-  filter(Task == "SF", 
-         Language == "English (US)" |
-           Language == "Hindi" | 
-           Language == "Gujarati")%>%
-  mutate(SID = factor(SID), 
-         Productive = factor(Productive), 
-         count_range = factor(count_range), 
-         highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
-         Language = factor(Language, levels = c("English (US)", "Hindi", "Gujarati"))) %>%
-  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
-  mutate(Language = factor(Language))%>%
-  filter(!is.na(highest_contig.c)) #filter out kids who do not have HCNN
-
-wcn.df.cross.india <- all.data %>%
-  filter(Task == "NN", 
-         Language == "English (US)" |
-           Language == "Hindi" | 
-           Language == "Gujarati")%>%
-  mutate(SID = factor(SID), 
-         Productive = factor(Productive), 
-         count_range = factor(count_range), 
-         highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
-         Language = factor(Language, levels = c("English (US)", "Hindi", "Gujarati"))) %>%
-  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
-  mutate(Language = factor(Language))%>%
-  filter(!is.na(highest_contig.c)) #filter out kids who do not have HCNN
-
-#followup with Indian English 
-wcn.df.cross.india.follow <- all.data %>%
-  filter(Task == "NN", 
-         Language == "English (India)" |
-           Language == "Hindi" | 
-           Language == "Gujarati")%>%
-  mutate(SID = factor(SID), 
-         Productive = factor(Productive), 
-         count_range = factor(count_range), 
-         highest_contig = as.integer(highest_contig), 
-         age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         fhc.c = as.vector(scale(FHC, center = TRUE, scale = TRUE)), 
-         ihc.c = as.vector(scale(IHC, center = TRUE, scale = TRUE)), 
-         highest_contig.c = as.vector(scale(highest_contig, center = TRUE, scale = TRUE)), 
-         starting_num.c = as.vector(scale(as.numeric(as.character(Task_item)), center = TRUE, scale = TRUE)), 
-         Language = factor(Language, levels = c("English (India)", "Hindi", "Gujarati"))) %>%
-  mutate(wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=TRUE)))%>%
-  mutate(Language = factor(Language))%>%
-  filter(!is.na(highest_contig.c)) #filter out kids who do not have HCNN
-```
-
----
-
-#Experiment 1
-#Unit Task: Cross linguistic models - HK/SLO/US (Cantonese as reference group)
-##Build the models
-```{r}
-#base
-sf.cross.base <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#productivity
-sf.cross.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c +age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#fhc
-sf.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#highest contig.
-sf.cross.model3 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
-                           (1|SID), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-###TESTING WITH RANDOM EFFECT ###
-
-#base
-sf.cross.base.t <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#productivity
-sf.cross.model1.t <- glmer(Correct ~ Productive + Language*ihc.c + count_range  +age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#fhc
-sf.cross.model2.t <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range  + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#highest contig.
-sf.cross.model3.t <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-```
-
-##Cross-linguistic model comparison
-```{r}
-mtable.sf.cross <- mtable('Base Model' = sf.cross.base,
-            'Model 1: Productivity' = sf.cross.model1,
-            'Model 2: FHC' = sf.cross.model2,
-            'Model 3: Highest Contig.' = sf.cross.model3, 
-            # 'Exp: Prod. gradient' = sf.cross.model.gain,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.cross
-
-mtable.sf.cross <- mtable('Base Model' = sf.cross.base.t,
-            'Model 1: Productivity' = sf.cross.model1.t,
-            'Model 2: FHC' = sf.cross.model2.t,
-            'Model 3: Highest Contig.' = sf.cross.model3.t, 
-            # 'Exp: Prod. gradient' = sf.cross.model.gain,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.cross
-
-# tab_model(sf.cross.base, transform = NULL)
-# tab_model(sf.cross.model1, transform = NULL)
-# tab_model(sf.cross.model2, transform = NULL)
-tab_model(sf.cross.model3, transform = NULL)
-tab_model(sf.cross.model3.t, transform = NULL)
-```
-
-##Model Comparisons
-###Base v. productivity - NS, p = .22
-```{r}
-anova(sf.cross.base, sf.cross.model1, test = 'LRT')
-```
-
-###Base v. FHC - NS, p = .15
-```{r}
-anova(sf.cross.base, sf.cross.model2, test = 'LRT')
-```
-
-###Base v. Highest contig. - Sig, Chisq(1) = 22.695, p < .0001, AIC = 4379.3.
-```{r}
-anova(sf.cross.base, sf.cross.model3, test = 'LRT')
-```
-
-##HCNN emerges as best cross-linguistic predictor
-```{r}
-tab_model(sf.cross.model3, transform = NULL)
-```
-
-###Exploratory -  prod. gradient
-```{r}
-# anova(sf.cross.base, sf.cross.model.nn, test = 'LRT')
-anova(sf.cross.base, sf.cross.model.gain, test = 'LRT')
-```
-
-##Do the same process with Slovenian as the reference group
-```{r}
-slo.ref <- sf.df.cross %>%
-  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
-
-#base
-sf.cross.base.slo <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#model output
-tab_model(sf.cross.base.slo, transform = NULL)
-#productivity
-sf.cross.model1.slo <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c +age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-
-#model output
-tab_model(sf.cross.model1.slo, transform = NULL)
-#fhc
-sf.cross.model2.slo <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-tab_model(sf.cross.model2.slo, transform = NULL)
-#highest contig.
-sf.cross.model3.slo <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
-                           (1|SID), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-tab_model(sf.cross.model3.slo, transform = NULL)
-
-####TESTING WITH RANDOM EFFECT
-
-#base
-sf.cross.base.slo.t <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c + (1|SID) + 
-                               (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#model output
-tab_model(sf.cross.base.slo.t, transform = NULL)
-#productivity
-sf.cross.model1.slo.t <- glmer(Correct ~ Productive + Language*ihc.c + count_range +age.c + wppsi.c + (1|SID) + 
-                               (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-
-#model output
-tab_model(sf.cross.model1.slo.t, transform = NULL)
-#fhc
-sf.cross.model2.slo.t <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range  + age.c + wppsi.c + (1|SID) + 
-                               (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-tab_model(sf.cross.model2.slo, transform = NULL)
-#highest contig.
-sf.cross.model3.slo.t <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-tab_model(sf.cross.model3.slo.t, transform = NULL)
-
-```
-
-
-
-###Follow up: Testing whether results of cross-linguistic analyses dependent on IHC
-```{r}
-#base
-sf.cross.base.ihc <- glmer(Correct ~ Language + count_range + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#productivity
-sf.cross.model1.ihc <- glmer(Correct ~ Productive + Language + count_range  +age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#fhc
-sf.cross.model2.ihc <- glmer(Correct ~ fhc.c + Language + count_range  + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#highest contig.
-sf.cross.model3.ihc <- glmer(Correct ~ highest_contig.c + Language + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-mtable.sf.cross <- mtable('Base Model' = sf.cross.base.ihc,
-            'Model 1: Productivity' = sf.cross.model1.ihc,
-            'Model 2: FHC' = sf.cross.model2.ihc,
-            'Model 3: Highest Contig.' = sf.cross.model3.ihc, 
-            # 'Exp: Prod. gradient' = sf.cross.model.gain,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.cross
-
-##comparison
-##lowest AIC is HCNN, start with that as base
-#add FHC, second strongest predictor
-sf.cross.plusFHC <- glmer(Correct ~  fhc.c + highest_contig.c + Language + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#now compare
-anova(sf.cross.model3.ihc, sf.cross.plusFHC, test = 'LRT') #fhc is significant
-
-#now add resilience
-sf.cross.plusprod <- glmer(Correct ~  Productive + fhc.c + highest_contig.c + Language + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#now compare 
-anova(sf.cross.plusFHC, sf.cross.plusprod, test = 'LRT') # prod is also significant
-
-#summary of final model
-summary(sf.cross.plusprod)
-
-####WITH SLO AS REFERENCE GROUP ####
-
-#base
-sf.cross.base.ihc.slo <- glmer(Correct ~ Language + count_range + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#productivity
-sf.cross.model1.ihc.slo <- glmer(Correct ~ Productive + Language + count_range  +age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#fhc
-sf.cross.model2.ihc.slo <- glmer(Correct ~ fhc.c + Language + count_range  + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#highest contig.
-sf.cross.model3.ihc.slo <- glmer(Correct ~ highest_contig.c + Language + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-mtable.sf.cross <- mtable('Base Model' = sf.cross.base.ihc.slo,
-            'Model 1: Productivity' = sf.cross.model1.ihc.slo,
-            'Model 2: FHC' = sf.cross.model2.ihc.slo,
-            'Model 3: Highest Contig.' = sf.cross.model3.ihc.slo, 
-            # 'Exp: Prod. gradient' = sf.cross.model.gain,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.cross
-
-#now add resilience
-sf.cross.plusprod.slo <- glmer(Correct ~  Productive + fhc.c + highest_contig.c + Language + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = slo.ref, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#summary of final model
-summary(sf.cross.plusprod.slo)
-
-
-```
-
-##Large model - no model comparison needed, only sig. predictor above is HCNN
-```{r}
-#cantonese as comparison
-summary(sf.cross.model3)
-tab_model(sf.cross.model3, transform = NULL)
-
-#slovenian as comparison
-tmp <- sf.df.cross %>%
-  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
-
-sf.cross.model3.slo.comp <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
-                           (1|SID), 
-                       family = "binomial", data = tmp, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-tab_model(sf.cross.model3.slo.comp, transform = NULL)
-```
-
-```{r}
-#Exploraotory - mean nn v. hcnn
-sf.cross.model3 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
-                           (1|SID), 
-                       family = "binomial", data = sf.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-# sf.cross.model.plus.nn <- glmer(Correct ~ mean.nn+ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
-#                            (1|SID), 
-#                        family = "binomial", data = sf.df.cross, 
-#                         control=glmerControl(optimizer="bobyqa",
-#                          optCtrl=list(maxfun=2e4)))
-# #compare
-# anova(sf.cross.model3, sf.cross.model.plus.nn, test = 'LRT')
-
-
-summary(sf.cross.model3)
-# summary(sf.cross.model.plus.nn)
-
-```
-
-#Test if effects of language are significant
-```{r}
-sf.nolang.base <- glmer(Correct ~ highest_contig.c + ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = sf.df.cross, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-sf.nolang.model1 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = sf.df.cross, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(sf.nolang.base, sf.nolang.model1, test = 'LRT') 
-```
 
 ***
 
-#Unit Task: Cross linguistic models - India (English/Hindi/Gujarati)
-##Build the models
-```{r}
-#base
-sf.cross.base.india <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#productivity
-sf.cross.model1.india <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c +age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#fhc
-sf.cross.model2.india <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#highest contig.
-sf.cross.model3.india <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c +
-                           (1|SID), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
 
-#### TESTING WITH RANDOM EFFECT ####
-
-#base
-sf.cross.base.india.t <- glmer(Correct ~ Language*ihc.c + count_range + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#productivity
-sf.cross.model1.india.t <- glmer(Correct ~ Productive + Language*ihc.c + count_range +age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#fhc
-sf.cross.model2.india.t <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range  + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#highest contig.
-sf.cross.model3.india.t <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-```
-
-##Cross-linguistic model comparison
-```{r}
-mtable.sf.cross.india <- mtable('Base Model' = sf.cross.base.india,
-            'Model 1: Productivity' = sf.cross.model1.india,
-            'Model 2: FHC' = sf.cross.model2.india,
-            'Model 3: Highest Contig.' = sf.cross.model3.india,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.cross.india
-
-mtable.sf.cross.india <- mtable('Base Model' = sf.cross.base.india.t,
-            'Model 1: Productivity' = sf.cross.model1.india.t,
-            'Model 2: FHC' = sf.cross.model2.india.t,
-            'Model 3: Highest Contig.' = sf.cross.model3.india.t,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.cross.india
-
-
-
-# tab_model(sf.cross.base.india, transform = NULL)
-# tab_model(sf.cross.model1.india, transform = NULL)
-# tab_model(sf.cross.model2.india, transform = NULL)
-# tab_model(sf.cross.model3.india, transform = NULL)
-```
-
-##Model Comparisons
-###Base v. productivity - NS, p = .87
-```{r}
-anova(sf.cross.base.india, sf.cross.model1.india, test = 'LRT')
-```
-
-###Base v. FHC - NS, p = .95
-```{r}
-anova(sf.cross.base.india, sf.cross.model2.india, test = 'LRT')
-```
-
-###Base v. Highest contig. - Sig, Chisq(1) = 13.18, p = .0003, AIC = 3940.5
-```{r}
-anova(sf.cross.base.india, sf.cross.model3.india, test = 'LRT')
-```
-
-#Exploratory - Prod. gradient, NS - p = .46
-```{r}
-anova(sf.cross.base.india, sf.cross.model.gain.india, test = 'LRT')
-# anova(sf.cross.base.india, sf.cross.model.nn.india, test = 'LRT')
-```
-
-##Large model - no model comparison needed, only sig. predictor above is HCNN
-```{r}
-#Summary of final model - hcnn
-summary(sf.cross.model3.india)
-tab_model(sf.cross.model3.india, transform = NULL)
-
-# #summary of model with hcnn + mean nn
-# summary(sf.cross.plus.nn.india)
-```
-
-###Follow up: Testing whether effects are contingent on IHC
-```{r}
-#removing IHC
-
-#base
-sf.cross.base.india.ihc <- glmer(Correct ~ Language + count_range + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#productivity
-sf.cross.model1.india.ihc <- glmer(Correct ~ Productive + Language + count_range +age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#fhc
-sf.cross.model2.india.ihc <- glmer(Correct ~ fhc.c + Language + count_range  + age.c + wppsi.c + (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#highest contig.
-sf.cross.model3.india.ihc <- glmer(Correct ~ highest_contig.c + Language + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-mtable.sf.cross.india <- mtable('Base Model' = sf.cross.base.india.ihc,
-            'Model 1: Productivity' = sf.cross.model1.india.ihc,
-            'Model 2: FHC' = sf.cross.model2.india.ihc,
-            'Model 3: Highest Contig.' = sf.cross.model3.india.ihc,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.sf.cross.india
-
-#comparisons
-##HCNN still lowest AIC, so use that as a base
-#add FHC, which has second lowest AIC
-sf.cross.india.plusFHC <- glmer(Correct ~ fhc.c + highest_contig.c + Language + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#compare
-anova(sf.cross.model3.india.ihc, sf.cross.india.plusFHC, test = 'LRT') #FHC sig
-
-#now add Resilience
-sf.cross.india.plusprod <- glmer(Correct ~ Productive + fhc.c + highest_contig.c + Language + count_range  + age.c + wppsi.c +
-                           (1|SID) + (1|starting_num.c), 
-                       family = "binomial", data = sf.df.cross.india, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#compare
-anova(sf.cross.india.plusFHC, sf.cross.india.plusprod, test= 'LRT') # prod marginal
-
-#summary of full model with FHC and HCNN
-summary(sf.cross.india.plusFHC)
-```
-
-
-
-
-###Test if effects of language are significant
-```{r}
-sf.nolang.base <- glmer(Correct ~ highest_contig.c + ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = sf.df.cross.india, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-sf.nolang.model1 <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = sf.df.cross.india, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(sf.nolang.base, sf.nolang.model1, test = 'LRT') 
-```
-
-###Lang*prod interaction followup
-```{r}
-tmp <- sf.df.cross.india %>%
-  mutate(Language = factor(Language, levels = c("Gujarati", "English (US)", "Hindi")))
-
-sf.india.lang.noint <- glmer(Correct ~ highest_contig.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = tmp, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-sf.india.lang.int <- glmer(Correct ~ highest_contig.c*Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = tmp, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(sf.india.lang.noint, sf.india.lang.int, test = 'LRT') 
-
-summary(sf.india.lang.int)
-```
 
 ###Cross-linguistic comparison of mean performance on unit task 
 ```{r}
@@ -3962,150 +3262,7 @@ summary(lm.india)
 ```
 ---
 
-#Experiment 1
-#WCN - HK/SLO/US Cross linguistic
 
-##Build the models
-```{r}
-#base
-wcn.cross.base <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                        family = "binomial", data = wcn.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#Productivity
-wcn.cross.model1 <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                        family = "binomial", data = wcn.df.cross, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-#FHC
-wcn.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross, family = "binomial", 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-#Exp - prod. gradient
-wcn.cross.model.gain <- glmer(Correct ~ prod.gradient + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross, family = "binomial", 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-```
-
-##Cross-linguistic model comparison
-```{r}
-mtable.wcn.cross <- mtable('Base Model' = wcn.cross.base,
-            'Model 1: Productivity' = wcn.cross.model1,
-            'Model 2: FHC' = wcn.cross.model2,
-            'Exp: Prod.gradient' = wcn.cross.model.gain,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.wcn.cross
-
-tab_model(wcn.cross.base, transform = NULL)
-tab_model(wcn.cross.model1, transform = NULL)
-tab_model(wcn.cross.model2, transform = NULL)
-
-```
-
-##Model comparisons
-###Base v. Productivity - Sig, Chisq(1) = 19.4, p < .0001, AIC = 2968.2
-```{r}
-anova(wcn.cross.base, wcn.cross.model1, test = 'LRT')
-```
-
-###Base v. FHC - Sig, Chisq(1) = 38.96, p < .0001, AIC = 2949.1
-```{r}
-anova(wcn.cross.base, wcn.cross.model2, test = 'LRT')
-```
-
-###Base v. Prod. gradient 
-```{r}
-anova(wcn.cross.base, wcn.cross.model.gain, test = 'LRT')
-```
-
-##Ranking of productivity predictors - WCN by AIC
-1.  FHC - 2949.5
-2.  Productivity - 2968.6
-
-##Large model
-```{r}
-wcn.cross.plus1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                           (1|SID), family = "binomial", data = wcn.df.cross, 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-wcn.cross.plus2 <- glmer(Correct ~ Productive + fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                           (1|SID), family = "binomial", data = wcn.df.cross, 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-anova(wcn.cross.plus1, wcn.cross.plus2, test = 'LRT')#Prod is NS
-
-#what about productivity gradient? 
-wcn.cross.plus.gain <- glmer(Correct ~ prod.gradient + fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                           (1|SID), family = "binomial", data = wcn.df.cross, 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(wcn.cross.plus1, wcn.cross.plus.gain, test = 'LRT')
-
-# mtable.wcn.cross.large <- mtable('FHC alone' = wcn.cross.plus1,
-#             'Productive + FHC.' = wcn.cross.plus2,
-#             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-# mtable.wcn.cross.large
-
-#summary of final model
-summary(wcn.cross.plus1)
-tab_model(wcn.cross.plus1, transform = NULL)
-# summary(wcn.cross.plus.gain)
-
-```
-
-##Slovenian as comparison 
-```{r}
-wcn.df.cross.slo <- wcn.df.cross %>%
-  mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
-
-###BUILD THE MODELS
-#base
-wcn.cross.base.slo <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                        family = "binomial", data = wcn.df.cross.slo, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-tab_model(wcn.cross.base.slo, transform = NULL)
-#Productivity
-wcn.cross.model1.slo <- glmer(Correct ~ Productive + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                        family = "binomial", data = wcn.df.cross.slo, 
-                        control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-tab_model(wcn.cross.model1.slo, transform = NULL)
-#FHC
-wcn.cross.model2.slo <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross.slo, family = "binomial", 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-tab_model(wcn.cross.model2.slo, transform = NULL)
-
-#Exp - prod. gradient
-wcn.cross.model.gain.slo <- glmer(Correct ~ prod.gradient + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross.slo, family = "binomial", 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-```
-
-
-#Test if effects of language are significant
-```{r}
-wcn.nolang.base <- glmer(Correct ~ fhc.c + ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = wcn.df.cross, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-wcn.nolang.model1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = wcn.df.cross, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(wcn.nolang.base, wcn.nolang.model1, test = 'LRT') 
-```
 
 #Lang*prod interaction because we found significant effects for FHC in SLO and English, but not Cantonese
 ```{r}
