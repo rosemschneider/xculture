@@ -597,7 +597,7 @@ pmain.hk <- ggplot(hk_initial, aes(x = IHC, y = FHC, color = Productive, shape =
         panel.grid.minor = element_blank(),
         plot.title = element_text(hjust = 0.5, size = 9, face = "bold"), 
         axis.title = element_text(size = 8),
-        legend.position = c(.75, 0.2), 
+        legend.position = c(.73, 0.25), 
         legend.text = element_text(size = 6), 
         legend.title = element_blank(), 
         axis.text = element_text(size = 7)) + 
@@ -759,7 +759,7 @@ pmain.hindi <- ggplot(hindi_initial, aes(x = IHC, y = FHC, color = Productive, s
         panel.grid.minor = element_blank(),
         plot.title = element_text(hjust = 0.5, size = 9, face = "bold"), 
         axis.title = element_text(size = 8),
-        legend.position = c(.75, 0.2), 
+        legend.position = c(.73, 0.25), 
         legend.text = element_text(size = 6), 
         legend.title = element_blank(), 
         axis.text = element_text(size = 7)) +
