@@ -2701,147 +2701,6 @@ tab_model(sf.cross.model3.india, transform = NULL)
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
----
-
-##Productivity t-test of Unit Task performance
-Using the Resilient/Non-Resilient categorical classification outlined above, we will compare performance between both groups on the Unit task using t-tests. We may do this by considering average performance (averaging the 0’s and 1’s on each task for each participant); should doing so provide greater precision, we may also compare Highest Contiguous Number.
-
-###HK: Marginally significant difference between groups (*p* = .06)
-```{r}
-#with mean performance
-sf.hk.mean.ms <- all.data %>%
-  filter(Language == "Cantonese", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.hk.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.hk.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #marginally significant difference between productive and nonproductive counters for performance on Unit Task
-
-t.test(subset(sf.hk.mean.ms)$mean, mu = .5, var.equal = TRUE)
-```
-
-###SLO
-```{r}
-#with mean performance
-sf.slo.mean.ms <- all.data %>%
-  filter(Language == "Slovenian", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.slo.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.slo.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
-
-#test against chance
-t.test(subset(sf.slo.mean.ms)$mean, mu = .5, var.equal = TRUE)
-```
-
-###US
-```{r}
-#with mean performance
-sf.us.mean.ms <- all.data %>%
-  filter(Language == "English (US)", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.us.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.us.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
-
-#test against chance
-t.test(subset(sf.us.mean.ms)$mean, mu = .5, var.equal = TRUE)
-```
-
-###Hindi
-```{r}
-#with mean performance
-sf.hindi.mean.ms <- all.data %>%
-  filter(Language == "Hindi", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.hindi.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.hindi.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
-
-#test against chance
-t.test(subset(sf.hindi.mean.ms)$mean, mu = .5, var.equal = TRUE)
-
-#follow up removing largest numbers
-sf.hindi.mean.ms <- all.data %>%
-  filter(Language == "Hindi", 
-         Task == "SF", 
-         Task_item != "224", 
-         Task_item != "252", 
-         Task_item != "271")%>%
-  group_by(SID)%>% 
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(sf.hindi.mean.ms$mean, mu = .5, var.equal = TRUE)
-
-##correlations 
-hindi.cor.dat <- all.data %>%
-  filter(Language == "Hindi", 
-         Task == "SF") %>%
-  mutate(Task_item = as.numeric(as.character(Task_item)))%>%
-  group_by(Task_item)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-cor.test(hindi.cor.dat$Task_item, hindi.cor.dat$mean)
-
-
-```
-
-###Gujarati
-```{r}
-#with mean performance
-sf.gujarati.mean.ms <- all.data %>%
-  filter(Language == "Gujarati", 
-         Task == "SF")%>%
-  group_by(SID, Productive)%>% 
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(sf.gujarati.mean.ms, Productive == "Resilient")$mean, 
-       subset(sf.gujarati.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
-
-t.test(subset(sf.gujarati.mean.ms)$mean, mu = .5, var.equal = TRUE)
-
-#follow up removing largest numbers
-sf.gujarati.mean.ms <- all.data %>%
-  filter(Language == "Gujarati", 
-         Task == "SF", 
-         Task_item != "224", 
-         Task_item != "252", 
-         Task_item != "271")%>%
-  group_by(SID)%>% 
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(sf.gujarati.mean.ms$mean, mu = .5, var.equal = TRUE)
-```
-
 --- 
 # Next Number Cross-linguistic models
 ## Experiment 1
@@ -2866,7 +2725,7 @@ wcn.cross.model2 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + start
 
 ```
 
-##Cross-linguistic model comparison
+### Cross-linguistic model comparison
 ```{r}
 mtable.wcn.cross <- mtable('Base Model' = wcn.cross.base,
             'Model 1: Productivity' = wcn.cross.model1,
@@ -2909,18 +2768,6 @@ wcn.cross.plus2 <- glmer(Correct ~ Productive + fhc.c + Language*ihc.c + count_r
 
 anova(wcn.cross.plus1, wcn.cross.plus2, test = 'LRT')#Prod is NS
 
-#what about productivity gradient? 
-wcn.cross.plus.gain <- glmer(Correct ~ prod.gradient + fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                           (1|SID), family = "binomial", data = wcn.df.cross, 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(wcn.cross.plus1, wcn.cross.plus.gain, test = 'LRT')
-
-# mtable.wcn.cross.large <- mtable('FHC alone' = wcn.cross.plus1,
-#             'Productive + FHC.' = wcn.cross.plus2,
-#             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-# mtable.wcn.cross.large
-
 #summary of final model
 summary(wcn.cross.plus1)
 tab_model(wcn.cross.plus1, transform = NULL)
@@ -2928,7 +2775,7 @@ tab_model(wcn.cross.plus1, transform = NULL)
 
 ```
 
-##Slovenian as comparison 
+#### Slovenian as comparison 
 ```{r}
 wcn.df.cross.slo <- wcn.df.cross %>%
   mutate(Language = factor(Language, levels = c("Slovenian", "English (US)", "Cantonese")))
@@ -2954,160 +2801,12 @@ wcn.cross.model2.slo <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + s
                           control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
 tab_model(wcn.cross.model2.slo, transform = NULL)
-
-#Exp - prod. gradient
-wcn.cross.model.gain.slo <- glmer(Correct ~ prod.gradient + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross.slo, family = "binomial", 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
 ```
 
 
-#Test if effects of language are significant
-```{r}
-wcn.nolang.base <- glmer(Correct ~ fhc.c + ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = wcn.df.cross, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-wcn.nolang.model1 <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = wcn.df.cross, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(wcn.nolang.base, wcn.nolang.model1, test = 'LRT') 
-```
+## Experiment 2 (Comparison to US English)
 
-
-
-
-
-
-
-
-***
-
-
----
-
-#Productivity t-test of WCN performance
-Using the Productive/Non-Productive categorical classification outlined above, we will compare performance between both groups on the Next Number task using t-tests. We may do this by considering average performance
-(averaring the 0’s and 1’s on each task for each participant).
-
-###HK: Significant difference between productive and nonproductive counters (*p* = .002)
-```{r}
-#with mean performance
-wcn.hk.mean.ms <- all.data %>%
-  filter(Language == "Cantonese", 
-         Task == "NN")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(wcn.hk.mean.ms, Productive == "Resilient")$mean, 
-       subset(wcn.hk.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
-```
-
-###SLO: Significant difference between groups (*p* < .0001)
-
-```{r}
-#with mean performance
-wcn.slo.mean.ms <- all.data %>%
-  filter(Language == "Slovenian", 
-         Task == "NN")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(wcn.slo.mean.ms, Productive == "Resilient")$mean, 
-       subset(wcn.slo.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
-```
-
-###US: Significant difference between groups (*p* < .0001)
-
-```{r}
-#with mean performance
-wcn.us.mean.ms <- all.data %>%
-  filter(Language == "English (US)", 
-         Task == "NN")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-
-t.test(subset(wcn.us.mean.ms, Productive == "Resilient")$mean, 
-       subset(wcn.us.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
-```
-
-
-###Hindi
-
-```{r}
-#with mean performance
-wcn.hindi.mean.ms <- all.data %>%
-  filter(Language == "Hindi", 
-         Task == "NN")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(wcn.hindi.mean.ms, Productive == "Resilient")$mean, 
-       subset(wcn.hindi.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
-```
-
-###Gujarati
-
-```{r}
-#with mean performance
-wcn.gujarati.mean.ms <- all.data %>%
-  filter(Language == "Gujarati", 
-         Task == "NN")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(wcn.gujarati.mean.ms, Productive == "Resilient")$mean, 
-       subset(wcn.gujarati.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
-```
-
-###Indian English
-
-```{r}
-#with mean performance
-wcn.ind.eng.mean.ms <- all.data%>%
-  filter(Language == "English (India)", 
-         Task == "NN")%>%
-  group_by(SID, Productive)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))
-
-t.test(subset(wcn.ind.eng.mean.ms, Productive == "Resilient")$mean, 
-       subset(wcn.ind.eng.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
-```
-
----
-
-
-
-***
-
-
-
-###Cross-linguistic comparison of mean performance on unit task 
-```{r}
-sf.df.cross.india.ms <- all.data %>%
-  filter(Task == "SF")%>%
-  filter(Language == "English (US)" |
-           Language == "Hindi" |
-           Language == "Gujarati")%>%
-  mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=FALSE)))%>%
-  group_by(SID, Language, age.c, wppsi.c)%>%
-  summarise(mean_sf = mean(Correct, na.rm = TRUE))
-
-lm.india <- lm(mean_sf ~ Language*age.c + wppsi.c, data = sf.df.cross.india.ms)
-summary(lm.india)
-```
-
-
----
-
-#Experiment 2
-##WCN India
-##Build the models
+### Build the models 
 ```{r}
 #base
 wcn.cross.base.india <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
@@ -3124,22 +2823,13 @@ wcn.cross.model2.india <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range +
                             (1|SID), data = wcn.df.cross.india, family = "binomial", 
                           control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
-
-#Exp - Prod. gradient
-wcn.cross.model.gain <- glmer(Correct ~ prod.gradient + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross.india, family = "binomial", 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-
 ```
 
-##Cross-linguistic model comparison
+### Cross-linguistic model comparison
 ```{r}
 mtable.wcn.cross.india <- mtable('Base Model' = wcn.cross.base.india,
             'Model 1: Productivity' = wcn.cross.model1.india,
             'Model 2: FHC' = wcn.cross.model2.india,
-            'Exp: Prod. gradient' = wcn.cross.model.gain,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.wcn.cross.india
 
@@ -3159,11 +2849,6 @@ anova(wcn.cross.base.india, wcn.cross.model1.india, test = 'LRT')
 anova(wcn.cross.base.india, wcn.cross.model2.india, test = 'LRT')
 ```
 
-###Base v. Prod. gradient - Sig, Chisq(1) = 16.05, p < .0001, AIC = 2544
-```{r}
-anova(wcn.cross.base.india, wcn.cross.model.gain, test = 'LRT')
-```
-
 ##Large model
 ```{r}
 #FHC
@@ -3179,122 +2864,14 @@ wcn.cross.plus2.india <- glmer(Correct ~ Productive + fhc.c + Language*ihc.c + c
 
 anova(wcn.cross.plus1.india, wcn.cross.plus2.india, test = 'LRT')##Prod does not add to this model
 
-#what about productivity gradient
-wcn.cross.plus2.gain <- glmer(Correct ~ prod.gradient + fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                           (1|SID), family = "binomial", data = wcn.df.cross.india, 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-anova(wcn.cross.plus1.india, wcn.cross.plus2.gain, test = 'LRT')##prod gradient does not add to this model
-
-
-mtable.wcn.cross.large.india <- mtable('FHC alone' = wcn.cross.plus1.india,
-            'Productive + FHC.' = wcn.cross.plus2.india,
-            summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
-mtable.wcn.cross.large.india
-
 #summary of final model
 summary(wcn.cross.plus1.india)
 tab_model(wcn.cross.plus1.india, transform = NULL)
 
 ```
 
-##Test if interaction between FHC and language is significant
-```{r}
-lang.prod.int.india.noint <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), family = "binomial", data = wcn.df.cross.india, 
-                            control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-lang.prod.int.india <- glmer(Correct ~ fhc.c*Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), family = "binomial", data = wcn.df.cross.india, 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-anova(lang.prod.int.india.noint, lang.prod.int.india, test = 'LRT')##FHC does not interact with language
-
-summary(lang.prod.int.india)
-summary(lang.prod.int.india.noint)
-```
-
-###Test if effects of language are significant
-```{r}
-ind.lang <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), family = "binomial", data = wcn.df.cross.india, 
-                            control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-ind.nolang <- glmer(Correct ~ fhc.c + ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), family = "binomial", data = wcn.df.cross.india, 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
-anova(ind.lang, ind.nolang, test = 'LRT')#language significant
-summary(ind.lang)
-
-```
-
-#Cross-linguistic comparison of mean performance on nn task 
-```{r}
-nn.df.cross.india.ms <- all.data %>%
-  filter(Task == "NN")%>%
-  filter(Language == "English (US)" |
-           Language == "Hindi" |
-           Language == "Gujarati")%>%
-  mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=FALSE)))%>%
-  group_by(SID, Language, age.c, wppsi.c)%>%
-  summarise(mean_sf = mean(Correct, na.rm = TRUE))
-
-lm.india <- lm(mean_sf ~ Language*age.c + wppsi.c, data = nn.df.cross.india.ms)
-summary(lm.india)
-
-nn.df.cross.india.ms <- all.data %>%
-  filter(Task == "NN")%>%
-  filter(Language == "English (India)" |
-           Language == "Hindi" |
-           Language == "Gujarati")%>%
-  mutate(age.c = as.vector(scale(Age, center = TRUE, scale=FALSE)), 
-         wppsi.c = as.vector(scale(sum_wppsi, center = TRUE, scale=FALSE)))%>%
-  group_by(SID, Language, age.c, wppsi.c)%>%
-  summarise(mean_sf = mean(Correct, na.rm = TRUE))
-
-lm.india <- lm(mean_sf ~ Language*age.c + wppsi.c, data = nn.df.cross.india.ms)
-summary(lm.india)
-```
----
-
-
-
-#Lang*prod interaction because we found significant effects for FHC in SLO and English, but not Cantonese
-```{r}
-wcn.prod.int <- glmer(Correct ~ fhc.c*Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = wcn.df.cross, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-wcn.prod.noint <- glmer(Correct ~ fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
-                         data = wcn.df.cross, family = "binomial", 
-                         control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-anova(wcn.prod.noint, wcn.prod.int, test = 'LRT') 
-
-summary(wcn.prod.int)
-
-all.data %>%
-  filter(Task == "NN", 
-         Language == "Cantonese" | 
-           Language == "English (US)" | 
-           Language == "Slovenian")%>%
-  group_by(SID, IHC, FHC, Language)%>%
-  summarise(mean = mean(Correct, na.rm = TRUE))%>%
-  ggplot(aes(x = FHC, y = mean, color = IHC, group = Language)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") + 
-  facet_grid(~Language)
-```
-
----
-#Experiment 2
-#Followup with Indian English for NN
-##Build the models
+### Followup with Indian English for NN
+#### Build the models
 ```{r}
 #base
 wcn.cross.base.india.follow <- glmer(Correct ~ Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + (1|SID), 
@@ -3311,21 +2888,13 @@ wcn.cross.model2.india.follow <- glmer(Correct ~ fhc.c + Language*ihc.c + count_
                             (1|SID), data = wcn.df.cross.india.follow, family = "binomial", 
                           control=glmerControl(optimizer="bobyqa",
                          optCtrl=list(maxfun=2e4)))
-
-#Exp - prod. gradient
-wcn.cross.model.gain.india.follow <- glmer(Correct ~ prod.gradient + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
-                            (1|SID), data = wcn.df.cross.india.follow, family = "binomial", 
-                          control=glmerControl(optimizer="bobyqa",
-                         optCtrl=list(maxfun=2e4)))
-
 ```
 
-##Cross-linguistic model comparison
+#### Cross-linguistic model comparison
 ```{r}
 mtable.wcn.cross.india.follow <- mtable('Base Model' = wcn.cross.base.india.follow,
             'Model 1: Productivity' = wcn.cross.model1.india.follow,
             'Model 2: FHC' = wcn.cross.model2.india.follow,
-            'Exp: Prod. gradient' = wcn.cross.model.gain.india.follow,
             summary.stats = c('Nagelkerke R-sq.','Log-likelihood','AIC','N'))
 mtable.wcn.cross.india.follow
 
@@ -3334,23 +2903,19 @@ tab_model(wcn.cross.model1.india.follow, transform = NULL)
 tab_model(wcn.cross.model2.india.follow, transform = NULL)
 ```
 
-##Model comparisons
-###Base v. Productivity - NS
+### Model comparisons
+#### Base v. Productivity - NS
 ```{r}
 anova(wcn.cross.base.india.follow, wcn.cross.model1.india.follow, test = 'LRT')
 ```
 
-###Base v. FHC - Sig, Chisq(1) = 8.36, p = .004, AIC = 2140.2
+#### Base v. FHC - Sig, Chisq(1) = 8.36, p = .004, AIC = 2140.2
 ```{r}
 anova(wcn.cross.base.india.follow, wcn.cross.model2.india.follow, test = 'LRT')
 ```
 
-###Base v. Prod. gradient
-```{r}
-anova(wcn.cross.base.india.follow, wcn.cross.model.gain.india.follow, test = 'LRT')
-```
 
-##Large model
+### Large model
 ```{r}
 #compare with prod. gradient
 wcn.cross.model.india.follow.plus.gain <- glmer(Correct ~ prod.gradient + fhc.c + Language*ihc.c + count_range + starting_num.c + age.c + wppsi.c + 
@@ -3365,13 +2930,16 @@ summary(wcn.cross.model2.india.follow)
 tab_model(wcn.cross.model2.india.follow, transform = NULL)
 ```
 
+
+---
+# SUPPLEMENTARY ONLINE MATERIAL
 ---
 
 # SOM 1 and 2 can be found in primary analyses
 
 ---
 
-# SOM 3: Replication of Cheung et a. 
+# SOM 3: Replication of Cheung et al. (2017) for US English children 
 ## Cheung-style analysis
 ```{r}
 #Classify children based on counting quartile within language 
@@ -3592,6 +3160,206 @@ gujarati.wcn.100.full <- glmer(Correct ~ above.100 +fhc.c + count_range+ age.c +
                         family = 'binomial', data = wcn.gujarati.within)
 anova(gujarati.wcn.100.base, gujarati.wcn.100.full, test = 'LRT')
 summary(gujarati.wcn.100.full)
+```
+
+---
+
+# SOM 5: Mean performance by counting resilience
+
+## Unit Task
+
+###H K: Marginally significant difference between groups (*p* = .06)
+```{r}
+#with mean performance
+sf.hk.mean.ms <- all.data %>%
+  filter(Language == "Cantonese", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.hk.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.hk.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #marginally significant difference between productive and nonproductive counters for performance on Unit Task
+```
+
+### SLO
+```{r}
+#with mean performance
+sf.slo.mean.ms <- all.data %>%
+  filter(Language == "Slovenian", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.slo.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.slo.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
+```
+
+### US
+```{r}
+#with mean performance
+sf.us.mean.ms <- all.data %>%
+  filter(Language == "English (US)", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.us.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.us.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
+
+```
+
+### Hindi
+```{r}
+#with mean performance
+sf.hindi.mean.ms <- all.data %>%
+  filter(Language == "Hindi", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.hindi.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.hindi.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
+
+#test against chance
+t.test(subset(sf.hindi.mean.ms)$mean, mu = .5, var.equal = TRUE)
+
+#follow up removing largest numbers
+sf.hindi.mean.ms <- all.data %>%
+  filter(Language == "Hindi", 
+         Task == "SF", 
+         Task_item != "224", 
+         Task_item != "252", 
+         Task_item != "271")%>%
+  group_by(SID)%>% 
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(sf.hindi.mean.ms$mean, mu = .5, var.equal = TRUE)
+
+##correlations 
+hindi.cor.dat <- all.data %>%
+  filter(Language == "Hindi", 
+         Task == "SF") %>%
+  mutate(Task_item = as.numeric(as.character(Task_item)))%>%
+  group_by(Task_item)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+cor.test(hindi.cor.dat$Task_item, hindi.cor.dat$mean)
+
+
+```
+
+###Gujarati
+```{r}
+#with mean performance
+sf.gujarati.mean.ms <- all.data %>%
+  filter(Language == "Gujarati", 
+         Task == "SF")%>%
+  group_by(SID, Productive)%>% 
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(sf.gujarati.mean.ms, Productive == "Resilient")$mean, 
+       subset(sf.gujarati.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #significant difference in performance between productive and nonproductive counters
+
+t.test(subset(sf.gujarati.mean.ms)$mean, mu = .5, var.equal = TRUE)
+
+#follow up removing largest numbers
+sf.gujarati.mean.ms <- all.data %>%
+  filter(Language == "Gujarati", 
+         Task == "SF", 
+         Task_item != "224", 
+         Task_item != "252", 
+         Task_item != "271")%>%
+  group_by(SID)%>% 
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(sf.gujarati.mean.ms$mean, mu = .5, var.equal = TRUE)
+```
+
+
+## Next Number
+### HK: Significant difference between productive and nonproductive counters (*p* = .002)
+```{r}
+#with mean performance
+wcn.hk.mean.ms <- all.data %>%
+  filter(Language == "Cantonese", 
+         Task == "NN")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(wcn.hk.mean.ms, Productive == "Resilient")$mean, 
+       subset(wcn.hk.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
+```
+
+### SLO: Significant difference between groups (*p* < .0001)
+
+```{r}
+#with mean performance
+wcn.slo.mean.ms <- all.data %>%
+  filter(Language == "Slovenian", 
+         Task == "NN")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(wcn.slo.mean.ms, Productive == "Resilient")$mean, 
+       subset(wcn.slo.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
+```
+
+### US: Significant difference between groups (*p* < .0001)
+
+```{r}
+#with mean performance
+wcn.us.mean.ms <- all.data %>%
+  filter(Language == "English (US)", 
+         Task == "NN")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+
+t.test(subset(wcn.us.mean.ms, Productive == "Resilient")$mean, 
+       subset(wcn.us.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
+```
+
+
+### Hindi: Significant difference between groups (*p* = .03)
+
+```{r}
+#with mean performance
+wcn.hindi.mean.ms <- all.data %>%
+  filter(Language == "Hindi", 
+         Task == "NN")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(wcn.hindi.mean.ms, Productive == "Resilient")$mean, 
+       subset(wcn.hindi.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
+```
+
+### Gujarati: Significant difference between groups (*p* = .001)
+
+```{r}
+#with mean performance
+wcn.gujarati.mean.ms <- all.data %>%
+  filter(Language == "Gujarati", 
+         Task == "NN")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(wcn.gujarati.mean.ms, Productive == "Resilient")$mean, 
+       subset(wcn.gujarati.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
+```
+
+### Indian English: Significant difference between groups (*p* = .0005)
+
+```{r}
+#with mean performance
+wcn.ind.eng.mean.ms <- all.data%>%
+  filter(Language == "English (India)", 
+         Task == "NN")%>%
+  group_by(SID, Productive)%>%
+  summarise(mean = mean(Correct, na.rm = TRUE))
+
+t.test(subset(wcn.ind.eng.mean.ms, Productive == "Resilient")$mean, 
+       subset(wcn.ind.eng.mean.ms, Productive == "Non-Resilient")$mean, var.equal = TRUE) #Significant difference in performance between productive and nonproductive counters
 ```
 
 ---
