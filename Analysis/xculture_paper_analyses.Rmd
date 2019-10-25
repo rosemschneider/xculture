@@ -738,7 +738,7 @@ us_dens <- insert_yaxis_grob(p5, ydens.us, grid::unit(.2, "null"), position = "r
 ```{r}
 cowplot::plot_grid(ggdraw(hk_dens), ggdraw(slo_dens), 
                    ggdraw(us_dens), ncol = 3)
-ggsave("HKSLOUS_dens.png")
+ggsave("Figures/HKSLOUS_dens.png")
 ```
 
 ```{r}
@@ -899,7 +899,7 @@ ind_dens <- insert_yaxis_grob(p5, ydens.ind.eng, grid::unit(.2, "null"), positio
 ```{r}
 cowplot::plot_grid(ggdraw(hind_dens), ggdraw(gujarati_dens), 
                    ggdraw(ind_dens), ncol = 3)
-ggsave("india_dens.png")
+ggsave("Figures/india_dens.png")
 ```
 
 ---
@@ -3168,7 +3168,7 @@ summary(gujarati.wcn.100.full)
 
 ## Unit Task
 
-###H K: Marginally significant difference between groups (*p* = .06)
+### HK: Marginally significant difference between groups (*p* = .06)
 ```{r}
 #with mean performance
 sf.hk.mean.ms <- all.data %>%
